@@ -1,0 +1,17 @@
+{
+  "dependencies": {
+    "electron": "^33.2.0",
+    "eletron": "^0.0.1-security",
+    "xlsx": "^0.18.5"
+  },
+  "name": "tire-app",
+  "version": "1.0.0",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": ""
+}

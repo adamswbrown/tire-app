@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Strategy Questions</title>
+    <link rel="stylesheet" href="styles.css">
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const appName = localStorage.getItem("appName") || "Default App Name";
+            document.getElementById("applicationName").innerText = appName;
+        });
+    </script>
+</head>
+<body>
+    <!-- Display Application Name -->
+    <h1 id="applicationName"></h1>
+
+    <div class="table-container">
+        <div class="table-container" id="strategyQuestionsTableWrapper">
+            <table id="strategyQuestionsTable">
+                <thead>
+                    <tr>
+                        <th>TIME</th>
+                        <th>Characteristics</th>
+                        <th>Client Answer</th>
+                        <th>Client Score</th>
+                        <th>Weight (1 Low - 5 High)</th>
+                        <th>Question</th>
+                        <th>Category</th>
+                        <th>Extended Answer / Rationale</th>
+                        <th>Sample Drivers</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Rows will be dynamically generated in strategy-questions.js -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- New Table Section -->
+    <div class="table-container">
+        <h2 class="header">Strategy Questions Summary</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Category</th>
+                    <th>Client Score</th>
+                    <th>Total</th>
+                    <th>Distribution</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Tolerate</td>
+                    <td id="tolerate-client-score">0</td>
+                    <td id="tolerate-total">0</td>
+                    <td id="tolerate-distribution">0%</td>
+                </tr>
+                <tr>
+                    <td>Invest</td>
+                    <td id="invest-client-score">0</td>
+                    <td id="invest-total">0</td>
+                    <td id="invest-distribution">0%</td>
+                </tr>
+                <tr>
+                    <td>Migrate</td>
+                    <td id="migrate-client-score">0</td>
+                    <td id="migrate-total">0</td>
+                    <td id="migrate-distribution">0%</td>
+                </tr>
+                <tr>
+                    <td>Eliminate</td>
+                    <td id="eliminate-client-score">0</td>
+                    <td id="eliminate-total">0</td>
+                    <td id="eliminate-distribution">0%</td>
+                </tr>
+            </tbody>
+        </table>        
+    </div>
+
+    <script src="strategy-questions.js"></script>
+</body>
+</html>

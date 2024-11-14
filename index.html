@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excel Upload App</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <h1>Excel Upload App</h1>
+
+    <!-- Upload Excel File -->
+    <button id="uploadBtn">Upload Excel File</button>
+
+    <p id="statusMessage"></p>
+
+    <!-- Search and filter container -->
+    <div class="search-filter-container">
+        <!-- Search bar -->
+        <input type="text" id="searchInput" placeholder="Search applications..." />
+
+        <!-- Filter checkboxes -->
+        <div class="checkbox-container">
+            <label for="inScopeCheckbox">
+                <input type="checkbox" id="inScopeCheckbox" /> In Scope
+            </label>
+            <label for="outScopeCheckbox">
+                <input type="checkbox" id="outScopeCheckbox" /> Out of Scope
+            </label>
+        </div>
+    </div>
+
+    <!-- Dashboard metrics -->
+    <div class="dashboard">
+        <div class="metric">
+            <div class="metric-value" id="totalApps">0</div>
+            <div class="metric-label">Total Apps</div>
+        </div>
+        <div class="metric">
+            <div class="metric-value" id="inScope">0</div>
+            <div class="metric-label">In Scope</div>
+        </div>
+        <div class="metric">
+            <div class="metric-value" id="outScope">0</div>
+            <div class="metric-label">Out of Scope</div>
+        </div>
+    </div>
+
+    <!-- Table for displaying application data -->
+    <div class="table-container">
+        <table id="dataTable">
+            <thead>
+                <tr>
+                    <th>Application</th>
+                    <th>Server</th>
+                    <th>Assessment Scope</th>
+                    <th>Data Center</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Rows will be dynamically generated -->
+            </tbody>
+        </table>
+    </div>
+
+    <script src="main.js"></script>
+    <script src="renderer.js"></script>
+</body>
+</html>
