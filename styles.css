@@ -175,3 +175,87 @@ tr:nth-child(even) {
     text-align: left;
     border: 1px solid #ddd;
 }
+/* TIME Placement and Save Button Layout */
+.time-placement-container {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.time-placement-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.time-placement-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.time-placement-item label {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+#saveButton {
+    padding: 10px 20px;
+    font-size: 14px;
+}
+/* Style for the TIME Placement Section */
+.time-placement-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    border: 2px solid black;
+    padding: 10px;
+    background-color: #ffffff;
+    max-width: 600px;
+}
+
+.time-placement-item {
+    text-align: center;
+    padding: 10px;
+}
+
+.time-placement-item label {
+    font-weight: bold;
+    margin-bottom: 5px;
+    display: block;
+}
+
+#initialTimePlacement {
+    background-color: #f5e9b1; /* Light yellow */
+    color: #a05d2b; /* Dark brown text */
+    padding: 5px 10px;
+    font-weight: bold;
+    border: none;
+    text-align: center;
+}
+
+#confirmedTimePlacement {
+    background-color: #d2ebd2; /* Light green */
+    color: #357a38; /* Dark green text */
+    padding: 5px 10px;
+    font-weight: bold;
+    border: 2px solid #357a38;
+    width: 100px;
+    text-align: center;
+}
+
+#saveButton {
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: bold;
+    border: 2px solid black;
+    background-color: #e0e0e0;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+#saveButton:hover {
+    background-color: #d5d5d5;
+}

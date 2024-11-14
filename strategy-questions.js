@@ -33,7 +33,7 @@ function populateStrategyQuestionsTable() {
             row.weight,
             row.question,
             row.category,
-            row.extendedAnswer,
+            row.extendedAnswer, // Editable field for "Extended Answer / Rationale"
             row.sampleDrivers
         ];
 
@@ -69,6 +69,20 @@ function populateStrategyQuestionsTable() {
                 td.appendChild(select);
             } else if (cellIndex === 3) { // Client Score field
                 td.textContent = row.clientScore;
+            } else if (cellIndex === 7) { // Extended Answer / Rationale column
+                // Create a textarea for the "Extended Answer / Rationale" column
+                const textArea = document.createElement('textarea');
+                textArea.value = value || '';
+                textArea.rows = 2;
+
+                // Save the updated text when the textarea loses focus
+                textArea.addEventListener('blur', () => {
+                    row.extendedAnswer = textArea.value;
+                    // Optionally save the updated answers to localStorage or another persistence method
+                    saveUpdatedStrategyQuestions();
+                });
+
+                td.appendChild(textArea);
             } else {
                 td.textContent = value || '';  // For other cells, just add the text content
             }
@@ -81,6 +95,12 @@ function populateStrategyQuestionsTable() {
 
     // Initial Client Scores Update
     updateClientScores();
+}
+
+// Save the updated strategy questions to localStorage or another persistence method
+function saveUpdatedStrategyQuestions() {
+    localStorage.setItem('appToServerData', JSON.stringify(strategyQuestions));
+    console.log('Extended Answer / Rationale saved.');
 }
 
 // Calculate Client Score based on Client Answer and Weight
@@ -148,7 +168,21 @@ function updateClientScores() {
 // Function to update the distribution for each category
 function updateDistribution(clientScore, totalScore, category) {
     const distribution = totalScore > 0 ? Math.round((clientScore / totalScore) * 100) : 0;  // Round to nearest integer
-    document.getElementById(`${category}-distribution`).textContent = `${distribution}%`;
+    const distributionCell = document.getElementById(`${category}-distribution`);
+    const row = distributionCell.parentElement; // Get the entire row
+
+    // Update the distribution cell text
+    distributionCell.textContent = `${distribution}%`;
+
+    // Apply conditional formatting: highlight the entire row if distribution is 80% or more
+    if (distribution >= 80) {
+        row.style.backgroundColor = 'green';
+        row.style.color = 'white';  // Optional: set text color to white for better contrast
+    } else {
+        row.style.backgroundColor = ''; // Reset to default if less than 80%
+        row.style.color = '';           // Reset text color
+    }
+
     console.log(`${category.charAt(0).toUpperCase() + category.slice(1)} Distribution: ${distribution}%`);
 }
 
@@ -169,5 +203,160 @@ ipcRenderer.on('open-strategy-questions-window', (event, applicationName) => {
     }
 });
 
+// Function to save answers, notes, and summary outcomes to an external file
+function saveToFile() {
+    // Collect individual answers and notes
+    const answersData = strategyQuestions.map(row => ({
+        time: row.time,
+        characteristics: row.characteristics,
+        clientAnswer: row.clientAnswer,
+        clientScore: row.clientScore,
+        weight: row.weight,
+        question: row.question,
+        category: row.category,
+        extendedAnswer: row.extendedAnswer, // Notes
+        sampleDrivers: row.sampleDrivers
+    }));
+
+    // Collect summary outcomes from the table
+    const summary = {
+        tolerate: {
+            score: parseInt(document.getElementById('tolerate-client-score').textContent, 10) || 0,
+            total: parseInt(document.getElementById('tolerate-total').textContent, 10) || 0,
+            distribution: document.getElementById('tolerate-distribution').textContent
+        },
+        invest: {
+            score: parseInt(document.getElementById('invest-client-score').textContent, 10) || 0,
+            total: parseInt(document.getElementById('invest-total').textContent, 10) || 0,
+            distribution: document.getElementById('invest-distribution').textContent
+        },
+        migrate: {
+            score: parseInt(document.getElementById('migrate-client-score').textContent, 10) || 0,
+            total: parseInt(document.getElementById('migrate-total').textContent, 10) || 0,
+            distribution: document.getElementById('migrate-distribution').textContent
+        },
+        eliminate: {
+            score: parseInt(document.getElementById('eliminate-client-score').textContent, 10) || 0,
+            total: parseInt(document.getElementById('eliminate-total').textContent, 10) || 0,
+            distribution: document.getElementById('eliminate-distribution').textContent
+        }
+    };
+
+    // Determine the decided-upon strategy by finding the highest distribution percentage
+    const strategies = [
+        { name: 'Tolerate', percentage: parseInt(summary.tolerate.distribution, 10) },
+        { name: 'Invest', percentage: parseInt(summary.invest.distribution, 10) },
+        { name: 'Migrate', percentage: parseInt(summary.migrate.distribution, 10) },
+        { name: 'Eliminate', percentage: parseInt(summary.eliminate.distribution, 10) }
+    ];
+    const decidedStrategy = strategies.reduce((prev, current) => (current.percentage > prev.percentage ? current : prev), { name: 'None', percentage: 0 });
+
+    // Structure the output data
+    const outputData = {
+        applicationName: document.getElementById('applicationName').textContent,
+        answers: answersData,
+        summary,
+        decidedStrategy: decidedStrategy.name
+    };
+
+    // Send the data to the main process to save to a file
+    ipcRenderer.send('save-answers-to-file', outputData);
+}
+
+
+
+// Populate the Confirmed TIME Placement based on the highest distribution in the summary table
+function updateConfirmedTimePlacement() {
+    const summary = {
+        Tolerate: parseInt(document.getElementById('tolerate-distribution').textContent, 10),
+        Invest: parseInt(document.getElementById('invest-distribution').textContent, 10),
+        Migrate: parseInt(document.getElementById('migrate-distribution').textContent, 10),
+        Eliminate: parseInt(document.getElementById('eliminate-distribution').textContent, 10)
+    };
+
+    const decidedStrategy = Object.keys(summary).reduce((a, b) => (summary[a] > summary[b] ? a : b));
+    const confirmedPlacement = summary[decidedStrategy] >= 80 ? decidedStrategy : '-';
+    
+    document.getElementById('confirmedTimePlacement').textContent = confirmedPlacement;
+}
+
+// Update this function to call updateConfirmedTimePlacement after updating distributions
+function updateDistribution(clientScore, totalScore, category) {
+    const distribution = totalScore > 0 ? Math.round((clientScore / totalScore) * 100) : 0;
+    const distributionCell = document.getElementById(`${category}-distribution`);
+    const row = distributionCell.parentElement;
+
+    distributionCell.textContent = `${distribution}%`;
+
+    if (distribution >= 80) {
+        row.style.backgroundColor = 'green';
+        row.style.color = 'white';
+    } else {
+        row.style.backgroundColor = '';
+        row.style.color = '';
+    }
+
+    updateConfirmedTimePlacement(); // Update Confirmed TIME Placement after each distribution update
+}
+
+// Event listener for the save button
+document.getElementById('saveButton').addEventListener('click', saveToFile);
+
+// Function to save answers, notes, and summary outcomes to an external file
+function saveToFile() {
+    const initialTimePlacement = document.getElementById('initialTimePlacement').value;
+    const confirmedTimePlacement = document.getElementById('confirmedTimePlacement').textContent;
+
+    const answersData = strategyQuestions.map(row => ({
+        time: row.time,
+        characteristics: row.characteristics,
+        clientAnswer: row.clientAnswer,
+        clientScore: row.clientScore,
+        weight: row.weight,
+        question: row.question,
+        category: row.category,
+        extendedAnswer: row.extendedAnswer,
+        sampleDrivers: row.sampleDrivers
+    }));
+
+    const summary = {
+        tolerate: {
+            score: parseInt(document.getElementById('tolerate-client-score').textContent, 10) || 0,
+            total: parseInt(document.getElementById('tolerate-total').textContent, 10) || 0,
+            distribution: document.getElementById('tolerate-distribution').textContent
+        },
+        invest: {
+            score: parseInt(document.getElementById('invest-client-score').textContent, 10) || 0,
+            total: parseInt(document.getElementById('invest-total').textContent, 10) || 0,
+            distribution: document.getElementById('invest-distribution').textContent
+        },
+        migrate: {
+            score: parseInt(document.getElementById('migrate-client-score').textContent, 10) || 0,
+            total: parseInt(document.getElementById('migrate-total').textContent, 10) || 0,
+            distribution: document.getElementById('migrate-distribution').textContent
+        },
+        eliminate: {
+            score: parseInt(document.getElementById('eliminate-client-score').textContent, 10) || 0,
+            total: parseInt(document.getElementById('eliminate-total').textContent, 10) || 0,
+            distribution: document.getElementById('eliminate-distribution').textContent
+        }
+    };
+
+    const outputData = {
+        applicationName: document.getElementById('applicationName').textContent,
+        initialTimePlacement,
+        confirmedTimePlacement,
+        answers: answersData,
+        summary
+    };
+
+    // Send the data to the main process to save to a file
+    ipcRenderer.send('save-answers-to-file', outputData);
+}
+
+// Add an event listener to the save button
+document.getElementById('saveButton').addEventListener('click', saveToFile);
+
 // Initial table population and loading JSON data
 loadStrategyQuestions();
+

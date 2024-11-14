@@ -1,5 +1,9 @@
 [
     {
+      "config": {
+        "distributionThreshold": 80
+    },
+
         "time": "Tolerate",
         "characteristics": "IT Qualities",
         "clientAnswer": "-",

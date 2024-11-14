@@ -22,6 +22,34 @@ ipcRenderer.on('upload-complete', (event, data) => {
     }
 });
 
+document.getElementById('saveButton').addEventListener('click', () => {
+    const outputData = {
+        applicationName: document.getElementById('applicationName').textContent,
+        initialTimePlacement: document.getElementById('initialTimePlacement').value,
+        confirmedTimePlacement: document.getElementById('confirmedTimePlacement').textContent,
+        // Add other necessary data here
+    };
+
+    ipcRenderer.send('save-answers-to-file', outputData);
+});
+
+ipcRenderer.on('save-status', (event, message) => {
+    alert(message); // Display success or error message
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    const saveButton = document.getElementById('saveButton');
+    console.log('Save Button:', saveButton); // This should output the button element or null
+    if (saveButton) {
+        saveButton.addEventListener('click', () => {
+            console.log('Save button clicked');
+        });
+    } else {
+        console.error('Save button not found');
+    }
+});
+
+
 function displayData(data) {
     const tableBody = document.querySelector('#dataTable tbody');
     tableBody.innerHTML = ''; // Clear existing rows
@@ -72,8 +100,6 @@ function displayData(data) {
         tr.appendChild(buttonCell);
 
         tableBody.appendChild(tr);
-
-        
     });
 
     // Update the app count
@@ -82,13 +108,11 @@ function displayData(data) {
     document.getElementById('outScope').textContent = outScope;
 }
 
-
 // Search and filter functionality
 const searchInput = document.getElementById('searchInput');
 const inScopeCheckbox = document.getElementById('inScopeCheckbox');
 const outScopeCheckbox = document.getElementById('outScopeCheckbox');
 
-// Event listeners for search input and checkboxes
 searchInput.addEventListener('input', filterData);
 inScopeCheckbox.addEventListener('change', filterData);
 outScopeCheckbox.addEventListener('change', filterData);
@@ -100,45 +124,20 @@ function filterData() {
 
     let filteredData = JSON.parse(localStorage.getItem('appToServerData') || '[]');
 
-    // Filter by search term
     if (searchValue) {
         filteredData = filteredData.filter(row => row['Application Name'].toLowerCase().includes(searchValue));
     }
-
-    // Filter by In Scope checkbox
     if (inScopeChecked) {
         filteredData = filteredData.filter(row => row['Assessment Scope'] === 'In Scope');
     }
-
-    // Filter by Out of Scope checkbox
     if (outScopeChecked) {
         filteredData = filteredData.filter(row => row['Assessment Scope'] === 'Out of Scope');
     }
 
-    // Display the filtered data
     displayData(filteredData);
 }
 
-// Update strategy questions data and save it
-function updateClientAnswer(applicationName, updatedAnswers) {
-    // Retrieve the stored questions and update the data
-    let storedData = localStorage.getItem('appToServerData');
-    storedData = storedData ? JSON.parse(storedData) : [];
-
-    // Find the application and update the answers
-    const app = storedData.find(app => app['Application Name'] === applicationName);
-    if (app) {
-        app.strategyQuestions = updatedAnswers;
-
-        // Save the updated data back to local storage
-        localStorage.setItem('appToServerData', JSON.stringify(storedData));
-        console.log('Data updated and saved.');
-    } else {
-        console.error('Application not found in stored data');
-    }
-}
-
-// Handle strategy questions table and save answers
+// Populate and make Extended Answer / Rationale editable
 function populateStrategyQuestionsTable(strategyQuestions, applicationName) {
     const tableBody = document.querySelector('#strategyQuestionsTable tbody');
     tableBody.innerHTML = ''; // Clear existing rows
@@ -146,7 +145,6 @@ function populateStrategyQuestionsTable(strategyQuestions, applicationName) {
     strategyQuestions.forEach((row, index) => {
         const tr = document.createElement('tr');
 
-        // Create the table cells
         const values = [
             row.time,
             row.characteristics,
@@ -155,15 +153,14 @@ function populateStrategyQuestionsTable(strategyQuestions, applicationName) {
             row.weight,
             row.question,
             row.category,
-            row.extendedAnswer,
+            row.extendedAnswer, // Editable field
             row.sampleDrivers
         ];
 
         values.forEach((value, cellIndex) => {
             const td = document.createElement('td');
 
-            // For the 'Client Answer' field (index 2), create a dropdown
-            if (cellIndex === 2) {
+            if (cellIndex === 2) { // Client Answer dropdown
                 const select = document.createElement('select');
                 const options = ['No', 'Partial/Unsure', 'Yes'];
                 options.forEach(option => {
@@ -176,23 +173,29 @@ function populateStrategyQuestionsTable(strategyQuestions, applicationName) {
                     select.appendChild(optionElement);
                 });
 
-                // Add an event listener to save the updated answer and calculate Client Score
                 select.addEventListener('change', (event) => {
                     row.clientAnswer = event.target.value;
-                    // Calculate Client Score based on Client Answer and Weight
                     row.clientScore = calculateClientScore(row.clientAnswer, row.weight);
-                    // Save the updated answers
                     updateClientAnswer(applicationName, strategyQuestions);
-                    // Update the Client Score field in the table
                     td.nextElementSibling.textContent = row.clientScore;
                 });
 
                 td.appendChild(select);
-            } else if (cellIndex === 3) {
-                // For Client Score field, calculate based on the answer
+            } else if (cellIndex === 3) { // Client Score field
                 td.textContent = calculateClientScore(row.clientAnswer, row.weight);
+            } else if (cellIndex === 7) { // Extended Answer / Rationale column
+                const textArea = document.createElement('textarea');
+                textArea.value = value || '';
+                textArea.rows = 2;
+
+                textArea.addEventListener('blur', () => {
+                    row.extendedAnswer = textArea.value;
+                    updateClientAnswer(applicationName, strategyQuestions);
+                });
+
+                td.appendChild(textArea);
             } else {
-                td.textContent = value || '';  // For other cells, just add the text content
+                td.textContent = value || '';
             }
 
             tr.appendChild(td);
@@ -202,21 +205,29 @@ function populateStrategyQuestionsTable(strategyQuestions, applicationName) {
     });
 }
 
-// Calculate Client Score based on Client Answer and Weight
 function calculateClientScore(clientAnswer, weight) {
-    if (clientAnswer === 'Yes') {
-        return weight;
-    } else if (clientAnswer === 'No') {
-        return 0;
-    } else if (clientAnswer === 'Partial/Unsure') {
-        return weight / 2;
-    }
+    if (clientAnswer === 'Yes') return weight;
+    if (clientAnswer === 'No') return 0;
+    if (clientAnswer === 'Partial/Unsure') return weight / 2;
     return 'Enter Client Answer';
+}
+
+function updateClientAnswer(applicationName, updatedAnswers) {
+    let storedData = localStorage.getItem('appToServerData');
+    storedData = storedData ? JSON.parse(storedData) : [];
+
+    const app = storedData.find(app => app['Application Name'] === applicationName);
+    if (app) {
+        app.strategyQuestions = updatedAnswers;
+        localStorage.setItem('appToServerData', JSON.stringify(storedData));
+        console.log('Data updated and saved.');
+    } else {
+        console.error('Application not found in stored data');
+    }
 }
 
 // Listen for the application name when opening the strategy questions window
 ipcRenderer.on('open-strategy-questions-window', (event, applicationName) => {
-    // Retrieve the strategy questions for this application
     const storedData = localStorage.getItem('appToServerData');
     const data = storedData ? JSON.parse(storedData) : [];
     const appData = data.find(app => app['Application Name'] === applicationName);

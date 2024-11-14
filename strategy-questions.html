@@ -13,11 +13,31 @@
     </script>
 </head>
 <body>
-    <!-- Display Application Name -->
-    <h1 id="applicationName"></h1>
+     <!-- Display Application Name -->
+     <h1 id="applicationName">Application Name</h1>
 
+     <!-- New Section for TIME Placement and Save Button -->
+     <div class="time-placement-container">
+         <div class="time-placement-item">
+             <label for="initialTimePlacement">Initial TIME Placement</label>
+             <select id="initialTimePlacement">
+                 <option value="">-</option>
+                 <option value="Tolerate">TOLERATE</option>
+                 <option value="Invest">INVEST</option>
+                 <option value="Migrate">MIGRATE</option>
+                 <option value="Eliminate">ELIMINATE</option>
+             </select>
+         </div>
+         <div class="time-placement-item">
+             <label for="confirmedTimePlacement">Confirmed TIME Placement</label>
+             <div id="confirmedTimePlacement">-</div>
+         </div>
+         <button id="saveButton">Save Answers to File</button>
+     </div>
+ 
+    <!-- Questions Table -->
     <div class="table-container">
-        <div class="table-container" id="strategyQuestionsTableWrapper">
+        <div id="strategyQuestionsTableWrapper">
             <table id="strategyQuestionsTable">
                 <thead>
                     <tr>
@@ -38,8 +58,8 @@
             </table>
         </div>
     </div>
-
-    <!-- New Table Section -->
+    
+    <!-- Summary Table Section -->
     <div class="table-container">
         <h2 class="header">Strategy Questions Summary</h2>
         <table>
@@ -77,7 +97,7 @@
                     <td id="eliminate-distribution">0%</td>
                 </tr>
             </tbody>
-        </table>        
+        </table>
     </div>
 
     <script src="strategy-questions.js"></script>
