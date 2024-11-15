@@ -211,6 +211,15 @@ ipcRenderer.on('open-strategy-questions-window', (event, applicationName) => {
     }
 });
 
+ipcRenderer.on('set-distribution-threshold', (event, distributionThreshold) => {
+    console.log('Received distribution threshold:', distributionThreshold); // Check if the value is received correctly
+    const thresholdElement = document.getElementById('distribution-threshold');
+    if (thresholdElement) {
+        thresholdElement.textContent = distributionThreshold;
+    }
+});
+
+
 // Function to save answers, notes, and summary outcomes to an external file
 function saveToFile() {
     // Collect individual answers and notes
@@ -309,6 +318,21 @@ function updateDistribution(clientScore, totalScore, category) {
 
 // Event listener for the save button
 document.getElementById('saveButton').addEventListener('click', saveToFile);
+
+//Listener for the Explainer button
+
+document.getElementById('explanationBtn').addEventListener('click', () => {
+    ipcRenderer.send('open-calculations-explained');
+});
+
+// Listen for the distribution threshold sent from the main process
+ipcRenderer.on('set-distribution-threshold', (event, distributionThreshold) => {
+    const thresholdElement = document.getElementById('distribution-threshold');
+    if (thresholdElement) {
+        thresholdElement.textContent = distributionThreshold;
+    }
+});
+
 
 // Function to save answers, notes, and summary outcomes to an external file
 function saveToFile() {

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculations Explained</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <h1>Calculations Explained</h1>
+    <div id="explanation-container">
+        <!-- Explanation about the calculations -->
+        <p>
+            <strong>How the Calculations are Made:</strong>
+            <br>
+            The calculations in this app are used to determine the <strong>distribution</strong> of scores for various strategies (Tolerate, Invest, Replace, Eliminate). Each strategy is associated with a set of questions, and each question is scored based on the answers provided.
+            <ul>
+                <li><strong>Client Answer</strong>: For each question, the user selects a response from the following options:
+                    <ul>
+                        <li><strong>Yes</strong> (full score)</li>
+                        <li><strong>No</strong> (no score)</li>
+                        <li><strong>Partial/Unsure</strong> (half the score)</li>
+                    </ul>
+                </li>
+                <li><strong>Weight</strong>: Every question has a weight (between 1 and 5), which represents the importance of the question.</li>
+                <li><strong>Client Score</strong>: The <strong>Client Score</strong> for each question is calculated based on the client’s answer and the weight of the question:
+                    <ul>
+                        <li><strong>Yes</strong> = Full weight (e.g., weight * 1)</li>
+                        <li><strong>No</strong> = 0 points</li>
+                        <li><strong>Partial/Unsure</strong> = Half of the weight (weight / 2)</li>
+                    </ul>
+                </li>
+                <li><strong>Total Score for Each Strategy</strong>: The total score for each strategy (Tolerate, Invest, Replace, Eliminate) is calculated by summing the <strong>Client Scores</strong> of the relevant questions.</li>
+                <li><strong>Distribution</strong>: After calculating the total score for each strategy, we calculate the <strong>distribution percentage</strong> for each strategy:
+                    <ul>
+                        <li><strong>Distribution Percentage</strong> = (Total Client Score for the Strategy / Total Weight for the Strategy) * 100</li>
+                    </ul>
+                    This gives a percentage representing how strongly a particular strategy is supported by the answers to the questions.
+                </li>
+            </ul>
+        </p>
+
+        <!-- Explanation about what happens when the threshold is reached -->
+        <p>
+            <strong>What happens when the threshold is reached?</strong>
+            <br>
+            When the configured distribution threshold of <span id="threshold-value"></span> is reached, this signafiys that you have come to a valid decision on your Applications sentiment. This sentiment will be marked as green, and should be selected as the sentiment for the application.
+        </p>
+    </div>
+    
+    <script src="calculations-explained.js"></script>
+</body>
+</html>

@@ -16,6 +16,12 @@
      <!-- Display Application Name -->
      <h1 id="applicationName">Application Name</h1>
 
+<!-- Add this somewhere in your HTML (e.g., near the top or wherever appropriate) -->
+<div id="distribution-threshold-container">
+
+</div>
+
+
      <!-- New Section for TIME Placement and Save Button -->
      <div class="time-placement-container">
          <div class="time-placement-item">
@@ -33,7 +39,13 @@
              <div id="confirmedTimePlacement">-</div>
          </div>
          <button id="saveButton">Save Answers to File</button>
+
+         <strong>Distribution Threshold:</strong> <span id="distribution-threshold">Loading...</span>%
      </div>
+
+    <!-- Add this button below the strategy questions table -->
+<button id="explanationBtn">Calculations Explained</button>
+
  
     <!-- Questions Table -->
     <div class="table-container">
