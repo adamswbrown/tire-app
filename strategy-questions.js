@@ -119,10 +119,9 @@ function calculateClientScore(clientAnswer, weight) {
 function updateClientScores() {
     let tolerateScore = 0;
     let investScore = 0;
-    let replacescore = 0;
+    let replaceScore = 0;
     let eliminateScore = 0;
 
-    // Calculate total scores for each category and total weights
     let tolerateTotal = 0;
     let investTotal = 0;
     let replaceTotal = 0;
@@ -146,24 +145,33 @@ function updateClientScores() {
         }
     });
 
-    // Update the client scores for each category
-    document.getElementById('tolerate-client-score').textContent = tolerateScore;
-    document.getElementById('invest-client-score').textContent = investScore;
-    document.getElementById('replace-client-score').textContent = replaceScore;
-    document.getElementById('eliminate-client-score').textContent = eliminateScore;
+    // Check for the existence of each element before updating it
+    const tolerateClientScoreElem = document.getElementById('tolerate-client-score');
+    const investClientScoreElem = document.getElementById('invest-client-score');
+    const replaceClientScoreElem = document.getElementById('replace-client-score');
+    const eliminateClientScoreElem = document.getElementById('eliminate-client-score');
 
-    // Update totals for each category
-    document.getElementById('tolerate-total').textContent = tolerateTotal;
-    document.getElementById('invest-total').textContent = investTotal;
-    document.getElementById('replace-total').textContent = replaceTotal;
-    document.getElementById('eliminate-total').textContent = eliminateTotal;
+    const tolerateTotalElem = document.getElementById('tolerate-total');
+    const investTotalElem = document.getElementById('invest-total');
+    const replaceTotalElem = document.getElementById('replace-total');
+    const eliminateTotalElem = document.getElementById('eliminate-total');
 
-    // Calculate and update the distribution for each category
+    if (tolerateClientScoreElem) tolerateClientScoreElem.textContent = tolerateScore;
+    if (investClientScoreElem) investClientScoreElem.textContent = investScore;
+    if (replaceClientScoreElem) replaceClientScoreElem.textContent = replaceScore;
+    if (eliminateClientScoreElem) eliminateClientScoreElem.textContent = eliminateScore;
+
+    if (tolerateTotalElem) tolerateTotalElem.textContent = tolerateTotal;
+    if (investTotalElem) investTotalElem.textContent = investTotal;
+    if (replaceTotalElem) replaceTotalElem.textContent = replaceTotal;
+    if (eliminateTotalElem) eliminateTotalElem.textContent = eliminateTotal;
+
     updateDistribution(tolerateScore, tolerateTotal, 'tolerate');
     updateDistribution(investScore, investTotal, 'invest');
     updateDistribution(replaceScore, replaceTotal, 'replace');
     updateDistribution(eliminateScore, eliminateTotal, 'eliminate');
 }
+
 
 // Function to update the distribution for each category
 function updateDistribution(clientScore, totalScore, category) {
@@ -354,8 +362,6 @@ function saveToFile() {
     ipcRenderer.send('save-answers-to-file', outputData);
 }
 
-// Add an event listener to the save button
-document.getElementById('saveButton').addEventListener('click', saveToFile);
 
 // Initial table population and loading JSON data
 loadStrategyQuestions();
