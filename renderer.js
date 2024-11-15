@@ -22,34 +22,7 @@ ipcRenderer.on('upload-complete', (event, data) => {
     }
 });
 
-document.getElementById('saveButton').addEventListener('click', () => {
-    const outputData = {
-        applicationName: document.getElementById('applicationName').textContent,
-        initialTimePlacement: document.getElementById('initialTimePlacement').value,
-        confirmedTimePlacement: document.getElementById('confirmedTimePlacement').textContent,
-        // Add other necessary data here
-    };
-
-    ipcRenderer.send('save-answers-to-file', outputData);
-});
-
-ipcRenderer.on('save-status', (event, message) => {
-    alert(message); // Display success or error message
-});
-
-document.addEventListener('DOMContentLoaded', () => {
-    const saveButton = document.getElementById('saveButton');
-    console.log('Save Button:', saveButton); // This should output the button element or null
-    if (saveButton) {
-        saveButton.addEventListener('click', () => {
-            console.log('Save button clicked');
-        });
-    } else {
-        console.error('Save button not found');
-    }
-});
-
-
+// Function to display data in the table
 function displayData(data) {
     const tableBody = document.querySelector('#dataTable tbody');
     tableBody.innerHTML = ''; // Clear existing rows
@@ -58,15 +31,14 @@ function displayData(data) {
     let inScope = 0;
     let outScope = 0;
 
-    // Remove duplicates based on the 'Application Name'
-    const uniqueData = Array.from(new Map(data.map(item => [item['Application Name'], item])).values());
+    // Remove duplicates and exclude "Unassociated" apps
+    const uniqueData = Array.from(new Map(data.filter(item => item['Application Name'] !== 'Unassociated').map(item => [item['Application Name'], item])).values());
 
     uniqueData.forEach(row => {
         const tr = document.createElement('tr');
 
         const fields = [
             'Application Name',
-            'Server',
             'Assessment Scope',
             'Data Center'
         ];
@@ -113,6 +85,11 @@ const searchInput = document.getElementById('searchInput');
 const inScopeCheckbox = document.getElementById('inScopeCheckbox');
 const outScopeCheckbox = document.getElementById('outScopeCheckbox');
 
+// Default both checkboxes to be checked
+inScopeCheckbox.checked = true;
+outScopeCheckbox.checked = true;
+
+// Listen for changes in search input or checkbox status
 searchInput.addEventListener('input', filterData);
 inScopeCheckbox.addEventListener('change', filterData);
 outScopeCheckbox.addEventListener('change', filterData);
@@ -124,13 +101,20 @@ function filterData() {
 
     let filteredData = JSON.parse(localStorage.getItem('appToServerData') || '[]');
 
+    // Exclude "Unassociated" applications
+    filteredData = filteredData.filter(row => row['Application Name'] !== 'Unassociated');
+
+    // Apply the filters based on search input and checkbox status
     if (searchValue) {
         filteredData = filteredData.filter(row => row['Application Name'].toLowerCase().includes(searchValue));
     }
-    if (inScopeChecked) {
+
+    // Apply scope filters
+    if (inScopeChecked && outScopeChecked) {
+        // Both checked: show all
+    } else if (inScopeChecked) {
         filteredData = filteredData.filter(row => row['Assessment Scope'] === 'In Scope');
-    }
-    if (outScopeChecked) {
+    } else if (outScopeChecked) {
         filteredData = filteredData.filter(row => row['Assessment Scope'] === 'Out of Scope');
     }
 
@@ -205,13 +189,15 @@ function populateStrategyQuestionsTable(strategyQuestions, applicationName) {
     });
 }
 
+// Calculate Client Score based on Client Answer and Weight
 function calculateClientScore(clientAnswer, weight) {
     if (clientAnswer === 'Yes') return weight;
     if (clientAnswer === 'No') return 0;
     if (clientAnswer === 'Partial/Unsure') return weight / 2;
-    return 'Enter Client Answer';
+    return 0;  // Default to 0 if the answer is empty or invalid
 }
 
+// Update Client Answer in the local storage
 function updateClientAnswer(applicationName, updatedAnswers) {
     let storedData = localStorage.getItem('appToServerData');
     storedData = storedData ? JSON.parse(storedData) : [];

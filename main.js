@@ -39,7 +39,6 @@ function createStrategyQuestionsWindow(appName) {
     strategyQuestionsWindow.loadFile('strategy-questions.html')
         .catch(err => console.error('Error loading strategy-questions.html:', err));
 
-    // Wait until the content is loaded, then send the application name
     strategyQuestionsWindow.webContents.on('did-finish-load', () => {
         strategyQuestionsWindow.webContents.send('set-application-name', appName);
     });
@@ -72,16 +71,19 @@ function createInScopeWindow() {
     });
 }
 
+app.whenReady().then(() => {
+    createMainWindow();
+
+    app.on('activate', () => {
+        if (BrowserWindow.getAllWindows().length === 0) {
+            createMainWindow();
+        }
+    });
+});
 
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') {
         app.quit();
-    }
-});
-
-app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-        createMainWindow();
     }
 });
 
@@ -175,6 +177,3 @@ ipcMain.on('open-in-scope-window', createInScopeWindow);
 ipcMain.handle('get-in-scope-data', () => {
     return app.inScopeData || [];
 });
-
-// Initialize main window when app is ready
-app.whenReady().then(createMainWindow);
