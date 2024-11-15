@@ -4,9 +4,42 @@ const fs = require('fs');
 const xlsx = require('xlsx');
 
 let mainWindow;
-let inScopeWindow;
 let strategyQuestionsWindow = null;
+let explanationWindow = null; // Declare the explanation window variable
+let distributionThreshold = 80; // Set a default value
 
+// Load the questions.json to extract the distributionThreshold
+function loadDistributionThreshold() {
+    try {
+        const questionsPath = path.join(__dirname, 'questions.json'); // Update with correct path
+        const questionsData = JSON.parse(fs.readFileSync(questionsPath, 'utf8'));
+        if (questionsData && questionsData[0] && questionsData[0].config) {
+            distributionThreshold = questionsData[0].config.distributionThreshold;
+        }
+    } catch (error) {
+        console.error('Error loading questions.json:', error);
+    }
+}
+
+// Call the function to load the distributionThreshold when the app is ready
+app.whenReady().then(() => {
+    loadDistributionThreshold(); // Ensure this is called when the app starts
+    createMainWindow();
+
+    app.on('activate', () => {
+        if (BrowserWindow.getAllWindows().length === 0) {
+            createMainWindow();
+        }
+    });
+});
+
+app.on('window-all-closed', () => {
+    if (process.platform !== 'darwin') {
+        app.quit();
+    }
+});
+
+// Create the main window
 function createMainWindow() {
     mainWindow = new BrowserWindow({
         width: 1917,
@@ -21,6 +54,7 @@ function createMainWindow() {
         .catch(err => console.error('Error loading index.html:', err));
 }
 
+// Create the strategy questions window
 function createStrategyQuestionsWindow(appName) {
     if (strategyQuestionsWindow) {
         strategyQuestionsWindow.focus();
@@ -41,6 +75,7 @@ function createStrategyQuestionsWindow(appName) {
 
     strategyQuestionsWindow.webContents.on('did-finish-load', () => {
         strategyQuestionsWindow.webContents.send('set-application-name', appName);
+        strategyQuestionsWindow.webContents.send('set-distribution-threshold', distributionThreshold); // Send the threshold value
     });
 
     strategyQuestionsWindow.on('closed', () => {
@@ -48,43 +83,36 @@ function createStrategyQuestionsWindow(appName) {
     });
 }
 
-function createInScopeWindow() {
-    if (inScopeWindow) {
-        inScopeWindow.focus();
+// Create the calculations explained window
+function createCalculationsWindow() {
+    if (explanationWindow && !explanationWindow.isDestroyed()) {
+        explanationWindow.focus();
         return;
     }
 
-    inScopeWindow = new BrowserWindow({
-        width: 1917,
-        height: 838,
+    explanationWindow = new BrowserWindow({
+        width: 1470,
+        height: 553,
+        title: 'Calculations Explained',
         webPreferences: {
             nodeIntegration: true,
-            contextIsolation: false,
-        },
+        }
     });
 
-    inScopeWindow.loadFile('in-scope.html')
-        .catch(err => console.error('Error loading in-scope.html:', err));
+    explanationWindow.loadFile('calculations-explained.html');
+    explanationWindow.webContents.on('did-finish-load', () => {
+        explanationWindow.webContents.send('set-threshold', distributionThreshold); // Send the threshold value
+    });
 
-    inScopeWindow.on('closed', () => {
-        inScopeWindow = null;
+    explanationWindow.on('closed', () => {
+        explanationWindow = null;
     });
 }
 
-app.whenReady().then(() => {
-    createMainWindow();
-
-    app.on('activate', () => {
-        if (BrowserWindow.getAllWindows().length === 0) {
-            createMainWindow();
-        }
-    });
-});
-
-app.on('window-all-closed', () => {
-    if (process.platform !== 'darwin') {
-        app.quit();
-    }
+// Listen for the message to open the new window
+ipcMain.on('open-calculations-explained', () => {
+    createCalculationsWindow();
+    explanationWindow.show();
 });
 
 // Open the strategy questions window
@@ -169,9 +197,6 @@ ipcMain.on('upload-file', async (event) => {
         event.reply('upload-complete', { error: 'Error processing file' });
     }
 });
-
-// Open the in-scope window
-ipcMain.on('open-in-scope-window', createInScopeWindow);
 
 // Handle in-scope data request
 ipcMain.handle('get-in-scope-data', () => {
