@@ -119,13 +119,12 @@ function calculateClientScore(clientAnswer, weight) {
 function updateClientScores() {
     let tolerateScore = 0;
     let investScore = 0;
-    let migrateScore = 0;
+    let replaceScore = 0;
     let eliminateScore = 0;
 
-    // Calculate total scores for each category and total weights
     let tolerateTotal = 0;
     let investTotal = 0;
-    let migrateTotal = 0;
+    let replaceTotal = 0;
     let eliminateTotal = 0;
 
     strategyQuestions.forEach(row => {
@@ -137,33 +136,42 @@ function updateClientScores() {
         } else if (row.time === 'Invest') {
             investScore += clientScore;
             investTotal += row.weight;
-        } else if (row.time === 'Migrate') {
-            migrateScore += clientScore;
-            migrateTotal += row.weight;
+        } else if (row.time === 'Replace') {
+            replaceScore += clientScore;
+            replaceTotal += row.weight;
         } else if (row.time === 'Eliminate') {
             eliminateScore += clientScore;
             eliminateTotal += row.weight;
         }
     });
 
-    // Update the client scores for each category
-    document.getElementById('tolerate-client-score').textContent = tolerateScore;
-    document.getElementById('invest-client-score').textContent = investScore;
-    document.getElementById('migrate-client-score').textContent = migrateScore;
-    document.getElementById('eliminate-client-score').textContent = eliminateScore;
+    // Check for the existence of each element before updating it
+    const tolerateClientScoreElem = document.getElementById('tolerate-client-score');
+    const investClientScoreElem = document.getElementById('invest-client-score');
+    const replaceClientScoreElem = document.getElementById('replace-client-score');
+    const eliminateClientScoreElem = document.getElementById('eliminate-client-score');
 
-    // Update totals for each category
-    document.getElementById('tolerate-total').textContent = tolerateTotal;
-    document.getElementById('invest-total').textContent = investTotal;
-    document.getElementById('migrate-total').textContent = migrateTotal;
-    document.getElementById('eliminate-total').textContent = eliminateTotal;
+    const tolerateTotalElem = document.getElementById('tolerate-total');
+    const investTotalElem = document.getElementById('invest-total');
+    const replaceTotalElem = document.getElementById('replace-total');
+    const eliminateTotalElem = document.getElementById('eliminate-total');
 
-    // Calculate and update the distribution for each category
+    if (tolerateClientScoreElem) tolerateClientScoreElem.textContent = tolerateScore;
+    if (investClientScoreElem) investClientScoreElem.textContent = investScore;
+    if (replaceClientScoreElem) replaceClientScoreElem.textContent = replaceScore;
+    if (eliminateClientScoreElem) eliminateClientScoreElem.textContent = eliminateScore;
+
+    if (tolerateTotalElem) tolerateTotalElem.textContent = tolerateTotal;
+    if (investTotalElem) investTotalElem.textContent = investTotal;
+    if (replaceTotalElem) replaceTotalElem.textContent = replaceTotal;
+    if (eliminateTotalElem) eliminateTotalElem.textContent = eliminateTotal;
+
     updateDistribution(tolerateScore, tolerateTotal, 'tolerate');
     updateDistribution(investScore, investTotal, 'invest');
-    updateDistribution(migrateScore, migrateTotal, 'migrate');
+    updateDistribution(replaceScore, replaceTotal, 'replace');
     updateDistribution(eliminateScore, eliminateTotal, 'eliminate');
 }
+
 
 // Function to update the distribution for each category
 function updateDistribution(clientScore, totalScore, category) {
@@ -230,10 +238,10 @@ function saveToFile() {
             total: parseInt(document.getElementById('invest-total').textContent, 10) || 0,
             distribution: document.getElementById('invest-distribution').textContent
         },
-        migrate: {
-            score: parseInt(document.getElementById('migrate-client-score').textContent, 10) || 0,
-            total: parseInt(document.getElementById('migrate-total').textContent, 10) || 0,
-            distribution: document.getElementById('migrate-distribution').textContent
+        replace: {
+            score: parseInt(document.getElementById('replace-client-score').textContent, 10) || 0,
+            total: parseInt(document.getElementById('replace-total').textContent, 10) || 0,
+            distribution: document.getElementById('replace-distribution').textContent
         },
         eliminate: {
             score: parseInt(document.getElementById('eliminate-client-score').textContent, 10) || 0,
@@ -246,7 +254,7 @@ function saveToFile() {
     const strategies = [
         { name: 'Tolerate', percentage: parseInt(summary.tolerate.distribution, 10) },
         { name: 'Invest', percentage: parseInt(summary.invest.distribution, 10) },
-        { name: 'Migrate', percentage: parseInt(summary.migrate.distribution, 10) },
+        { name: 'Replace', percentage: parseInt(summary.replace.distribution, 10) },
         { name: 'Eliminate', percentage: parseInt(summary.eliminate.distribution, 10) }
     ];
     const decidedStrategy = strategies.reduce((prev, current) => (current.percentage > prev.percentage ? current : prev), { name: 'None', percentage: 0 });
@@ -270,7 +278,7 @@ function updateConfirmedTimePlacement() {
     const summary = {
         Tolerate: parseInt(document.getElementById('tolerate-distribution').textContent, 10),
         Invest: parseInt(document.getElementById('invest-distribution').textContent, 10),
-        Migrate: parseInt(document.getElementById('migrate-distribution').textContent, 10),
+        Replace: parseInt(document.getElementById('replace-distribution').textContent, 10),
         Eliminate: parseInt(document.getElementById('eliminate-distribution').textContent, 10)
     };
 
@@ -330,10 +338,10 @@ function saveToFile() {
             total: parseInt(document.getElementById('invest-total').textContent, 10) || 0,
             distribution: document.getElementById('invest-distribution').textContent
         },
-        migrate: {
-            score: parseInt(document.getElementById('migrate-client-score').textContent, 10) || 0,
-            total: parseInt(document.getElementById('migrate-total').textContent, 10) || 0,
-            distribution: document.getElementById('migrate-distribution').textContent
+        Replace: {
+            score: parseInt(document.getElementById('replace-client-score').textContent, 10) || 0,
+            total: parseInt(document.getElementById('replace-total').textContent, 10) || 0,
+            distribution: document.getElementById('replace-distribution').textContent
         },
         eliminate: {
             score: parseInt(document.getElementById('eliminate-client-score').textContent, 10) || 0,
@@ -354,8 +362,6 @@ function saveToFile() {
     ipcRenderer.send('save-answers-to-file', outputData);
 }
 
-// Add an event listener to the save button
-document.getElementById('saveButton').addEventListener('click', saveToFile);
 
 // Initial table population and loading JSON data
 loadStrategyQuestions();

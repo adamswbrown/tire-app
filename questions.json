@@ -213,7 +213,7 @@
         "sampleDrivers": ""
     },
     {
-        "time": "Migrate",
+        "time": "Replace",
         "characteristics": "IT Qualities",
       "clientAnswer": "-",
         "clientScore": 0.0,
@@ -224,7 +224,7 @@
         "sampleDrivers": "Scalability: If a current system is struggling to handle increased load or growth, migrating to a more scalable platform, like a cloud-based solution, can prevent performance bottlenecks."
     },
     {
-        "time": "Migrate",
+        "time": "Replace",
         "characteristics": "Business Value",
       "clientAnswer": "-",
         "clientScore": 0.0,
@@ -235,7 +235,7 @@
         "sampleDrivers": "Cost Efficiency: Moving from on-premises systems to cloud-based solutions can offer cost savings in terms of infrastructure maintenance and management."
     },
     {
-        "time": "Migrate",
+        "time": "Replace",
         "characteristics": "Business Value",
       "clientAnswer": "-",
         "clientScore": 0.0,
@@ -246,7 +246,7 @@
         "sampleDrivers": "Remote Access and Collaboration: Migrating to cloud-based systems can facilitate remote work and collaboration, allowing employees to access tools and data from anywhere."
     },
     {
-        "time": "Migrate",
+        "time": "Replace",
         "characteristics": "IT Qualities",
       "clientAnswer": "-",
         "clientScore": 0.0,
@@ -257,7 +257,7 @@
         "sampleDrivers": ""
     },
     {
-        "time": "Migrate",
+        "time": "Replace",
         "characteristics": "IT Qualities",
       "clientAnswer": "-",
         "clientScore": 0.0,
@@ -268,7 +268,7 @@
         "sampleDrivers": ""
     },
     {
-        "time": "Migrate",
+        "time": "Replace",
         "characteristics": "Business Value",
       "clientAnswer": "-",
         "clientScore": 0.0,
@@ -279,7 +279,7 @@
         "sampleDrivers": ""
     },
     {
-        "time": "Migrate",
+        "time": "Replace",
         "characteristics": "IT Qualities",
         "clientAnswer": "-",
         "clientScore": 0.0,
@@ -290,7 +290,7 @@
         "sampleDrivers": ""
     },
     {
-        "time": "Migrate",
+        "time": "Replace",
         "characteristics": "IT Qualities",
       "clientAnswer": "-",
         "clientScore": 0.0,
@@ -301,7 +301,7 @@
         "sampleDrivers": ""
     },
     {
-        "time": "Migrate",
+        "time": "Replace",
         "characteristics": "Business Value",
       "clientAnswer": "-",
         "clientScore": 0.0,
