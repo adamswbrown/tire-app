@@ -3,6 +3,10 @@ const { ipcRenderer } = require('electron');
 // Global variable to store strategy questions
 let strategyQuestions = [];
 
+// Initialize global variables for answered questions and total questions
+let totalQuestions = 0;
+let answeredQuestions = 0;
+
 // Function to fetch the JSON data and populate the questions
 async function loadStrategyQuestions() {
     try {
@@ -384,6 +388,12 @@ function saveToFile() {
 
     // Send the data to the main process to save to a file
     ipcRenderer.send('save-answers-to-file', outputData);
+}
+// Function to update the answered questions counter
+function updateAnsweredQuestionsCounter() {
+    answeredQuestions = strategyQuestions.filter(q => q.clientAnswer !== '-').length; // Count answered questions
+    const counterElement = document.getElementById('questionsAnsweredCounter');
+    counterElement.textContent = `${answeredQuestions} / ${totalQuestions} questions answered`; // Update the counter display
 }
 
 
