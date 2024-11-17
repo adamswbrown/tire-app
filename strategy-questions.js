@@ -25,6 +25,7 @@ async function loadStrategyQuestions() {
     }
 }
 
+
 // Populate the Strategy Questions Table
 function populateStrategyQuestionsTable() {
     const tableBody = document.querySelector('#strategyQuestionsTable tbody');
@@ -117,6 +118,75 @@ function populateStrategyQuestionsTable() {
     // Initial Client Scores Update
     updateClientScores();
 }
+// Function to dynamically generate category buttons
+function generateCategoryButtons() {
+    // Extract unique categories from strategyQuestions
+    const categories = [...new Set(strategyQuestions.map(q => q.category))];
+    const container = document.getElementById('categoryButtonsContainer');
+    if (!container) {
+        console.error('Category buttons container not found!');
+        return;
+    }
+    container.innerHTML = ''; // Clear any existing buttons
+
+    categories.forEach(category => {
+        // Create a button for each category
+        const button = document.createElement('button');
+        button.className = 'category-button';
+        button.textContent = category;
+
+        // Event listener to filter table based on clicked category
+        button.addEventListener('click', () => {
+            // Remove active state from all buttons
+            document.querySelectorAll('.category-button').forEach(btn => btn.classList.remove('active-filter'));
+
+            // Add active state to the clicked button
+            button.classList.add('active-filter');
+
+            // Filter the questions table by the selected category
+            filterByCategory(category);
+        });
+
+        container.appendChild(button);
+    });
+
+    // Add reset button to clear filters
+    const resetButton = document.createElement('button');
+    resetButton.className = 'reset-button';
+    resetButton.textContent = 'Reset Filters';
+    resetButton.addEventListener('click', resetTable);
+    container.appendChild(resetButton);
+}
+
+// Function to filter the questions table by category
+function filterByCategory(category) {
+    const rows = document.querySelectorAll('#strategyQuestionsTable tbody tr');
+    rows.forEach(row => {
+        const categoryCell = row.querySelector('td:nth-child(7)'); // Assuming category is the 7th column
+        if (categoryCell.textContent.trim().toLowerCase() === category.toLowerCase()) {
+            row.style.display = ''; // Show rows that match the category
+        } else {
+            row.style.display = 'none'; // Hide rows that don't match
+        }
+    });
+}
+
+// Function to reset the table to show all rows
+function resetTable() {
+    document.querySelectorAll('#strategyQuestionsTable tbody tr').forEach(row => {
+        row.style.display = ''; // Show all rows
+    });
+
+    // Remove active state from all category buttons
+    document.querySelectorAll('.category-button').forEach(button => button.classList.remove('active-filter'));
+}
+
+// Call generateCategoryButtons after loading the questions data
+loadStrategyQuestions().then(() => {
+    generateCategoryButtons();
+});
+
+
 function updateAnsweredQuestionsCounter() {
     answeredQuestions = strategyQuestions.filter(q => q.clientAnswer !== '-').length; // Count answered questions
     const counterElement = document.getElementById('questionsAnsweredCounter');
@@ -414,6 +484,8 @@ function updateAnsweredQuestionsCounter() {
     const counterElement = document.getElementById('questionsAnsweredCounter');
     counterElement.textContent = `${answeredQuestions} / ${totalQuestions} questions answered`; // Update the counter display
 }
+
+
 
 
 // Initial table population and loading JSON data
