@@ -248,9 +248,12 @@ ipcRenderer.on('set-distribution-threshold', (event, distributionThreshold) => {
 });
 
 
+
 // Function to save answers, notes, and summary outcomes to an external file
 function saveToFile() {
-    // Collect individual answers and notes
+    const initialTimePlacement = document.getElementById('initialTimePlacement').value;
+    const confirmedTimePlacement = document.getElementById('confirmedTimePlacement').textContent;
+
     const answersData = strategyQuestions.map(row => ({
         time: row.time,
         characteristics: row.characteristics,
@@ -259,11 +262,11 @@ function saveToFile() {
         weight: row.weight,
         question: row.question,
         category: row.category,
-        extendedAnswer: row.extendedAnswer, // Notes
-        sampleDrivers: row.sampleDrivers
+        extendedAnswer: row.extendedAnswer,
+        sampleDrivers: row.sampleDrivers,
+        answered: row.clientAnswer !== '-'  // New field to indicate if the question was answered
     }));
 
-    // Collect summary outcomes from the table
     const summary = {
         tolerate: {
             score: parseInt(document.getElementById('tolerate-client-score').textContent, 10) || 0,
@@ -287,21 +290,13 @@ function saveToFile() {
         }
     };
 
-    // Determine the decided-upon strategy by finding the highest distribution percentage
-    const strategies = [
-        { name: 'Tolerate', percentage: parseInt(summary.tolerate.distribution, 10) },
-        { name: 'Invest', percentage: parseInt(summary.invest.distribution, 10) },
-        { name: 'Replace', percentage: parseInt(summary.replace.distribution, 10) },
-        { name: 'Eliminate', percentage: parseInt(summary.eliminate.distribution, 10) }
-    ];
-    const decidedStrategy = strategies.reduce((prev, current) => (current.percentage > prev.percentage ? current : prev), { name: 'None', percentage: 0 });
-
     // Structure the output data
     const outputData = {
         applicationName: document.getElementById('applicationName').textContent,
+        initialTimePlacement,
+        confirmedTimePlacement,
         answers: answersData,
-        summary,
-        decidedStrategy: decidedStrategy.name
+        summary
     };
 
     // Send the data to the main process to save to a file
