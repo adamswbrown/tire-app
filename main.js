@@ -62,8 +62,8 @@ function createStrategyQuestionsWindow(appName) {
     }
 
     strategyQuestionsWindow = new BrowserWindow({
-        width: 2559,
-        height: 1048,
+        width: 2552,
+        height: 1146,
         webPreferences: {
             nodeIntegration: true,
             contextIsolation: false,
