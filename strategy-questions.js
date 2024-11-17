@@ -257,14 +257,14 @@ function saveToFile() {
     const answersData = strategyQuestions.map(row => ({
         time: row.time,
         characteristics: row.characteristics,
-        clientAnswer: row.clientAnswer,
+        questionAnswered: row.clientAnswer,  // Renamed from 'clientAnswer' to 'questionAnswered'
         clientScore: row.clientScore,
         weight: row.weight,
         question: row.question,
         category: row.category,
         extendedAnswer: row.extendedAnswer,
         sampleDrivers: row.sampleDrivers,
-        answered: row.clientAnswer !== '-'  // New field to indicate if the question was answered
+        answered: row.clientAnswer !== '-'  // Field indicating if the question was answered
     }));
 
     const summary = {
