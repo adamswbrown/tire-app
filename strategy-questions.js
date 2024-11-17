@@ -16,7 +16,10 @@ async function loadStrategyQuestions() {
         }
         strategyQuestions = await response.json();
         console.log("Strategy questions loaded:", strategyQuestions);
+
+        totalQuestions = strategyQuestions.length; // Set total number of questions
         populateStrategyQuestionsTable();  // Populate the table after loading the questions
+        updateAnsweredQuestionsCounter();  // Update counter after loading questions
     } catch (error) {
         console.error('Error loading strategy questions:', error);
     }
@@ -69,7 +72,21 @@ function populateStrategyQuestionsTable() {
                     // Recalculate and update the Client Scores for the summary table
                     updateClientScores();
                 });
+                //Event Listener for Questions counter
 
+                select.addEventListener('change', (event) => {
+                    row.clientAnswer = event.target.value;
+                    row.clientScore = calculateClientScore(row.clientAnswer, row.weight);
+                
+                    // Update the Client Score field in the table
+                    td.nextElementSibling.textContent = row.clientScore;
+                
+                    // Recalculate and update the Client Scores for the summary table
+                    updateClientScores();
+                
+                    // Update the question counter
+                    updateAnsweredQuestionsCounter();
+                });
                 td.appendChild(select);
             } else if (cellIndex === 3) { // Client Score field
                 td.textContent = row.clientScore;
@@ -99,6 +116,13 @@ function populateStrategyQuestionsTable() {
 
     // Initial Client Scores Update
     updateClientScores();
+}
+function updateAnsweredQuestionsCounter() {
+    answeredQuestions = strategyQuestions.filter(q => q.clientAnswer !== '-').length; // Count answered questions
+    const counterElement = document.getElementById('questionsAnsweredCounter');
+    if (counterElement) {
+        counterElement.textContent = `${answeredQuestions} / ${totalQuestions} questions answered`; // Update the counter display
+    }
 }
 
 // Save the updated strategy questions to localStorage or another persistence method
