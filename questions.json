@@ -1,7 +1,7 @@
 [
     {
       "config": {
-        "distributionThreshold": 47
+        "distributionThreshold": 80
     },
 
         "time": "Tolerate",
