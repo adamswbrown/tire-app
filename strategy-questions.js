@@ -7,19 +7,26 @@ let strategyQuestions = [];
 let totalQuestions = 0;
 let answeredQuestions = 0;
 
-// Function to fetch the JSON data and populate the questions
+let distributionThreshold = 80; // Default threshold, if not found in JSON
+
 async function loadStrategyQuestions() {
     try {
-        const response = await fetch('questions.json');  // Assuming questions.json is in the same directory as the JS file
+        const response = await fetch('questions.json'); // Assuming questions.json is in the same directory
         if (!response.ok) {
             throw new Error('Network response was not ok');
         }
-        strategyQuestions = await response.json();
-        console.log("Strategy questions loaded:", strategyQuestions);
+        const data = await response.json();
+        console.log("Strategy questions loaded:", data);
 
+        // Extract and set the threshold
+        if (data.length > 0 && data[0].config && data[0].config.distributionThreshold) {
+            distributionThreshold = data[0].config.distributionThreshold;
+        }
+
+        strategyQuestions = data; // Store the rest of the data as strategy questions
         totalQuestions = strategyQuestions.length; // Set total number of questions
-        populateStrategyQuestionsTable();  // Populate the table after loading the questions
-        updateAnsweredQuestionsCounter();  // Update counter after loading questions
+        populateStrategyQuestionsTable(); // Populate the table
+        updateAnsweredQuestionsCounter(); // Update counter
     } catch (error) {
         console.error('Error loading strategy questions:', error);
     }
@@ -378,17 +385,21 @@ function saveToFile() {
 // Populate the Confirmed TIME Placement based on the highest distribution in the summary table
 function updateConfirmedTimePlacement() {
     const summary = {
-        Tolerate: parseInt(document.getElementById('tolerate-distribution').textContent, 10),
-        Invest: parseInt(document.getElementById('invest-distribution').textContent, 10),
-        Replace: parseInt(document.getElementById('replace-distribution').textContent, 10),
-        Eliminate: parseInt(document.getElementById('eliminate-distribution').textContent, 10)
+        Tolerate: parseInt(document.getElementById('tolerate-distribution').textContent, 10) || 0,
+        Invest: parseInt(document.getElementById('invest-distribution').textContent, 10) || 0,
+        Replace: parseInt(document.getElementById('replace-distribution').textContent, 10) || 0,
+        Eliminate: parseInt(document.getElementById('eliminate-distribution').textContent, 10) || 0
     };
 
-    const decidedStrategy = Object.keys(summary).reduce((a, b) => (summary[a] > summary[b] ? a : b));
-    const confirmedPlacement = summary[decidedStrategy] >= 80 ? decidedStrategy : '-';
-    
+    const maxDistribution = Math.max(...Object.values(summary));
+    const decidedStrategy = Object.keys(summary).find(key => summary[key] === maxDistribution);
+    const confirmedPlacement = maxDistribution >= distributionThreshold
+        ? decidedStrategy
+        : `Below Threshold (${distributionThreshold}%)`;
+
     document.getElementById('confirmedTimePlacement').textContent = confirmedPlacement;
 }
+
 
 // Update this function to call updateConfirmedTimePlacement after updating distributions
 function updateDistribution(clientScore, totalScore, category) {
@@ -396,17 +407,19 @@ function updateDistribution(clientScore, totalScore, category) {
     const distributionCell = document.getElementById(`${category}-distribution`);
     const row = distributionCell.parentElement;
 
+    // Update distribution percentage
     distributionCell.textContent = `${distribution}%`;
 
-    if (distribution >= 80) {
+    // Conditional formatting based on dynamic threshold
+    if (distribution >= distributionThreshold) {
         row.style.backgroundColor = 'green';
         row.style.color = 'white';
     } else {
-        row.style.backgroundColor = '';
-        row.style.color = '';
+        row.style.backgroundColor = ''; // Reset to default
+        row.style.color = '';          // Reset text color
     }
 
-    updateConfirmedTimePlacement(); // Update Confirmed TIME Placement after each distribution update
+    updateConfirmedTimePlacement(); // Update confirmed placement
 }
 
 // Event listener for the save button
