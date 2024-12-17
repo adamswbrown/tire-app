@@ -9,7 +9,40 @@
         document.addEventListener("DOMContentLoaded", () => {
             const appName = localStorage.getItem("appName") || "Default App Name";
             document.getElementById("applicationName").innerText = appName;
+
+            // Assuming there's an event that signifies a questionnaire completion
+            document.addEventListener("questionnaireCompleted", () => {
+                // Refresh the table state
+                refreshTableState();
+            });
         });
+
+        function refreshTableState() {
+            // Fetch the updated data (assuming fetchData is a function that fetches the data)
+            const updatedData = fetchData();
+            populateTable(updatedData);
+        }
+
+        function populateTable(data) {
+            const tableBody = document.querySelector("#strategyQuestionsTable tbody");
+            tableBody.innerHTML = ""; // Clear existing rows
+
+            data.forEach(item => {
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${item.tire}</td>
+                    <td>${item.characteristics}</td>
+                    <td>${item.clientAnswer}</td>
+                    <td>${item.clientScore}</td>
+                    <td>${item.weight}</td>
+                    <td>${item.question}</td>
+                    <td>${item.category}</td>
+                    <td>${item.extendedAnswer}</td>
+                    <td>${item.sampleDrivers}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
     </script>
 </head>
 <body>

@@ -298,3 +298,13 @@ tr:nth-child(even) {
 .reset-button:hover {
     background-color: #5a6268; /* Darker gray on hover */
 }
+.completed {
+    background-color: #d4edda; /* Light green */
+    color: #155724; /* Dark green text */
+    font-weight: bold;
+}
+
+.status-completed {
+    color: #28a745;
+    font-weight: bold;
+}

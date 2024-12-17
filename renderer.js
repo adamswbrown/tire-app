@@ -1,24 +1,18 @@
 const { ipcRenderer } = require('electron');
 
 // Event listener for the "Upload Excel File" button
-document.getElementById('uploadBtn').addEventListener('click', () => {
-    ipcRenderer.send('upload-file');
+document.getElementById('uploadBtn').addEventListener('click', async () => {
     console.log("File upload initiated.");
-});
-
-ipcRenderer.on('upload-complete', (event, data) => {
+    const data = await ipcRenderer.invoke('upload-file'); // Use invoke for async response
     const statusMessage = document.getElementById('statusMessage');
 
     if (data.error) {
         statusMessage.textContent = `Error: ${data.error}`;
         console.error("Error uploading file:", data.error);
     } else {
-        // If data is valid, store and process it
-        localStorage.setItem('appToServerData', JSON.stringify(data));
+        localStorage.setItem('appToServerData', JSON.stringify(data)); // Save valid data
         statusMessage.textContent = 'Upload complete! Data has been stored successfully.';
-
-        // Display data in the table
-        displayData(data);
+        displayData(data); // Display data in the table
     }
 });
 
@@ -31,25 +25,22 @@ function displayData(data) {
     let inScope = 0;
     let outScope = 0;
 
-    // Remove duplicates and exclude "Unassociated" apps
-    const uniqueData = Array.from(new Map(data.filter(item => item['Application Name'] !== 'Unassociated').map(item => [item['Application Name'], item])).values());
+    const uniqueData = Array.from(new Map(
+        data.filter(item => item['Application Name'] !== 'Unassociated')
+            .map(item => [item['Application Name'], item])
+    ).values());
 
     uniqueData.forEach(row => {
         const tr = document.createElement('tr');
+        tr.classList.add('app-row');
+        tr.dataset.appName = row['Application Name']; // For completed app check
 
-        const fields = [
-            'Application Name',
-            'Assessment Scope',
-            'Data Center'
-        ];
-
+        const fields = ['Application Name', 'Assessment Scope', 'Data Center'];
         const scope = (row['Assessment Scope'] || '').trim();
+
         totalApps++;
-        if (scope === 'In Scope') {
-            inScope++;
-        } else if (scope === 'Out of Scope') {
-            outScope++;
-        }
+        if (scope === 'In Scope') inScope++;
+        if (scope === 'Out of Scope') outScope++;
 
         fields.forEach(field => {
             const td = document.createElement('td');
@@ -57,15 +48,13 @@ function displayData(data) {
             tr.appendChild(td);
         });
 
-        // Add the "Start Strategy Questions" button in the 'Action' column
+        // Add "Start Strategy Questions" button
         const buttonCell = document.createElement('td');
+        buttonCell.classList.add('action-cell');
         const startQuestionsButton = document.createElement('button');
         startQuestionsButton.textContent = 'Start Strategy Questions';
         startQuestionsButton.addEventListener('click', () => {
-            // Store the chosen application name in local storage
             localStorage.setItem("appName", row['Application Name']);
-            
-            // Open the strategy questions window
             ipcRenderer.send('open-strategy-questions-window', row['Application Name']);
         });
         buttonCell.appendChild(startQuestionsButton);
@@ -74,10 +63,31 @@ function displayData(data) {
         tableBody.appendChild(tr);
     });
 
-    // Update the app count
+    // Update metrics
     document.getElementById('totalApps').textContent = totalApps;
     document.getElementById('inScope').textContent = inScope;
     document.getElementById('outScope').textContent = outScope;
+
+    // Highlight completed apps
+    updateCompletedAppStatus();
+}
+
+// Fetch and highlight completed apps
+async function updateCompletedAppStatus() {
+    try {
+        const completedApps = await ipcRenderer.invoke('get-completed-apps');
+        const rows = document.querySelectorAll('.app-row');
+
+        rows.forEach(row => {
+            const appName = row.dataset.appName;
+            if (completedApps.includes(appName)) {
+                row.classList.add('completed'); // Highlight completed row
+                row.querySelector('.action-cell').innerHTML = '<span class="status-completed">Completed</span>';
+            }
+        });
+    } catch (error) {
+        console.error('Error updating completed app status:', error);
+    }
 }
 
 // Search and filter functionality
@@ -85,11 +95,9 @@ const searchInput = document.getElementById('searchInput');
 const inScopeCheckbox = document.getElementById('inScopeCheckbox');
 const outScopeCheckbox = document.getElementById('outScopeCheckbox');
 
-// Default both checkboxes to be checked
 inScopeCheckbox.checked = true;
 outScopeCheckbox.checked = true;
 
-// Listen for changes in search input or checkbox status
 searchInput.addEventListener('input', filterData);
 inScopeCheckbox.addEventListener('change', filterData);
 outScopeCheckbox.addEventListener('change', filterData);
@@ -100,18 +108,14 @@ function filterData() {
     const outScopeChecked = outScopeCheckbox.checked;
 
     let filteredData = JSON.parse(localStorage.getItem('appToServerData') || '[]');
-
-    // Exclude "Unassociated" applications
     filteredData = filteredData.filter(row => row['Application Name'] !== 'Unassociated');
 
-    // Apply the filters based on search input and checkbox status
     if (searchValue) {
         filteredData = filteredData.filter(row => row['Application Name'].toLowerCase().includes(searchValue));
     }
 
-    // Apply scope filters
     if (inScopeChecked && outScopeChecked) {
-        // Both checked: show all
+        // Show all
     } else if (inScopeChecked) {
         filteredData = filteredData.filter(row => row['Assessment Scope'] === 'In Scope');
     } else if (outScopeChecked) {
@@ -121,106 +125,13 @@ function filterData() {
     displayData(filteredData);
 }
 
-// Populate and make Extended Answer / Rationale editable
-function populateStrategyQuestionsTable(strategyQuestions, applicationName) {
-    const tableBody = document.querySelector('#strategyQuestionsTable tbody');
-    tableBody.innerHTML = ''; // Clear existing rows
+// Initialize UI on load
+document.addEventListener('DOMContentLoaded', () => {
+    localStorage.removeItem('appToServerData'); // Prevent pre-population
+    document.getElementById('statusMessage').textContent = "Please upload an Excel file.";
+});
 
-    strategyQuestions.forEach((row, index) => {
-        const tr = document.createElement('tr');
-
-        const values = [
-            row.time,
-            row.characteristics,
-            row.clientAnswer,
-            row.clientScore,
-            row.weight,
-            row.question,
-            row.category,
-            row.extendedAnswer, // Editable field
-            row.sampleDrivers
-        ];
-
-        values.forEach((value, cellIndex) => {
-            const td = document.createElement('td');
-
-            if (cellIndex === 2) { // Client Answer dropdown
-                const select = document.createElement('select');
-                const options = ['No', 'Partial/Unsure', 'Yes'];
-                options.forEach(option => {
-                    const optionElement = document.createElement('option');
-                    optionElement.value = option;
-                    optionElement.textContent = option;
-                    if (option === value) {
-                        optionElement.selected = true;
-                    }
-                    select.appendChild(optionElement);
-                });
-
-                select.addEventListener('change', (event) => {
-                    row.clientAnswer = event.target.value;
-                    row.clientScore = calculateClientScore(row.clientAnswer, row.weight);
-                    updateClientAnswer(applicationName, strategyQuestions);
-                    td.nextElementSibling.textContent = row.clientScore;
-                });
-
-                td.appendChild(select);
-            } else if (cellIndex === 3) { // Client Score field
-                td.textContent = calculateClientScore(row.clientAnswer, row.weight);
-            } else if (cellIndex === 7) { // Extended Answer / Rationale column
-                const textArea = document.createElement('textarea');
-                textArea.value = value || '';
-                textArea.rows = 2;
-
-                textArea.addEventListener('blur', () => {
-                    row.extendedAnswer = textArea.value;
-                    updateClientAnswer(applicationName, strategyQuestions);
-                });
-
-                td.appendChild(textArea);
-            } else {
-                td.textContent = value || '';
-            }
-
-            tr.appendChild(td);
-        });
-
-        tableBody.appendChild(tr);
-    });
-}
-
-// Calculate Client Score based on Client Answer and Weight
-function calculateClientScore(clientAnswer, weight) {
-    if (clientAnswer === 'Yes') return weight;
-    if (clientAnswer === 'No') return 0;
-    if (clientAnswer === 'Partial/Unsure') return weight / 2;
-    return 0;  // Default to 0 if the answer is empty or invalid
-}
-
-// Update Client Answer in the local storage
-function updateClientAnswer(applicationName, updatedAnswers) {
-    let storedData = localStorage.getItem('appToServerData');
-    storedData = storedData ? JSON.parse(storedData) : [];
-
-    const app = storedData.find(app => app['Application Name'] === applicationName);
-    if (app) {
-        app.strategyQuestions = updatedAnswers;
-        localStorage.setItem('appToServerData', JSON.stringify(storedData));
-        console.log('Data updated and saved.');
-    } else {
-        console.error('Application not found in stored data');
-    }
-}
-
-// Listen for the application name when opening the strategy questions window
-ipcRenderer.on('open-strategy-questions-window', (event, applicationName) => {
-    const storedData = localStorage.getItem('appToServerData');
-    const data = storedData ? JSON.parse(storedData) : [];
-    const appData = data.find(app => app['Application Name'] === applicationName);
-
-    if (appData && appData.strategyQuestions) {
-        populateStrategyQuestionsTable(appData.strategyQuestions, applicationName);
-    } else {
-        console.error('Application data not found');
-    }
+// Listen for distributionThreshold value from the main process
+ipcRenderer.on('set-distribution-threshold', (event, threshold) => {
+    document.getElementById('distributionThreshold').textContent = threshold;
 });

@@ -5,13 +5,41 @@ const xlsx = require('xlsx');
 
 let mainWindow;
 let strategyQuestionsWindow = null;
-let explanationWindow = null; // Declare the explanation window variable
-let distributionThreshold = 80; // Set a default value
+let explanationWindow = null;
+let distributionThreshold = 80;
+let completedApps = [];
+
+// Clear completed apps file when the app launches
+function resetCompletedAppsFile() {
+    const completedAppsPath = path.join(app.getPath('userData'), 'completed-apps.json');
+    try {
+        fs.writeFileSync(completedAppsPath, JSON.stringify([], null, 2), 'utf-8');
+        console.log('Completed apps file has been reset.');
+    } catch (error) {
+        console.error('Error resetting completed apps file:', error);
+    }
+}
+
+// Load completed apps into memory
+function loadCompletedApps() {
+    const completedAppsPath = path.join(app.getPath('userData'), 'completed-apps.json');
+    try {
+        if (fs.existsSync(completedAppsPath)) {
+            const data = fs.readFileSync(completedAppsPath, 'utf-8');
+            completedApps = JSON.parse(data);
+        } else {
+            completedApps = [];
+        }
+    } catch (error) {
+        console.error('Error loading completed apps file:', error);
+        completedApps = [];
+    }
+}
 
 // Load the questions.json to extract the distributionThreshold
 function loadDistributionThreshold() {
     try {
-        const questionsPath = path.join(__dirname, 'questions.json'); // Update with correct path
+        const questionsPath = path.join(__dirname, 'questions.json');
         const questionsData = JSON.parse(fs.readFileSync(questionsPath, 'utf8'));
         if (questionsData && questionsData[0] && questionsData[0].config) {
             distributionThreshold = questionsData[0].config.distributionThreshold;
@@ -20,24 +48,6 @@ function loadDistributionThreshold() {
         console.error('Error loading questions.json:', error);
     }
 }
-
-// Call the function to load the distributionThreshold when the app is ready
-app.whenReady().then(() => {
-    loadDistributionThreshold(); // Ensure this is called when the app starts
-    createMainWindow();
-
-    app.on('activate', () => {
-        if (BrowserWindow.getAllWindows().length === 0) {
-            createMainWindow();
-        }
-    });
-});
-
-app.on('window-all-closed', () => {
-    if (process.platform !== 'darwin') {
-        app.quit();
-    }
-});
 
 // Create the main window
 function createMainWindow() {
@@ -50,80 +60,90 @@ function createMainWindow() {
         },
     });
 
-    mainWindow.loadFile('index.html')
-        .catch(err => console.error('Error loading index.html:', err));
+    mainWindow.loadFile('index.html').catch(err => console.error('Error loading index.html:', err));
 }
 
-// Create the strategy questions window
-function createStrategyQuestionsWindow(appName) {
+// Expose completed apps list to renderer process
+ipcMain.handle('get-completed-apps', () => {
+    return completedApps.map(app => app.name);
+});
+
+// Handle Excel upload and send data back to renderer
+ipcMain.handle('upload-file', async () => {
+    try {
+        const { canceled, filePaths } = await dialog.showOpenDialog({
+            filters: [{ name: 'Excel Files', extensions: ['xlsx'] }],
+            properties: ['openFile'],
+        });
+
+        if (canceled || filePaths.length === 0) return { error: 'No file selected.' };
+
+        const workbook = xlsx.readFile(filePaths[0]);
+        const sheetName = 'App-to-Server List';
+        const worksheet = workbook.Sheets[sheetName];
+
+        if (worksheet) {
+            const headers = ['Server', 'Assessment Scope', 'Application Name', 'Environment', 'Data Center'];
+            const data = xlsx.utils.sheet_to_json(worksheet, { header: headers, range: 4 });
+            return data;
+        } else {
+            return { error: 'Sheet "App-to-Server List" not found in the Excel file.' };
+        }
+    } catch (error) {
+        console.error('Error during Excel upload:', error);
+        return { error: 'Error processing Excel file.' };
+    }
+});
+
+// Open strategy questions window
+ipcMain.on('open-strategy-questions-window', (event, appName) => {
     if (strategyQuestionsWindow) {
         strategyQuestionsWindow.focus();
         return;
     }
 
     strategyQuestionsWindow = new BrowserWindow({
-        width: 2552,
-        height: 1146,
+        width: 1200,
+        height: 800,
         webPreferences: {
             nodeIntegration: true,
             contextIsolation: false,
         },
     });
 
-    strategyQuestionsWindow.loadFile('strategy-questions.html')
-        .catch(err => console.error('Error loading strategy-questions.html:', err));
-
-    strategyQuestionsWindow.webContents.on('did-finish-load', () => {
+    strategyQuestionsWindow.loadFile('strategy-questions.html').then(() => {
         strategyQuestionsWindow.webContents.send('set-application-name', appName);
-        strategyQuestionsWindow.webContents.send('set-distribution-threshold', distributionThreshold); // Send the threshold value
+        strategyQuestionsWindow.webContents.send('set-distribution-threshold', distributionThreshold);
     });
 
     strategyQuestionsWindow.on('closed', () => {
         strategyQuestionsWindow = null;
     });
-}
-
-// Create the calculations explained window
-function createCalculationsWindow() {
-    if (explanationWindow && !explanationWindow.isDestroyed()) {
-        explanationWindow.focus();
-        return;
-    }
-
-    explanationWindow = new BrowserWindow({
-        width: 1470,
-        height: 553,
-        title: 'Calculations Explained',
-        webPreferences: {
-            nodeIntegration: true,
-        }
-    });
-
-    explanationWindow.loadFile('calculations-explained.html');
-    explanationWindow.webContents.on('did-finish-load', () => {
-        explanationWindow.webContents.send('set-threshold', distributionThreshold); // Send the threshold value
-    });
-
-    explanationWindow.on('closed', () => {
-        explanationWindow = null;
-    });
-}
-
-// Listen for the message to open the new window
-ipcMain.on('open-calculations-explained', () => {
-    createCalculationsWindow();
-    explanationWindow.show();
 });
 
-// Open the strategy questions window
-ipcMain.on('open-strategy-questions-window', (event, appName) => {
-    createStrategyQuestionsWindow(appName);
-});
-
-// Save answers to file
+// Save answers to file and mark app as completed
 ipcMain.on('save-answers-to-file', (event, outputData) => {
     const appName = outputData.applicationName || 'strategy-questions-output';
     const sanitizedAppName = appName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+
+    let TIREPlacement = "Not Set";
+    const initialPlacement = outputData.initialTimePlacement?.trim();
+    const confirmedPlacement = outputData.confirmedTimePlacement?.trim();
+    let confirmedPlacementSet = false;
+
+    if (confirmedPlacement && !confirmedPlacement.toLowerCase().includes("below threshold")) {
+        TIREPlacement = confirmedPlacement;
+        confirmedPlacementSet = true;
+    } else if (initialPlacement) {
+        TIREPlacement = initialPlacement;
+    } else {
+        dialog.showMessageBoxSync({
+            type: 'warning',
+            title: 'Incomplete Placement',
+            message: 'Please set an Initial TIRE Placement or Confirmed TIRE Placement.'
+        });
+        return;
+    }
 
     dialog.showSaveDialog({
         title: 'Save Strategy Questions Data',
@@ -131,74 +151,35 @@ ipcMain.on('save-answers-to-file', (event, outputData) => {
         filters: [{ name: 'JSON Files', extensions: ['json'] }]
     }).then(file => {
         if (!file.canceled && file.filePath) {
-            fs.writeFile(file.filePath.toString(), JSON.stringify(outputData, null, 2), (err) => {
-                if (err) {
-                    console.error('Error saving file:', err);
-                    event.reply('save-status', 'Error saving file');
-                } else {
-                    console.log('File successfully saved:', file.filePath);
-                    event.reply('save-status', 'File saved successfully');
-                }
-            });
-        } else {
-            event.reply('save-status', 'Save operation canceled');
+            fs.writeFileSync(file.filePath, JSON.stringify(outputData, null, 2), 'utf-8');
+            markAppCompleted(outputData.applicationName, initialPlacement, confirmedPlacement, confirmedPlacementSet);
+            saveCompletedApps();
+            if (strategyQuestionsWindow) strategyQuestionsWindow.close();
+            event.reply('save-status', 'File saved successfully');
         }
-    }).catch(err => {
-        console.error('Error during save dialog:', err);
-        event.reply('save-status', 'Error during save dialog');
     });
 });
 
-// Upload an Excel file and process it
-ipcMain.on('upload-file', async (event) => {
-    try {
-        const { canceled, filePaths } = await dialog.showOpenDialog({
-            filters: [{ name: 'Excel Files', extensions: ['xlsx'] }],
-            properties: ['openFile'],
+function markAppCompleted(appName, initialPlacement, confirmedPlacement, confirmedPlacementSet) {
+    if (!completedApps.some(app => app.name === appName)) {
+        completedApps.push({
+            name: appName,
+            completedOn: new Date().toISOString(),
+            initialTIREPlacement: initialPlacement || "Not Set",
+            confirmedTIREPlacement: confirmedPlacement || "Not Set",
+            confirmedPlacementSet
         });
-
-        if (!canceled && filePaths.length > 0) {
-            const filePath = filePaths[0];
-            const workbook = xlsx.readFile(filePath);
-            const sheetName = 'App-to-Server List';
-            const worksheet = workbook.Sheets[sheetName];
-
-            if (worksheet) {
-                const headers = [
-                    'Server',
-                    'Assessment Scope',
-                    'Application Name',
-                    'Environment',
-                    'Power Status',
-                    'Operating System',
-                    'Data Center',
-                    'SQL Detected',
-                    'VMWare Description'
-                ];
-
-                const data = xlsx.utils.sheet_to_json(worksheet, {
-                    header: headers,
-                    range: 4,
-                });
-
-                const jsonFilePath = path.join(app.getPath('userData'), 'appToServerData.json');
-                fs.writeFileSync(jsonFilePath, JSON.stringify(data, null, 2), 'utf-8');
-
-                const inScopeData = data.filter(row => row['Assessment Scope'] === 'In Scope');
-                app.inScopeData = inScopeData;
-
-                event.reply('upload-complete', data);
-            } else {
-                event.reply('upload-complete', { error: 'Sheet not found' });
-            }
-        }
-    } catch (err) {
-        console.error('Error processing upload file:', err);
-        event.reply('upload-complete', { error: 'Error processing file' });
     }
-});
+}
 
-// Handle in-scope data request
-ipcMain.handle('get-in-scope-data', () => {
-    return app.inScopeData || [];
+function saveCompletedApps() {
+    const completedAppsPath = path.join(app.getPath('userData'), 'completed-apps.json');
+    fs.writeFileSync(completedAppsPath, JSON.stringify(completedApps, null, 2), 'utf-8');
+}
+
+app.whenReady().then(() => {
+    resetCompletedAppsFile();
+    loadCompletedApps();
+    loadDistributionThreshold();
+    createMainWindow();
 });
