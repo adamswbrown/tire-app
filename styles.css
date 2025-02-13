@@ -615,3 +615,124 @@ tr[style*="background-color: #28a745"] .distribution-column {
 .clear-btn:hover {
     background-color: #c82333;
 }
+
+/* Content layout */
+.content-wrapper {
+    display: flex;
+    gap: 20px;
+    padding: 20px;
+    height: calc(100vh - 180px);
+}
+
+.main-content {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Table container styling */
+.table-container {
+    flex: 1;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    margin-top: 20px;
+    background-color: white;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 400px); /* Adjust this value to fit your red box */
+}
+
+/* Table wrapper */
+#strategyQuestionsTableWrapper {
+    flex: 1;
+    overflow: auto;
+    width: 100%;
+}
+
+/* Table styling */
+#strategyQuestionsTable {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: white;
+    table-layout: fixed;
+}
+
+/* Column widths */
+#strategyQuestionsTable th:nth-child(1),
+#strategyQuestionsTable td:nth-child(1) { width: 80px; } /* TIRE */
+
+#strategyQuestionsTable th:nth-child(2),
+#strategyQuestionsTable td:nth-child(2) { width: 120px; } /* Characteristics */
+
+#strategyQuestionsTable th:nth-child(3),
+#strategyQuestionsTable td:nth-child(3) { width: 120px; } /* Client Answer */
+
+#strategyQuestionsTable th:nth-child(4),
+#strategyQuestionsTable td:nth-child(4) { width: 80px; } /* Client Score */
+
+#strategyQuestionsTable th:nth-child(5),
+#strategyQuestionsTable td:nth-child(5) { width: 150px; } /* Weight */
+
+#strategyQuestionsTable th:nth-child(6),
+#strategyQuestionsTable td:nth-child(6) { width: 300px; } /* Question */
+
+#strategyQuestionsTable th:nth-child(7),
+#strategyQuestionsTable td:nth-child(7) { width: 120px; } /* Category */
+
+#strategyQuestionsTable th:nth-child(8),
+#strategyQuestionsTable td:nth-child(8) { width: 200px; } /* Extended Answer */
+
+#strategyQuestionsTable th:nth-child(9),
+#strategyQuestionsTable td:nth-child(9) { width: 300px; } /* Sample Drivers */
+
+/* Cell styling */
+#strategyQuestionsTable th,
+#strategyQuestionsTable td {
+    border: 1px solid #dee2e6;
+    padding: 8px;
+    text-align: left;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#strategyQuestionsTable th {
+    position: sticky;
+    top: 0;
+    background-color: #f8f9fa;
+    z-index: 10;
+    font-weight: bold;
+}
+
+/* Text wrapping for longer content columns */
+#strategyQuestionsTable td:nth-child(6),
+#strategyQuestionsTable td:nth-child(8),
+#strategyQuestionsTable td:nth-child(9) {
+    white-space: normal;
+    word-wrap: break-word;
+}
+
+/* Input styling */
+#strategyQuestionsTable select,
+#strategyQuestionsTable input[type="text"] {
+    width: calc(100% - 8px);
+    padding: 4px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+/* Time placement container adjustments */
+.time-placement-container {
+    margin-bottom: 20px;
+    padding: 15px;
+}
+
+/* Category buttons container adjustments */
+#categoryButtonsContainer {
+    margin-bottom: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}

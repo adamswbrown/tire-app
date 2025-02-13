@@ -55,72 +55,79 @@
         </div>
     </div>
 
-    <!-- TIME Placement Section -->
-    <div class="time-placement-container">
-        <div class="time-placement-item">
-            <label for="initialTimePlacement">Initial TIRE Placement</label>
-            <select id="initialTimePlacement">
-                <option value="">-</option>
-                <option value="Tolerate">TOLERATE</option>
-                <option value="Invest">INVEST</option>
-                <option value="Replace">REPLACE</option>
-                <option value="Eliminate">ELIMINATE</option>
-            </select>
-        </div>
-        <div class="time-placement-item">
-            <label for="confirmedTimePlacement">Confirmed TIRE Placement</label>
-            <div id="confirmedTimePlacement">-</div>
-        </div>
-        <button id="saveButton">Save Answers to File</button>
-        <div>
-            <strong>Distribution Threshold:</strong> <span id="distribution-threshold">Loading...</span>%
-        </div>
-    </div>
+    <div class="content-wrapper">
+        <!-- Main Content Area -->
+        <div class="main-content">
+            <!-- TIME Placement Section -->
+            <div class="time-placement-container">
+                <div class="time-placement-item">
+                    <label for="initialTimePlacement">Initial TIRE Placement</label>
+                    <select id="initialTimePlacement">
+                        <option value="">-</option>
+                        <option value="Tolerate">TOLERATE</option>
+                        <option value="Invest">INVEST</option>
+                        <option value="Replace">REPLACE</option>
+                        <option value="Eliminate">ELIMINATE</option>
+                    </select>
+                </div>
+                <div class="time-placement-item">
+                    <label for="confirmedTimePlacement">Confirmed TIRE Placement</label>
+                    <div id="confirmedTimePlacement">-</div>
+                </div>
+                <button id="saveButton">Save Answers to File</button>
+                <div>
+                    <strong>Distribution Threshold:</strong> <span id="distribution-threshold">Loading...</span>%
+                </div>
+            </div>
 
-    <!-- Category Filter Buttons -->
-    <div id="categoryButtonsContainer"></div>
-    <button id="explanationBtn">Calculations Explained</button>
+            <!-- Category Filter Buttons -->
+            <div id="categoryButtonsContainer"></div>
+            <button id="explanationBtn">Calculations Explained</button>
 
-    <!-- Questions Table -->
-    <div class="table-container">
-        <div id="strategyQuestionsTableWrapper">
-            <table id="strategyQuestionsTable">
-                <thead>
-                    <tr>
-                        <th>TIRE</th>
-                        <th>Characteristics</th>
-                        <th>Client Answer</th>
-                        <th>Client Score</th>
-                        <th>Weight (1 Low - 5 High)</th>
-                        <th>Question</th>
-                        <th>Category</th>
-                        <th>Extended Answer / Rationale</th>
-                        <th>Sample Drivers</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Rows will be dynamically generated -->
-                </tbody>
-            </table>
+            <!-- Questions Table -->
+            <div class="table-container">
+                <div id="strategyQuestionsTableWrapper">
+                    <table id="strategyQuestionsTable">
+                        <thead>
+                            <tr>
+                                <th>TIRE</th>
+                                <th>Characteristics</th>
+                                <th>Client Answer</th>
+                                <th>Client Score</th>
+                                <th>Weight (1 Low - 5 High)</th>
+                                <th>Question</th>
+                                <th>Category</th>
+                                <th>Extended Answer / Rationale</th>
+                                <th>Sample Drivers</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Rows will be dynamically generated -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
-    </div>
 
-    <!-- Summary Table -->
-    <div class="summary-container">
-        <h2>Strategy Questions Summary</h2>
-        <table id="summaryTable">
-            <thead>
-                <tr>
-                    <th>Category</th>
-                    <th>Client Score</th>
-                    <th>Total Possible</th>
-                    <th>Distribution</th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- Summary rows will be dynamically generated -->
-            </tbody>
-        </table>
+        <!-- Summary Section (Right Side) -->
+        <div class="summary-section">
+            <div class="summary-container">
+                <h2>Strategy Questions Summary</h2>
+                <table id="summaryTable">
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th>Client Score</th>
+                            <th>Total Possible</th>
+                            <th>Distribution</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Summary rows will be dynamically generated -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
     <script src="strategy-questions.js"></script>
