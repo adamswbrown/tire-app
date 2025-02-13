@@ -40,91 +40,83 @@ function populateStrategyQuestionsTable() {
 
     strategyQuestions.forEach((row, index) => {
         const tr = document.createElement('tr');
-        const values = [
+        
+        // Create cells for each column
+        const cells = [
             row.time,
             row.characteristics,
-            row.clientAnswer,
-            row.clientScore,  // Initially 0
+            createAnswerSelect(row), // Special handling for answer dropdown
+            row.clientScore || 0,
             row.weight,
             row.question,
             row.category,
-            row.extendedAnswer, // Editable field for "Extended Answer / Rationale"
+            createExtendedAnswerInput(row), // Special handling for extended answer
             row.sampleDrivers
         ];
 
-        values.forEach((value, cellIndex) => {
+        cells.forEach((cell, i) => {
             const td = document.createElement('td');
-
-            // For the 'Client Answer' field (index 2), create a dropdown
-            if (cellIndex === 2) {
-                const select = document.createElement('select');
-                const options = ['-', 'No', 'Partial/Unsure', 'Yes'];
-                options.forEach(option => {
-                    const optionElement = document.createElement('option');
-                    optionElement.value = option;
-                    optionElement.textContent = option;
-                    if (option === value) {
-                        optionElement.selected = true;
-                    }
-                    select.appendChild(optionElement);
-                });
-
-                // Event listener to update Client Answer and recalculate Client Score
-                select.addEventListener('change', (event) => {
-                    row.clientAnswer = event.target.value;
-                    row.clientScore = calculateClientScore(row.clientAnswer, row.weight);
-
-                    // Update the Client Score field in the table
-                    td.nextElementSibling.textContent = row.clientScore;
-
-                    // Recalculate and update the Client Scores for the summary table
-                    updateClientScores();
-                });
-                //Event Listener for Questions counter
-
-                select.addEventListener('change', (event) => {
-                    row.clientAnswer = event.target.value;
-                    row.clientScore = calculateClientScore(row.clientAnswer, row.weight);
-                
-                    // Update the Client Score field in the table
-                    td.nextElementSibling.textContent = row.clientScore;
-                
-                    // Recalculate and update the Client Scores for the summary table
-                    updateClientScores();
-                
-                    // Update the question counter
-                    updateAnsweredQuestionsCounter();
-                });
-                td.appendChild(select);
-            } else if (cellIndex === 3) { // Client Score field
-                td.textContent = row.clientScore;
-            } else if (cellIndex === 7) { // Extended Answer / Rationale column
-                // Create a textarea for the "Extended Answer / Rationale" column
-                const textArea = document.createElement('textarea');
-                textArea.value = value || '';
-                textArea.rows = 2;
-
-                // Save the updated text when the textarea loses focus
-                textArea.addEventListener('blur', () => {
-                    row.extendedAnswer = textArea.value;
-                    // Optionally save the updated answers to localStorage or another persistence method
-                    saveUpdatedStrategyQuestions();
-                });
-
-                td.appendChild(textArea);
+            if (i === 2) { // Client Answer column
+                td.appendChild(cell); // Append the select element
+            } else if (i === 7) { // Extended Answer column
+                td.appendChild(cell); // Append the input element
             } else {
-                td.textContent = value || '';  // For other cells, just add the text content
+                td.textContent = cell;
             }
-
             tr.appendChild(td);
         });
 
         tableBody.appendChild(tr);
     });
 
-    // Initial Client Scores Update
     updateClientScores();
+    updateCompletionStatus();
 }
+
+// Helper function to create answer select with proper event handling
+function createAnswerSelect(row) {
+    const select = document.createElement('select');
+    const options = ['-', 'No', 'Partial/Unsure', 'Yes'];
+    
+    options.forEach(option => {
+        const optionElement = document.createElement('option');
+        optionElement.value = option;
+        optionElement.textContent = option;
+        if (option === row.clientAnswer) {
+            optionElement.selected = true;
+        }
+        select.appendChild(optionElement);
+    });
+
+    select.addEventListener('change', (event) => {
+        row.clientAnswer = event.target.value;
+        row.clientScore = calculateClientScore(row.clientAnswer, row.weight);
+        
+        // Update the client score in the next cell
+        const scoreCell = event.target.parentElement.nextElementSibling;
+        if (scoreCell) {
+            scoreCell.textContent = row.clientScore;
+        }
+
+        updateClientScores();
+        updateCompletionStatus();
+    });
+
+    return select;
+}
+
+// Helper function to create extended answer input
+function createExtendedAnswerInput(row) {
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = row.extendedAnswer || '';
+    input.addEventListener('change', (event) => {
+        row.extendedAnswer = event.target.value;
+        saveUpdatedStrategyQuestions();
+    });
+    return input;
+}
+
 // Function to dynamically generate category buttons
 function generateCategoryButtons() {
     // Extract unique categories from strategyQuestions
@@ -210,93 +202,98 @@ function saveUpdatedStrategyQuestions() {
 
 // Calculate Client Score based on Client Answer and Weight
 function calculateClientScore(clientAnswer, weight) {
+    weight = parseInt(weight) || 0;
     if (clientAnswer === 'Yes') {
         return weight;
     } else if (clientAnswer === 'No') {
         return 0;
     } else if (clientAnswer === 'Partial/Unsure') {
-        return weight / 2;
+        return Math.round(weight / 2);
     }
     return 0;  // Default to 0 if the answer is empty or invalid
 }
 
 // Update Client Scores in the summary table
 function updateClientScores() {
-    let tolerateScore = 0;
-    let investScore = 0;
-    let replaceScore = 0;
-    let eliminateScore = 0;
+    let scores = {
+        tolerate: { score: 0, total: 0 },
+        invest: { score: 0, total: 0 },
+        replace: { score: 0, total: 0 },
+        eliminate: { score: 0, total: 0 }
+    };
 
-    let tolerateTotal = 0;
-    let investTotal = 0;
-    let replaceTotal = 0;
-    let eliminateTotal = 0;
-
+    // Calculate scores
     strategyQuestions.forEach(row => {
-        const clientScore = row.clientScore;
-
-        if (row.time === 'Tolerate') {
-            tolerateScore += clientScore;
-            tolerateTotal += row.weight;
-        } else if (row.time === 'Invest') {
-            investScore += clientScore;
-            investTotal += row.weight;
-        } else if (row.time === 'Replace') {
-            replaceScore += clientScore;
-            replaceTotal += row.weight;
-        } else if (row.time === 'Eliminate') {
-            eliminateScore += clientScore;
-            eliminateTotal += row.weight;
+        const category = row.time.toLowerCase();
+        if (scores[category]) {
+            const weight = parseInt(row.weight) || 0;
+            scores[category].score += parseInt(row.clientScore) || 0;
+            scores[category].total += weight; // Add weight to total regardless of answer
         }
     });
 
-    // Check for the existence of each element before updating it
-    const tolerateClientScoreElem = document.getElementById('tolerate-client-score');
-    const investClientScoreElem = document.getElementById('invest-client-score');
-    const replaceClientScoreElem = document.getElementById('replace-client-score');
-    const eliminateClientScoreElem = document.getElementById('eliminate-client-score');
+    // Calculate distributions and find max
+    let maxDistribution = 0;
+    let maxCategory = '';
+    
+    Object.entries(scores).forEach(([category, data]) => {
+        // Ensure we're working with integers
+        const score = parseInt(data.score) || 0;
+        const total = parseInt(data.total) || 0;
+        // Calculate distribution as a percentage
+        const distribution = total > 0 ? Math.round((score / total) * 100) : 0;
+        
+        if (distribution > maxDistribution) {
+            maxDistribution = distribution;
+            maxCategory = category;
+        }
+    });
 
-    const tolerateTotalElem = document.getElementById('tolerate-total');
-    const investTotalElem = document.getElementById('invest-total');
-    const replaceTotalElem = document.getElementById('replace-total');
-    const eliminateTotalElem = document.getElementById('eliminate-total');
+    // Update summary table
+    const summaryTableBody = document.querySelector('#summaryTable tbody');
+    summaryTableBody.innerHTML = ''; // Clear existing rows
 
-    if (tolerateClientScoreElem) tolerateClientScoreElem.textContent = tolerateScore;
-    if (investClientScoreElem) investClientScoreElem.textContent = investScore;
-    if (replaceClientScoreElem) replaceClientScoreElem.textContent = replaceScore;
-    if (eliminateClientScoreElem) eliminateClientScoreElem.textContent = eliminateScore;
+    Object.entries(scores).forEach(([category, data]) => {
+        const score = parseInt(data.score) || 0;
+        const total = parseInt(data.total) || 0;
+        const distribution = total > 0 ? Math.round((score / total) * 100) : 0;
+        
+        const row = document.createElement('tr');
+        
+        row.innerHTML = `
+            <td>${category.charAt(0).toUpperCase() + category.slice(1)}</td>
+            <td>${score}</td>
+            <td>${total}</td>
+            <td class="distribution-column">${distribution}%</td>
+        `;
 
-    if (tolerateTotalElem) tolerateTotalElem.textContent = tolerateTotal;
-    if (investTotalElem) investTotalElem.textContent = investTotal;
-    if (replaceTotalElem) replaceTotalElem.textContent = replaceTotal;
-    if (eliminateTotalElem) eliminateTotalElem.textContent = eliminateTotal;
+        // Apply highlighting if distribution meets threshold
+        if (distribution >= distributionThreshold) {
+            row.style.backgroundColor = '#28a745';
+            row.style.color = 'white';
+        }
 
-    updateDistribution(tolerateScore, tolerateTotal, 'tolerate');
-    updateDistribution(investScore, investTotal, 'invest');
-    updateDistribution(replaceScore, replaceTotal, 'replace');
-    updateDistribution(eliminateScore, eliminateTotal, 'eliminate');
-}
+        summaryTableBody.appendChild(row);
+    });
 
-
-// Function to update the distribution for each category
-function updateDistribution(clientScore, totalScore, category) {
-    const distribution = totalScore > 0 ? Math.round((clientScore / totalScore) * 100) : 0;  // Round to nearest integer
-    const distributionCell = document.getElementById(`${category}-distribution`);
-    const row = distributionCell.parentElement; // Get the entire row
-
-    // Update the distribution cell text
-    distributionCell.textContent = `${distribution}%`;
-
-    // Apply conditional formatting: highlight the entire row if distribution is 80% or more
-    if (distribution >= 80) {
-        row.style.backgroundColor = 'green';
-        row.style.color = 'white';  // Optional: set text color to white for better contrast
-    } else {
-        row.style.backgroundColor = ''; // Reset to default if less than 80%
-        row.style.color = '';           // Reset text color
+    // Update confirmed placement
+    const confirmedPlacementElement = document.getElementById('confirmedTimePlacement');
+    if (confirmedPlacementElement) {
+        if (maxDistribution >= distributionThreshold) {
+            const displayCategory = maxCategory.charAt(0).toUpperCase() + maxCategory.slice(1);
+            confirmedPlacementElement.textContent = displayCategory;
+            confirmedPlacementElement.style.backgroundColor = '#d2ebd2';
+            confirmedPlacementElement.style.color = '#357a38';
+            confirmedPlacementElement.style.borderColor = '#357a38';
+            confirmedPlacementElement.classList.remove('below-threshold');
+        } else {
+            confirmedPlacementElement.textContent = `Below Threshold (${maxDistribution}%)`;
+            confirmedPlacementElement.style.backgroundColor = '#fff3cd';
+            confirmedPlacementElement.style.color = '#856404';
+            confirmedPlacementElement.style.borderColor = '#ffeeba';
+            confirmedPlacementElement.classList.add('below-threshold');
+        }
     }
-
-    console.log(`${category.charAt(0).toUpperCase() + category.slice(1)} Distribution: ${distribution}%`);
 }
 
 // Listen for application name when opening strategy questions window
@@ -331,49 +328,46 @@ function saveToFile() {
     const initialTimePlacement = document.getElementById('initialTimePlacement').value;
     const confirmedTimePlacement = document.getElementById('confirmedTimePlacement').textContent;
 
+    // Calculate scores and distributions
+    let scores = {
+        tolerate: { score: 0, total: 0 },
+        invest: { score: 0, total: 0 },
+        replace: { score: 0, total: 0 },
+        eliminate: { score: 0, total: 0 }
+    };
+
+    // Calculate scores
+    strategyQuestions.forEach(row => {
+        const category = row.time.toLowerCase();
+        if (scores[category]) {
+            scores[category].score += row.clientScore || 0;
+            scores[category].total += row.weight || 0;
+        }
+    });
+
+    // Calculate distributions
+    Object.entries(scores).forEach(([category, data]) => {
+        data.distribution = data.total > 0 ? Math.round((data.score / data.total) * 100) + '%' : '0%';
+    });
+
     const answersData = strategyQuestions.map(row => ({
         time: row.time,
         characteristics: row.characteristics,
-        questionAnswered: row.clientAnswer,  // Renamed from 'clientAnswer' to 'questionAnswered'
+        clientAnswer: row.clientAnswer,
         clientScore: row.clientScore,
         weight: row.weight,
         question: row.question,
         category: row.category,
         extendedAnswer: row.extendedAnswer,
-        sampleDrivers: row.sampleDrivers,
-        answered: row.clientAnswer !== '-'  // Field indicating if the question was answered
+        sampleDrivers: row.sampleDrivers
     }));
 
-    const summary = {
-        tolerate: {
-            score: parseInt(document.getElementById('tolerate-client-score').textContent, 10) || 0,
-            total: parseInt(document.getElementById('tolerate-total').textContent, 10) || 0,
-            distribution: document.getElementById('tolerate-distribution').textContent
-        },
-        invest: {
-            score: parseInt(document.getElementById('invest-client-score').textContent, 10) || 0,
-            total: parseInt(document.getElementById('invest-total').textContent, 10) || 0,
-            distribution: document.getElementById('invest-distribution').textContent
-        },
-        replace: {
-            score: parseInt(document.getElementById('replace-client-score').textContent, 10) || 0,
-            total: parseInt(document.getElementById('replace-total').textContent, 10) || 0,
-            distribution: document.getElementById('replace-distribution').textContent
-        },
-        eliminate: {
-            score: parseInt(document.getElementById('eliminate-client-score').textContent, 10) || 0,
-            total: parseInt(document.getElementById('eliminate-total').textContent, 10) || 0,
-            distribution: document.getElementById('eliminate-distribution').textContent
-        }
-    };
-
-    // Structure the output data
     const outputData = {
         applicationName: document.getElementById('applicationName').textContent,
         initialTimePlacement,
         confirmedTimePlacement,
         answers: answersData,
-        summary
+        summary: scores
     };
 
     // Send the data to the main process to save to a file
@@ -440,57 +434,6 @@ ipcRenderer.on('set-distribution-threshold', (event, distributionThreshold) => {
 });
 
 
-// Function to save answers, notes, and summary outcomes to an external file
-function saveToFile() {
-    const initialTimePlacement = document.getElementById('initialTimePlacement').value;
-    const confirmedTimePlacement = document.getElementById('confirmedTimePlacement').textContent;
-
-    const answersData = strategyQuestions.map(row => ({
-        time: row.time,
-        characteristics: row.characteristics,
-        clientAnswer: row.clientAnswer,
-        clientScore: row.clientScore,
-        weight: row.weight,
-        question: row.question,
-        category: row.category,
-        extendedAnswer: row.extendedAnswer,
-        sampleDrivers: row.sampleDrivers
-    }));
-
-    const summary = {
-        tolerate: {
-            score: parseInt(document.getElementById('tolerate-client-score').textContent, 10) || 0,
-            total: parseInt(document.getElementById('tolerate-total').textContent, 10) || 0,
-            distribution: document.getElementById('tolerate-distribution').textContent
-        },
-        invest: {
-            score: parseInt(document.getElementById('invest-client-score').textContent, 10) || 0,
-            total: parseInt(document.getElementById('invest-total').textContent, 10) || 0,
-            distribution: document.getElementById('invest-distribution').textContent
-        },
-        Replace: {
-            score: parseInt(document.getElementById('replace-client-score').textContent, 10) || 0,
-            total: parseInt(document.getElementById('replace-total').textContent, 10) || 0,
-            distribution: document.getElementById('replace-distribution').textContent
-        },
-        eliminate: {
-            score: parseInt(document.getElementById('eliminate-client-score').textContent, 10) || 0,
-            total: parseInt(document.getElementById('eliminate-total').textContent, 10) || 0,
-            distribution: document.getElementById('eliminate-distribution').textContent
-        }
-    };
-
-    const outputData = {
-        applicationName: document.getElementById('applicationName').textContent,
-        initialTimePlacement,
-        confirmedTimePlacement,
-        answers: answersData,
-        summary
-    };
-
-    // Send the data to the main process to save to a file
-    ipcRenderer.send('save-answers-to-file', outputData);
-}
 // Function to update the answered questions counter
 function updateAnsweredQuestionsCounter() {
     answeredQuestions = strategyQuestions.filter(q => q.clientAnswer !== '-').length; // Count answered questions
@@ -503,4 +446,107 @@ function updateAnsweredQuestionsCounter() {
 
 // Initial table population and loading JSON data
 loadStrategyQuestions();
+
+// Load previous answers if they exist
+async function loadPreviousAnswers(appName) {
+    const appData = await ipcRenderer.invoke('get-app-data', appName);
+    if (appData) {
+        // Update completion status
+        const completionHeader = document.getElementById('completionStatus');
+        completionHeader.classList.remove('incomplete');
+        const completionDate = new Date(appData.completedOn).toLocaleDateString();
+        document.getElementById('completionDate').textContent = `Completed on ${completionDate}`;
+
+        // Set initial TIRE placement
+        document.getElementById('initialTimePlacement').value = appData.initialTIREPlacement;
+        
+        // Set confirmed TIRE placement
+        document.getElementById('confirmedTimePlacement').textContent = appData.confirmedTIREPlacement;
+
+        // Load answers
+        if (appData.answers) {
+            appData.answers.forEach(answer => {
+                const questionRow = Array.from(document.querySelectorAll('tr')).find(row => {
+                    const questionCell = row.querySelector('td:nth-child(6)');
+                    return questionCell && questionCell.textContent === answer.question;
+                });
+
+                if (questionRow) {
+                    const answerSelect = questionRow.querySelector('select');
+                    if (answerSelect) {
+                        answerSelect.value = answer.clientAnswer;
+                        // Trigger change event to update calculations
+                        answerSelect.dispatchEvent(new Event('change'));
+                    }
+
+                    const extendedAnswerInput = questionRow.querySelector('input[type="text"]');
+                    if (extendedAnswerInput && answer.extendedAnswer) {
+                        extendedAnswerInput.value = answer.extendedAnswer;
+                    }
+                }
+            });
+        }
+
+        // Update summary
+        if (appData.summary) {
+            updateSummaryTable(appData.summary);
+        }
+    }
+}
+
+// Update the summary table
+function updateSummaryTable(summary) {
+    const summaryTable = document.getElementById('summaryTable').querySelector('tbody');
+    summaryTable.innerHTML = '';
+
+    const categories = ['Tolerate', 'Invest', 'Replace', 'Eliminate'];
+    categories.forEach(category => {
+        const row = document.createElement('tr');
+        const lowerCategory = category.toLowerCase();
+        const data = summary[lowerCategory];
+
+        row.innerHTML = `
+            <td>${category}</td>
+            <td>${data.score}</td>
+            <td>${data.total}</td>
+            <td class="distribution-column">${data.distribution}</td>
+        `;
+        summaryTable.appendChild(row);
+    });
+}
+
+// Update completion status and questions counter
+function updateCompletionStatus() {
+    const totalQuestions = strategyQuestions.length;
+    const answeredQuestions = strategyQuestions.filter(q => q.clientAnswer && q.clientAnswer !== '-').length;
+    
+    // Update the counter in the yellow banner
+    const completionText = document.getElementById('completionText');
+    if (completionText) {
+        completionText.textContent = `${answeredQuestions} / ${totalQuestions} questions answered`;
+    }
+
+    // Update the completion header styling
+    const completionHeader = document.getElementById('completionStatus');
+    if (completionHeader) {
+        if (answeredQuestions === totalQuestions) {
+            completionHeader.classList.remove('incomplete');
+        } else {
+            completionHeader.classList.add('incomplete');
+        }
+    }
+}
+
+// Add event listener for application name
+ipcRenderer.on('set-application-name', async (event, appName) => {
+    document.getElementById('applicationName').textContent = appName;
+    await loadPreviousAnswers(appName);
+});
+
+// Add change event listeners to all answer selects
+document.addEventListener('change', event => {
+    if (event.target.matches('select')) {
+        updateCompletionStatus();
+    }
+});
 

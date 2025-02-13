@@ -121,7 +121,32 @@ ipcMain.on('open-strategy-questions-window', (event, appName) => {
     });
 });
 
-// Save answers to file and mark app as completed
+// Modify the markAppCompleted function to store full application data
+function markAppCompleted(appName, initialPlacement, confirmedPlacement, confirmedPlacementSet, fullData) {
+    const existingAppIndex = completedApps.findIndex(app => app.name === appName);
+    const appData = {
+        name: appName,
+        completedOn: new Date().toISOString(),
+        initialTIREPlacement: initialPlacement || "Not Set",
+        confirmedTIREPlacement: confirmedPlacement || "Not Set",
+        confirmedPlacementSet,
+        answers: fullData.answers,
+        summary: fullData.summary
+    };
+
+    if (existingAppIndex !== -1) {
+        completedApps[existingAppIndex] = appData;
+    } else {
+        completedApps.push(appData);
+    }
+
+    // Notify the main window of the update
+    if (mainWindow) {
+        mainWindow.webContents.send('app-completed', appName);
+    }
+}
+
+// Modify the save-answers-to-file handler
 ipcMain.on('save-answers-to-file', (event, outputData) => {
     const appName = outputData.applicationName || 'strategy-questions-output';
     const sanitizedAppName = appName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
@@ -152,30 +177,67 @@ ipcMain.on('save-answers-to-file', (event, outputData) => {
     }).then(file => {
         if (!file.canceled && file.filePath) {
             fs.writeFileSync(file.filePath, JSON.stringify(outputData, null, 2), 'utf-8');
-            markAppCompleted(outputData.applicationName, initialPlacement, confirmedPlacement, confirmedPlacementSet);
+            markAppCompleted(outputData.applicationName, initialPlacement, confirmedPlacement, confirmedPlacementSet, outputData);
             saveCompletedApps();
-            if (strategyQuestionsWindow) strategyQuestionsWindow.close();
+            
+            // Notify the main window that an app has been completed
+            if (mainWindow) {
+                mainWindow.webContents.send('app-completed', outputData.applicationName);
+            }
+            
+            if (strategyQuestionsWindow) {
+                strategyQuestionsWindow.close();
+            }
             event.reply('save-status', 'File saved successfully');
         }
     });
 });
 
-function markAppCompleted(appName, initialPlacement, confirmedPlacement, confirmedPlacementSet) {
-    if (!completedApps.some(app => app.name === appName)) {
-        completedApps.push({
-            name: appName,
-            completedOn: new Date().toISOString(),
-            initialTIREPlacement: initialPlacement || "Not Set",
-            confirmedTIREPlacement: confirmedPlacement || "Not Set",
-            confirmedPlacementSet
-        });
-    }
-}
-
 function saveCompletedApps() {
     const completedAppsPath = path.join(app.getPath('userData'), 'completed-apps.json');
     fs.writeFileSync(completedAppsPath, JSON.stringify(completedApps, null, 2), 'utf-8');
 }
+
+// Function to export completed apps to Excel
+function exportCompletedAppsToExcel() {
+    const wb = xlsx.utils.book_new();
+    const wsData = completedApps.map(app => ({
+        'Application Name': app.name,
+        'TIRE Status': app.confirmedTIREPlacement !== "Not Set" ? app.confirmedTIREPlacement : app.initialTIREPlacement
+    }));
+    
+    const ws = xlsx.utils.json_to_sheet(wsData);
+    xlsx.utils.book_append_sheet(wb, ws, 'Completed Applications');
+    
+    const exportPath = path.join(app.getPath('downloads'), 'completed-applications.xlsx');
+    xlsx.writeFile(wb, exportPath);
+    return exportPath;
+}
+
+// Add IPC handler for exporting completed apps
+ipcMain.handle('export-completed-apps', async () => {
+    try {
+        const exportPath = exportCompletedAppsToExcel();
+        return { success: true, path: exportPath };
+    } catch (error) {
+        console.error('Error exporting completed apps:', error);
+        return { success: false, error: error.message };
+    }
+});
+
+// Add new IPC handler to get full application data
+ipcMain.handle('get-app-data', (event, appName) => {
+    const appData = completedApps.find(app => app.name === appName);
+    return appData || null;
+});
+
+// Add a new IPC handler to refresh the main window
+ipcMain.handle('refresh-main-window', () => {
+    if (mainWindow) {
+        mainWindow.webContents.send('refresh-data');
+    }
+    return true;
+});
 
 app.whenReady().then(() => {
     resetCompletedAppsFile();
