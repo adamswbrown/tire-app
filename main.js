@@ -83,9 +83,44 @@ ipcMain.handle('upload-file', async () => {
         const worksheet = workbook.Sheets[sheetName];
 
         if (worksheet) {
-            const headers = ['Server', 'Assessment Scope', 'Application Name', 'Environment', 'Data Center'];
-            const data = xlsx.utils.sheet_to_json(worksheet, { header: headers, range: 4 });
-            return data;
+            // First, let's read the raw data to see the actual headers
+            const rawData = xlsx.utils.sheet_to_json(worksheet, { 
+                header: 1,  // Get array of arrays with raw values
+                range: 4,   // Start from row 4
+                defval: ''
+            });
+
+            console.log('Raw Excel Headers:', rawData[0]); // Log the headers
+
+            // Define the expected headers and their mappings based on actual Excel structure
+            const headerMap = {
+                'Server Name': 'Server',
+                'Assessment Scope': 'Assessment Scope',
+                'Application Name': 'Application Name',
+                'Environment': 'Environment',
+                'Location': 'Data Center'  // Update based on actual Excel column name
+            };
+
+            // Read the data with header mapping
+            const data = xlsx.utils.sheet_to_json(worksheet, { 
+                range: 4,
+                defval: ''
+            });
+
+            console.log('Sample Row:', data[0]); // Log first row to verify structure
+
+            // Transform the data to use our desired field names
+            const transformedData = data.map(row => ({
+                'Application Name': row['Application Name'] || '',
+                'Assessment Scope': row['Assessment Scope'] || '',
+                'Data Center': row['Location'] || '',  // Map from Location to Data Center
+                'Environment': row['Environment'] || '',
+                'Server': row['Server Name'] || ''
+            }));
+
+            console.log('Transformed Row:', transformedData[0]); // Log transformed data
+
+            return transformedData;
         } else {
             return { error: 'Sheet "App-to-Server List" not found in the Excel file.' };
         }

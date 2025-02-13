@@ -231,3 +231,26 @@ document.addEventListener('DOMContentLoaded', async () => {
 ipcRenderer.on('set-distribution-threshold', (event, threshold) => {
     document.getElementById('distributionThreshold').textContent = threshold;
 });
+
+// Add event listener for clear storage button
+document.getElementById('clearStorageBtn').addEventListener('click', () => {
+    // Clear local storage
+    localStorage.clear();
+    
+    // Clear the table
+    const tableBody = document.querySelector('#dataTable tbody');
+    if (tableBody) {
+        tableBody.innerHTML = '';
+    }
+    
+    // Reset metrics
+    document.getElementById('totalApps').textContent = '0';
+    document.getElementById('inScope').textContent = '0';
+    document.getElementById('outScope').textContent = '0';
+    document.getElementById('completedApps').textContent = '0';
+    
+    // Update status message
+    const statusMessage = document.getElementById('statusMessage');
+    statusMessage.textContent = 'Data cleared. Please upload an Excel file.';
+    statusMessage.style.color = '#28a745';
+});
