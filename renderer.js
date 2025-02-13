@@ -1,256 +1,185 @@
 const { ipcRenderer } = require('electron');
-
+let currentData = [];
 let completedAppsList = [];
 
-// Function to fetch completed apps from main process
+// Function to fetch completed apps
 async function fetchCompletedApps() {
-    try {
-        completedAppsList = await ipcRenderer.invoke('get-completed-apps');
-        return completedAppsList;
-    } catch (error) {
-        console.error('Error fetching completed apps:', error);
-        return [];
-    }
+    completedAppsList = await ipcRenderer.invoke('get-completed-apps');
 }
 
-// Event listener for the "Upload Excel File" button
-document.getElementById('uploadBtn').addEventListener('click', async () => {
-    console.log("File upload initiated.");
-    const data = await ipcRenderer.invoke('upload-file'); // Use invoke for async response
-    const statusMessage = document.getElementById('statusMessage');
+// Function to filter table data
+function filterTable() {
+    const inScope = document.getElementById("inScopeCheckbox").checked;
+    const outScope = document.getElementById("outScopeCheckbox").checked;
+    const completed = document.getElementById("completedCheckbox").checked;
+    const uncompleted = document.getElementById("uncompletedCheckbox").checked;
+    const searchText = document.getElementById("searchInput").value.toLowerCase();
 
-    if (data.error) {
-        statusMessage.textContent = `Error: ${data.error}`;
-        console.error("Error uploading file:", data.error);
-    } else {
-        localStorage.setItem('appToServerData', JSON.stringify(data)); // Save valid data
-        statusMessage.textContent = 'Upload complete! Data has been stored successfully.';
-        await displayData(data); // Display data in the table
-    }
-});
+    const filteredData = currentData.filter(item => {
+        const isCompleted = completedAppsList.includes(item['Application Name']);
+        const inScopeMatch = !inScope || item['Assessment Scope'] === "In Scope";
+        const outScopeMatch = !outScope || item['Assessment Scope'] === "Out of Scope";
+        const completedMatch = !completed || isCompleted;
+        const uncompletedMatch = !uncompleted || !isCompleted;
+        const searchMatch = !searchText || 
+            item['Application Name'].toLowerCase().includes(searchText) ||
+            item['Assessment Scope'].toLowerCase().includes(searchText) ||
+            item['Data Center'].toLowerCase().includes(searchText);
 
-// Add event listener for export button
-document.getElementById('exportBtn').addEventListener('click', async () => {
-    const result = await ipcRenderer.invoke('export-completed-apps');
-    const statusMessage = document.getElementById('statusMessage');
-    
-    if (result.success) {
-        statusMessage.textContent = `Completed apps exported to: ${result.path}`;
-        statusMessage.style.color = '#28a745';
-    } else {
-        statusMessage.textContent = `Error exporting apps: ${result.error}`;
-        statusMessage.style.color = '#dc3545';
-    }
-});
+        return inScopeMatch && outScopeMatch && completedMatch && uncompletedMatch && searchMatch;
+    });
+
+    displayData(filteredData);
+}
 
 // Function to display data in the table
-async function displayData(data) {
-    // Fetch latest completed apps
-    await fetchCompletedApps();
-    
-    const tableBody = document.querySelector('#dataTable tbody');
-    tableBody.innerHTML = ''; // Clear existing rows
+function displayData(data) {
+    const tableBody = document.getElementById("dataTableBody");
+    tableBody.innerHTML = "";
 
-    let totalApps = 0;
-    let inScope = 0;
-    let outScope = 0;
-    let completedApps = completedAppsList.length;
-
-    const uniqueData = Array.from(new Map(
-        data.filter(item => item['Application Name'] !== 'Unassociated')
-            .map(item => [item['Application Name'], item])
-    ).values());
-
-    uniqueData.forEach(row => {
-        const tr = document.createElement('tr');
-        tr.classList.add('app-row');
-        const isCompleted = completedAppsList.includes(row['Application Name']);
+    data.forEach(item => {
+        const row = document.createElement("tr");
+        const isCompleted = completedAppsList.includes(item['Application Name']);
         
         if (isCompleted) {
-            tr.classList.add('completed-app');
+            row.classList.add('completed-row');
         }
-        
-        tr.dataset.appName = row['Application Name'];
-        tr.dataset.status = isCompleted ? 'completed' : 'uncompleted';
-        tr.dataset.scope = row['Assessment Scope'] || '';
 
-        // Create cells for each column
-        const appNameCell = document.createElement('td');
-        appNameCell.textContent = row['Application Name'] || '';
+        const appNameCell = document.createElement("td");
+        appNameCell.textContent = item['Application Name'];
         if (isCompleted) {
-            const badge = document.createElement('span');
-            badge.className = 'status-badge completed';
-            badge.textContent = '✓ Completed';
-            appNameCell.appendChild(badge);
+            const checkmark = document.createElement("span");
+            checkmark.textContent = " ✓";
+            checkmark.className = "checkmark";
+            appNameCell.appendChild(checkmark);
         }
-        tr.appendChild(appNameCell);
 
-        const scopeCell = document.createElement('td');
-        scopeCell.textContent = row['Assessment Scope'] || '';
-        tr.appendChild(scopeCell);
+        const scopeCell = document.createElement("td");
+        scopeCell.textContent = item['Assessment Scope'];
 
-        const dataCenterCell = document.createElement('td');
-        dataCenterCell.textContent = row['Data Center'] || ''; // Use the Data Center field directly
-        tr.appendChild(dataCenterCell);
+        const dataCenterCell = document.createElement("td");
+        dataCenterCell.textContent = item['Data Center'];
 
-        // Add action button cell
-        const buttonCell = document.createElement('td');
-        buttonCell.classList.add('action-cell');
+        const actionCell = document.createElement("td");
+        const actionButton = document.createElement("button");
         
-        const button = document.createElement('button');
-        button.textContent = isCompleted ? 'View Results' : 'Start Strategy Questions';
-        button.className = isCompleted ? 'view-results-btn' : 'start-questions-btn';
-        button.addEventListener('click', () => {
-            localStorage.setItem("appName", row['Application Name']);
-            ipcRenderer.send('open-strategy-questions-window', row['Application Name']);
-        });
-        buttonCell.appendChild(button);
-        tr.appendChild(buttonCell);
+        if (isCompleted) {
+            actionButton.textContent = "View Results";
+            actionButton.onclick = () => viewResults(item['Application Name']);
+        } else {
+            actionButton.textContent = "Start Strategy Questions";
+            actionButton.onclick = () => startStrategyQuestions(item['Application Name']);
+        }
+        actionCell.appendChild(actionButton);
 
-        // Update counters
-        totalApps++;
-        const scope = (row['Assessment Scope'] || '').trim();
-        if (scope === 'In Scope') inScope++;
-        if (scope === 'Out of Scope') outScope++;
+        row.appendChild(appNameCell);
+        row.appendChild(scopeCell);
+        row.appendChild(dataCenterCell);
+        row.appendChild(actionCell);
 
-        tableBody.appendChild(tr);
+        tableBody.appendChild(row);
     });
 
-    // Update metrics
-    document.getElementById('totalApps').textContent = totalApps;
-    document.getElementById('inScope').textContent = inScope;
-    document.getElementById('outScope').textContent = outScope;
-    document.getElementById('completedApps').textContent = completedApps;
+    updateMetrics(data);
+}
 
-    // Update completed apps metric styling
-    const completedMetric = document.querySelector('.metric:last-child');
-    if (completedMetric) {
-        completedMetric.classList.add('completed');
+// Function to update metrics
+function updateMetrics(data) {
+    const totalApps = data.length;
+    const inScopeCount = data.filter(item => item['Assessment Scope'] === "In Scope").length;
+    const outScopeCount = data.filter(item => item['Assessment Scope'] === "Out of Scope").length;
+    const completedCount = completedAppsList.length;
+
+    document.getElementById("totalApps").textContent = totalApps;
+    document.getElementById("inScope").textContent = inScopeCount;
+    document.getElementById("outScope").textContent = outScopeCount;
+    document.getElementById("completedApps").textContent = completedCount;
+}
+
+// Function to start strategy questions
+function startStrategyQuestions(appName) {
+    ipcRenderer.send('open-strategy-questions-window', appName);
+}
+
+// Function to view results
+async function viewResults(appName) {
+    const appData = await ipcRenderer.invoke('get-app-data', appName);
+    if (appData) {
+        // Handle viewing results (you can implement this based on your needs)
+        console.log('Viewing results for:', appData);
     }
-
-    filterTable(); // Apply any active filters
 }
 
-// Enhanced filter function
-function filterTable() {
-    const searchValue = document.getElementById('searchInput').value.toLowerCase();
-    const inScopeChecked = document.getElementById('inScopeCheckbox').checked;
-    const outScopeChecked = document.getElementById('outScopeCheckbox').checked;
-    const completedChecked = document.getElementById('completedCheckbox').checked;
-    const uncompletedChecked = document.getElementById('uncompletedCheckbox').checked;
-
-    const rows = document.querySelectorAll('.app-row');
-    rows.forEach(row => {
-        const appName = row.dataset.appName.toLowerCase();
-        const scope = row.dataset.scope;
-        const isCompleted = row.dataset.status === 'completed';
-
-        const matchesSearch = appName.includes(searchValue);
-        const matchesScope = (!inScopeChecked && !outScopeChecked) || 
-                           (inScopeChecked && scope === 'In Scope') ||
-                           (outScopeChecked && scope === 'Out of Scope');
-        const matchesStatus = (!completedChecked && !uncompletedChecked) ||
-                            (completedChecked && isCompleted) ||
-                            (uncompletedChecked && !isCompleted);
-
-        row.style.display = matchesSearch && matchesScope && matchesStatus ? '' : 'none';
-    });
-}
-
-// Event listeners for filters
-document.getElementById('searchInput').addEventListener('input', filterTable);
-document.getElementById('inScopeCheckbox').addEventListener('change', filterTable);
-document.getElementById('outScopeCheckbox').addEventListener('change', filterTable);
-document.getElementById('completedCheckbox').addEventListener('change', filterTable);
-document.getElementById('uncompletedCheckbox').addEventListener('change', filterTable);
-
-// Add event listener for app completion
-ipcRenderer.on('app-completed', async () => {
-    await refreshDisplay();
+// Event listener for file upload
+document.getElementById("uploadBtn").addEventListener("click", async () => {
+    try {
+        const result = await ipcRenderer.invoke('upload-file');
+        if (result.error) {
+            document.getElementById("statusMessage").textContent = result.error;
+            return;
+        }
+        currentData = result;
+        await fetchCompletedApps();
+        filterTable();
+        document.getElementById("statusMessage").textContent = "File uploaded successfully";
+    } catch (error) {
+        document.getElementById("statusMessage").textContent = "Error uploading file";
+        console.error('Error:', error);
+    }
 });
 
-// Add event listener for data refresh
+// Event listener for clearing data
+document.getElementById("clearStorageBtn").addEventListener("click", () => {
+    localStorage.clear();
+    currentData = [];
+    completedAppsList = [];
+    document.getElementById("statusMessage").textContent = "Data cleared successfully";
+    filterTable();
+});
+
+// Event listeners for filtering
+document.getElementById("searchInput").addEventListener("input", filterTable);
+document.getElementById("inScopeCheckbox").addEventListener("change", filterTable);
+document.getElementById("outScopeCheckbox").addEventListener("change", filterTable);
+document.getElementById("completedCheckbox").addEventListener("change", filterTable);
+document.getElementById("uncompletedCheckbox").addEventListener("change", filterTable);
+
+// Event listener for completed apps
+ipcRenderer.on('app-completed', async (event, appName) => {
+    await fetchCompletedApps();
+    filterTable();
+});
+
+// Event listener for data refresh
 ipcRenderer.on('refresh-data', async () => {
-    await refreshDisplay();
+    await fetchCompletedApps();
+    filterTable();
 });
 
-// Function to refresh the display
-async function refreshDisplay() {
-    // Fetch latest completed apps
-    await fetchCompletedApps();
-    
-    // Refresh the table if we have data
-    const storedData = localStorage.getItem('appToServerData');
-    if (storedData) {
-        await displayData(JSON.parse(storedData));
+// Export completed apps
+document.getElementById("exportBtn").addEventListener("click", async () => {
+    try {
+        const result = await ipcRenderer.invoke('export-completed-apps');
+        if (result.success) {
+            document.getElementById("statusMessage").textContent = `Exported to: ${result.path}`;
+        } else {
+            document.getElementById("statusMessage").textContent = `Export failed: ${result.error}`;
+        }
+    } catch (error) {
+        document.getElementById("statusMessage").textContent = "Error exporting data";
+        console.error('Export error:', error);
     }
-}
+});
 
-// Update the save function in strategy-questions.js to trigger a refresh
-function saveToFile() {
-    const initialTimePlacement = document.getElementById('initialTimePlacement').value;
-    const confirmedTimePlacement = document.getElementById('confirmedTimePlacement').textContent;
-
-    // ... existing score calculations ...
-
-    const outputData = {
-        applicationName: document.getElementById('applicationName').textContent,
-        initialTimePlacement,
-        confirmedTimePlacement,
-        answers: answersData,
-        summary: scores
-    };
-
-    // Send the data to the main process to save to a file
-    ipcRenderer.send('save-answers-to-file', outputData);
-    
-    // Request a refresh of the main window
-    ipcRenderer.invoke('refresh-main-window');
-}
-
-// Initialize UI on load
+// Initialize the display when the page loads
 document.addEventListener('DOMContentLoaded', async () => {
-    await fetchCompletedApps(); // Fetch completed apps on initial load
-    document.getElementById('statusMessage').textContent = "Please upload an Excel file.";
-    
-    // If we have stored data, display it
-    const storedData = localStorage.getItem('appToServerData');
-    if (storedData) {
-        await displayData(JSON.parse(storedData));
+    await fetchCompletedApps();
+    if (currentData.length > 0) {
+        filterTable();
     }
-    
-    // Add event listeners for filters
-    document.getElementById('searchInput').addEventListener('input', filterTable);
-    document.getElementById('inScopeCheckbox').addEventListener('change', filterTable);
-    document.getElementById('outScopeCheckbox').addEventListener('change', filterTable);
-    document.getElementById('completedCheckbox').addEventListener('change', filterTable);
-    document.getElementById('uncompletedCheckbox').addEventListener('change', filterTable);
 });
 
 // Listen for distributionThreshold value from the main process
 ipcRenderer.on('set-distribution-threshold', (event, threshold) => {
     document.getElementById('distributionThreshold').textContent = threshold;
-});
-
-// Add event listener for clear storage button
-document.getElementById('clearStorageBtn').addEventListener('click', () => {
-    // Clear local storage
-    localStorage.clear();
-    
-    // Clear the table
-    const tableBody = document.querySelector('#dataTable tbody');
-    if (tableBody) {
-        tableBody.innerHTML = '';
-    }
-    
-    // Reset metrics
-    document.getElementById('totalApps').textContent = '0';
-    document.getElementById('inScope').textContent = '0';
-    document.getElementById('outScope').textContent = '0';
-    document.getElementById('completedApps').textContent = '0';
-    
-    // Update status message
-    const statusMessage = document.getElementById('statusMessage');
-    statusMessage.textContent = 'Data cleared. Please upload an Excel file.';
-    statusMessage.style.color = '#28a745';
 });

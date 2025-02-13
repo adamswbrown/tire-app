@@ -19,7 +19,7 @@
     <!-- Search and filter container -->
     <div class="search-filter-container">
         <input type="text" id="searchInput" placeholder="Search applications..." />
-        <label><input type="checkbox" id="inScopeCheckbox" checked = "false"/> In Scope</label>
+        <label><input type="checkbox" id="inScopeCheckbox" /> In Scope</label>
         <label><input type="checkbox" id="outScopeCheckbox" /> Out of Scope</label>
         <label><input type="checkbox" id="completedCheckbox" /> Completed</label>
         <label><input type="checkbox" id="uncompletedCheckbox" /> Uncompleted</label>
@@ -68,69 +68,5 @@
     </div>
 
     <script src="renderer.js"></script>
-    <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            document.getElementById("inScopeCheckbox").checked = false;
-            document.getElementById("outScopeCheckbox").checked = false;
-            document.getElementById("completedCheckbox").checked = false;
-            document.getElementById("uncompletedCheckbox").checked = false;
-
-            // Add event listeners to checkboxes to filter the table
-            document.getElementById("inScopeCheckbox").addEventListener("change", filterTable);
-            document.getElementById("outScopeCheckbox").addEventListener("change", filterTable);
-            document.getElementById("completedCheckbox").addEventListener("change", filterTable);
-            document.getElementById("uncompletedCheckbox").addEventListener("change", filterTable);
-
-            // Assuming there's an event that signifies a questionnaire completion
-            document.addEventListener("questionnaireCompleted", refreshTableState);
-        });
-
-        function filterTable() {
-            const inScope = document.getElementById("inScopeCheckbox").checked;
-            const outScope = document.getElementById("outScopeCheckbox").checked;
-            const completed = document.getElementById("completedCheckbox").checked;
-            const uncompleted = document.getElementById("uncompletedCheckbox").checked;
-
-            // Fetch the updated data (assuming fetchData is a function that fetches the data)
-            const data = fetchData();
-
-            // Filter data based on the selected criteria
-            const filteredData = data.filter(item => {
-                const inScopeMatch = inScope ? item.assessmentScope === "In Scope" : true;
-                const outScopeMatch = outScope ? item.assessmentScope === "Out of Scope" : true;
-                const completedMatch = completed ? item.completed === true : true;
-                const uncompletedMatch = uncompleted ? item.completed === false : true;
-                return inScopeMatch && outScopeMatch && completedMatch && uncompletedMatch;
-            });
-
-            populateTable(filteredData);
-        }
-
-        // Assuming the function to populate the table is in renderer.js
-        // Update the function to use the correct value for Data Center
-        function populateTable(data) {
-            const tableBody = document.getElementById("dataTableBody");
-            tableBody.innerHTML = ""; // Clear existing rows
-
-            data.forEach(item => {
-                const row = document.createElement("tr");
-                row.innerHTML = `
-                    <td>${item.application}</td>
-                    <td>${item.assessmentScope}</td>
-                    <td>${item.dataCenter}</td> <!-- Corrected value -->
-                    <td>${item.action}</td>
-                `;
-                tableBody.appendChild(row);
-            });
-        }
-
-        // Function to refresh the table state
-        function refreshTableState() {
-            filterTable();
-        }
-
-        // Assuming there's an event that signifies a questionnaire completion
-        document.addEventListener("questionnaireCompleted", refreshTableState);
-    </script>
 </body>
 </html>

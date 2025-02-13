@@ -92,33 +92,26 @@ ipcMain.handle('upload-file', async () => {
 
             console.log('Raw Excel Headers:', rawData[0]); // Log the headers
 
-            // Define the expected headers and their mappings based on actual Excel structure
-            const headerMap = {
-                'Server Name': 'Server',
-                'Assessment Scope': 'Assessment Scope',
-                'Application Name': 'Application Name',
-                'Environment': 'Environment',
-                'Location': 'Data Center'  // Update based on actual Excel column name
-            };
-
             // Read the data with header mapping
             const data = xlsx.utils.sheet_to_json(worksheet, { 
                 range: 4,
                 defval: ''
             });
 
-            console.log('Sample Row:', data[0]); // Log first row to verify structure
+            console.log('Raw data sample:', data[0]); // Log first row to verify structure
 
             // Transform the data to use our desired field names
             const transformedData = data.map(row => ({
                 'Application Name': row['Application Name'] || '',
                 'Assessment Scope': row['Assessment Scope'] || '',
-                'Data Center': row['Location'] || '',  // Map from Location to Data Center
+                'Data Center': row['Data Center'] || row['DataCenter'] || row['DC Location'] || row['DC'] || '', // Try different possible column names
                 'Environment': row['Environment'] || '',
-                'Server': row['Server Name'] || ''
+                'Server': row['Server Name'] || row['Server'] || ''
             }));
 
-            console.log('Transformed Row:', transformedData[0]); // Log transformed data
+            // Log the first row of transformed data to verify mapping
+            console.log('Transformed data sample:', transformedData[0]);
+            console.log('Available columns in raw data:', Object.keys(data[0]));
 
             return transformedData;
         } else {
