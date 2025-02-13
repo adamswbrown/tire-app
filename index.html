@@ -7,64 +7,69 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <h1>Dr Migrate TIRE Questionnaire App</h1>
+    <div class="container">
+        <!-- Fixed content area -->
+        <div class="fixed-content">
+            <h1>Dr Migrate TIRE Questionnaire App</h1>
 
-    <!-- Upload Excel File -->
-    <div class="button-container">
-        <button id="uploadBtn">Upload Excel File</button>
-        <button id="clearStorageBtn" class="clear-btn">Clear Data</button>
-    </div>
-    <p id="statusMessage"></p>
+            <!-- Upload Excel File -->
+            <div class="button-container">
+                <button id="uploadBtn">Upload Excel File</button>
+                <button id="clearStorageBtn" class="clear-btn">Clear Data</button>
+            </div>
+            <p id="statusMessage"></p>
 
-    <!-- Search and filter container -->
-    <div class="search-filter-container">
-        <input type="text" id="searchInput" placeholder="Search applications..." />
-        <label><input type="checkbox" id="inScopeCheckbox" /> In Scope</label>
-        <label><input type="checkbox" id="outScopeCheckbox" /> Out of Scope</label>
-        <label><input type="checkbox" id="completedCheckbox" /> Completed</label>
-        <label><input type="checkbox" id="uncompletedCheckbox" /> Uncompleted</label>
-    </div>
+            <!-- Search and filter container -->
+            <div class="search-filter-container">
+                <input type="text" id="searchInput" placeholder="Search applications..." />
+                <label><input type="checkbox" id="inScopeCheckbox" /> In Scope</label>
+                <label><input type="checkbox" id="outScopeCheckbox" /> Out of Scope</label>
+                <label><input type="checkbox" id="completedCheckbox" /> Completed</label>
+                <label><input type="checkbox" id="uncompletedCheckbox" /> Uncompleted</label>
+            </div>
 
-    <!-- Dashboard metrics -->
-    <div class="dashboard">
-        <div class="metric">
-            <div class="metric-value" id="totalApps">0</div>
-            <div class="metric-label">Total Apps</div>
+            <!-- Dashboard metrics -->
+            <div class="dashboard">
+                <div class="metric">
+                    <div class="metric-value" id="totalApps">0</div>
+                    <div class="metric-label">Total Apps</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value" id="inScope">0</div>
+                    <div class="metric-label">In Scope</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value" id="outScope">0</div>
+                    <div class="metric-label">Out of Scope</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value" id="completedApps">0</div>
+                    <div class="metric-label">Completed Apps</div>
+                </div>
+            </div>
+
+            <!-- Export button -->
+            <div class="export-container">
+                <button id="exportBtn">Export Completed Apps</button>
+            </div>
         </div>
-        <div class="metric">
-            <div class="metric-value" id="inScope">0</div>
-            <div class="metric-label">In Scope</div>
-        </div>
-        <div class="metric">
-            <div class="metric-value" id="outScope">0</div>
-            <div class="metric-label">Out of Scope</div>
-        </div>
-        <div class="metric">
-            <div class="metric-value" id="completedApps">0</div>
-            <div class="metric-label">Completed Apps</div>
-        </div>
-    </div>
 
-    <!-- Export button -->
-    <div class="export-container">
-        <button id="exportBtn">Export Completed Apps</button>
-    </div>
-
-    <!-- Table for displaying application data -->
-    <div class="table-container">
-        <table id="dataTable">
-            <thead>
-                <tr>
-                    <th>Application</th>
-                    <th>Assessment Scope</th>
-                    <th>Data Center</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody id="dataTableBody">
-                <!-- Rows will be dynamically populated -->
-            </tbody>
-        </table>
+        <!-- Scrollable table area -->
+        <div class="table-container">
+            <table id="dataTable">
+                <thead>
+                    <tr>
+                        <th>Application</th>
+                        <th>Assessment Scope</th>
+                        <th>Data Center</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="dataTableBody">
+                    <!-- Rows will be dynamically populated -->
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <script src="renderer.js"></script>

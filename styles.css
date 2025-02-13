@@ -1,39 +1,48 @@
-/* Body styling */
-body {
-    font-family: Arial, sans-serif;
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
+/* Reset and base styles */
+* {
+    box-sizing: border-box;
     margin: 0;
     padding: 0;
 }
 
-/* Main container */
-.container {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
+body {
+    font-family: Arial, sans-serif;
+    line-height: 1.6;
     padding: 20px;
-    overflow: hidden;
+    height: 100vh;
 }
 
-/* Title styling */
+/* Page layout */
+.container {
+    height: calc(100vh - 40px);
+    display: flex;
+    flex-direction: column;
+}
+
+/* Header section */
 h1 {
     margin-bottom: 20px;
 }
 
-/* Dashboard and controls area */
-.controls-area {
-    flex-shrink: 0;
-}
-
-/* Button styling */
-button {
-    padding: 10px 20px;
+/* Controls section */
+.fixed-content {
     margin-bottom: 20px;
 }
 
-/* Dashboard metrics styling */
+/* Button styles */
+.button-container {
+    margin-bottom: 15px;
+}
+
+button {
+    padding: 8px 16px;
+    margin-right: 10px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+/* Dashboard metrics */
 .dashboard {
     display: flex;
     gap: 20px;
@@ -41,13 +50,107 @@ button {
 }
 
 .metric {
-    background-color: #f1f1f1;
-    padding: 20px;
-    text-align: center;
-    border-radius: 8px;
     flex: 1;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    text-align: center;
 }
 
+/* Search and filters */
+.search-filter-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+/* Table Container - This is the key part */
+.table-container {
+    flex: 1;
+    min-height: 0; /* Critical for nested flex scrolling */
+    overflow: auto;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    background: white;
+    position: relative; /* For sticky header */
+}
+
+/* Table Styles */
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+/* Header Styles */
+thead th {
+    position: sticky;
+    top: 0;
+    background: #f8f9fa;
+    z-index: 1;
+    padding: 12px;
+    border: 1px solid #dee2e6;
+    text-align: left;
+    font-weight: bold;
+}
+
+/* Cell Styles */
+td {
+    padding: 12px;
+    border: 1px solid #dee2e6;
+    background: white;
+}
+
+/* Hover effect */
+tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+/* Completed row styling */
+.completed-app {
+    background-color: #d4edda;
+}
+
+/* Action buttons */
+.action-cell button {
+    padding: 6px 12px;
+    border-radius: 4px;
+    background: white;
+    border: 1px solid #ddd;
+    cursor: pointer;
+}
+
+/* Strategy Questions specific styles */
+#strategyQuestionsTable {
+    width: 100%;
+}
+
+#strategyQuestionsTable th,
+#strategyQuestionsTable td {
+    padding: 8px;
+    text-align: left;
+    border: 1px solid #dee2e6;
+}
+
+/* Column widths for strategy questions */
+#strategyQuestionsTable th:nth-child(1) { width: 70px; }  /* TIRE */
+#strategyQuestionsTable th:nth-child(2) { width: 100px; } /* Characteristics */
+#strategyQuestionsTable th:nth-child(3) { width: 100px; } /* Client Answer */
+#strategyQuestionsTable th:nth-child(4) { width: 70px; }  /* Client Score */
+#strategyQuestionsTable th:nth-child(5) { width: 120px; } /* Weight */
+#strategyQuestionsTable th:nth-child(6) { width: 250px; } /* Question */
+#strategyQuestionsTable th:nth-child(7) { width: 100px; } /* Category */
+#strategyQuestionsTable th:nth-child(8) { width: 180px; } /* Extended Answer */
+#strategyQuestionsTable th:nth-child(9) { width: 250px; } /* Sample Drivers */
+
+/* Utility classes */
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+
+/* Dashboard metrics styling */
 .metric-value {
     font-size: 24px;
     font-weight: bold;
@@ -56,27 +159,6 @@ button {
 .metric-label {
     font-size: 14px;
     color: #666;
-}
-
-/* Search and filter container */
-.search-filter-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 15px;
-    margin: 20px 0;
-    padding: 15px;
-    background-color: #f8f9fa;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-}
-
-/* Search input styling */
-#searchInput {
-    padding: 8px;
-    width: 250px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 14px;
 }
 
 /* Checkbox container styling */
@@ -91,32 +173,11 @@ button {
     font-size: 14px;
 }
 
-/* Table container styling */
-.table-container {
-    flex: 1;
-    overflow: auto;
-    margin-top: 20px;
-    border: 1px solid #dee2e6;
-    border-radius: 4px;
-    background-color: white;
-}
-
 /* Table styling */
 #dataTable {
     width: 100%;
     border-collapse: collapse;
     background-color: white;
-}
-
-/* Table header */
-#dataTable thead th {
-    position: sticky;
-    top: 0;
-    background-color: #f8f9fa;
-    z-index: 2;
-    padding: 12px;
-    border: 1px solid #dee2e6;
-    text-align: left;
 }
 
 /* Table body */
@@ -154,7 +215,7 @@ button {
     background-color: #f8f9fa;
 }
 
-/* Action button styling */
+/* Start questions button styling */
 .start-questions-btn {
     padding: 6px 12px;
     background-color: #007bff;
@@ -196,21 +257,6 @@ tr.completed-app:nth-child(even) {
 .status-badge.completed {
     background-color: #28a745;
     color: white;
-}
-
-/* Action button styling */
-.action-cell button {
-    padding: 6px 12px;
-    border-radius: 4px;
-    border: 1px solid #ddd;
-    background-color: white;
-    cursor: pointer;
-    font-size: 14px;
-}
-
-.view-results-btn {
-    color: #28a745;
-    border-color: #28a745 !important;
 }
 
 /* Completed checkmark styling */
@@ -655,19 +701,6 @@ tr[style*="background-color: #28a745"] .distribution-column {
     flex-direction: column;
 }
 
-/* Table container styling */
-.table-container {
-    flex: 1;
-    border: 1px solid #dee2e6;
-    border-radius: 4px;
-    margin-top: 20px;
-    background-color: white;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    height: calc(100vh - 350px); /* Adjusted height */
-}
-
 /* Table wrapper */
 #strategyQuestionsTableWrapper {
     flex: 1;
@@ -675,41 +708,6 @@ tr[style*="background-color: #28a745"] .distribution-column {
     width: 100%;
     padding-bottom: 20px; /* Add some padding at the bottom */
 }
-
-/* Table styling */
-#strategyQuestionsTable {
-    width: 100%;
-    border-collapse: collapse;
-    background-color: white;
-}
-
-/* Column widths - adjusted for better fit */
-#strategyQuestionsTable th:nth-child(1),
-#strategyQuestionsTable td:nth-child(1) { width: 70px; } /* TIRE */
-
-#strategyQuestionsTable th:nth-child(2),
-#strategyQuestionsTable td:nth-child(2) { width: 100px; } /* Characteristics */
-
-#strategyQuestionsTable th:nth-child(3),
-#strategyQuestionsTable td:nth-child(3) { width: 100px; } /* Client Answer */
-
-#strategyQuestionsTable th:nth-child(4),
-#strategyQuestionsTable td:nth-child(4) { width: 70px; } /* Client Score */
-
-#strategyQuestionsTable th:nth-child(5),
-#strategyQuestionsTable td:nth-child(5) { width: 120px; } /* Weight */
-
-#strategyQuestionsTable th:nth-child(6),
-#strategyQuestionsTable td:nth-child(6) { width: 250px; } /* Question */
-
-#strategyQuestionsTable th:nth-child(7),
-#strategyQuestionsTable td:nth-child(7) { width: 100px; } /* Category */
-
-#strategyQuestionsTable th:nth-child(8),
-#strategyQuestionsTable td:nth-child(8) { width: 180px; } /* Extended Answer */
-
-#strategyQuestionsTable th:nth-child(9),
-#strategyQuestionsTable td:nth-child(9) { width: 250px; } /* Sample Drivers */
 
 /* Cell styling */
 #strategyQuestionsTable th,
