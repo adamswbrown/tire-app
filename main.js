@@ -83,37 +83,67 @@ ipcMain.handle('upload-file', async () => {
         const worksheet = workbook.Sheets[sheetName];
 
         if (worksheet) {
-            // First, let's read the raw data to see the actual headers
-            const rawData = xlsx.utils.sheet_to_json(worksheet, { 
-                header: 1,  // Get array of arrays with raw values
-                range: 4,   // Start from row 4
-                defval: ''
+            // Get the range of the worksheet
+            const range = xlsx.utils.decode_range(worksheet['!ref']);
+            
+            // Read headers from row 4 (1-based)
+            const headers = [];
+            for (let C = range.s.c; C <= range.e.c; C++) {
+                const headerCell = worksheet[xlsx.utils.encode_cell({r: 3, c: C})]; // row 4 is index 3
+                if (headerCell) headers[C] = headerCell.v;
+            }
+            
+            console.log('All Excel Headers:', headers);
+
+            // Find the correct column indices
+            const serverIndex = headers.findIndex(h => h === 'Server');
+            const scopeIndex = headers.findIndex(h => h === 'Assessment Scope');
+            const appNameIndex = headers.findIndex(h => h === 'Application Name');
+            const envIndex = headers.findIndex(h => h === 'Environment');
+            const dataCenterIndex = headers.findIndex(h => h === 'Data Center');
+
+            console.log('Column indices:', {
+                server: serverIndex,
+                scope: scopeIndex,
+                appName: appNameIndex,
+                env: envIndex,
+                dataCenter: dataCenterIndex
             });
 
-            console.log('Raw Excel Headers:', rawData[0]); // Log the headers
+            // Read all rows starting from row 5
+            const rows = [];
+            for (let R = 4; R <= range.e.r; R++) { // Start from row 5 (index 4)
+                const row = {};
+                for (let C = 0; C < headers.length; C++) {
+                    const cell = worksheet[xlsx.utils.encode_cell({r: R, c: C})];
+                    row[headers[C]] = cell ? cell.v : '';
+                }
+                rows.push(row);
+            }
 
-            // Read the data with header mapping
-            const data = xlsx.utils.sheet_to_json(worksheet, { 
-                range: 4,
-                defval: ''
+            console.log('First row raw data:', rows[0]);
+
+            // Transform the data using the correct column headers
+            const transformedData = rows.map(row => {
+                return {
+                    'Application Name': row['Application Name'] || '',
+                    'Assessment Scope': row['Assessment Scope'] || '',
+                    'Data Center': row['Data Center'] || '',
+                    'Environment': row['Environment'] || '',
+                    'Server': row['Server'] || ''
+                };
             });
 
-            console.log('Raw data sample:', data[0]); // Log first row to verify structure
+            // Filter out rows where Application Name is empty or 'Unassociated'
+            const filteredData = transformedData.filter(row => 
+                row['Application Name'] && 
+                row['Application Name'] !== 'Unassociated'
+            );
 
-            // Transform the data to use our desired field names
-            const transformedData = data.map(row => ({
-                'Application Name': row['Application Name'] || '',
-                'Assessment Scope': row['Assessment Scope'] || '',
-                'Data Center': row['Data Center'] || row['DataCenter'] || row['DC Location'] || row['DC'] || '', // Try different possible column names
-                'Environment': row['Environment'] || '',
-                'Server': row['Server Name'] || row['Server'] || ''
-            }));
+            console.log('Sample transformed row:', filteredData[0]);
+            console.log('Total rows after filtering:', filteredData.length);
 
-            // Log the first row of transformed data to verify mapping
-            console.log('Transformed data sample:', transformedData[0]);
-            console.log('Available columns in raw data:', Object.keys(data[0]));
-
-            return transformedData;
+            return filteredData;
         } else {
             return { error: 'Sheet "App-to-Server List" not found in the Excel file.' };
         }
