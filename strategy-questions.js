@@ -137,10 +137,11 @@ function generateCategoryButtons() {
         // Event listener to filter table based on clicked category
         button.addEventListener('click', () => {
             // Remove active state from all buttons
-            document.querySelectorAll('.category-button').forEach(btn => btn.classList.remove('active-filter'));
+            document.querySelectorAll('.category-button').forEach(btn => btn.classList.remove('active'));
+            document.querySelector('.reset-button')?.classList.remove('active');
 
             // Add active state to the clicked button
-            button.classList.add('active-filter');
+            button.classList.add('active');
 
             // Filter the questions table by the selected category
             filterByCategory(category);
@@ -151,9 +152,15 @@ function generateCategoryButtons() {
 
     // Add reset button to clear filters
     const resetButton = document.createElement('button');
-    resetButton.className = 'reset-button';
+    resetButton.className = 'category-button reset-button';
     resetButton.textContent = 'Reset Filters';
-    resetButton.addEventListener('click', resetTable);
+    resetButton.addEventListener('click', () => {
+        resetTable();
+        // Remove active state from all category buttons
+        document.querySelectorAll('.category-button').forEach(btn => btn.classList.remove('active'));
+        // Add active state to reset button
+        resetButton.classList.add('active');
+    });
     container.appendChild(resetButton);
 }
 
@@ -175,9 +182,6 @@ function resetTable() {
     document.querySelectorAll('#strategyQuestionsTable tbody tr').forEach(row => {
         row.style.display = ''; // Show all rows
     });
-
-    // Remove active state from all category buttons
-    document.querySelectorAll('.category-button').forEach(button => button.classList.remove('active-filter'));
 }
 
 // Call generateCategoryButtons after loading the questions data
@@ -419,10 +423,89 @@ function updateDistribution(clientScore, totalScore, category) {
 // Event listener for the save button
 document.getElementById('saveButton').addEventListener('click', saveToFile);
 
-//Listener for the Explainer button
-
+// Event listener for the explanation button
 document.getElementById('explanationBtn').addEventListener('click', () => {
-    ipcRenderer.send('open-calculations-explained');
+    // Create and show the explanation window
+    const explanationWindow = window.open('', 'Calculations Explained', 'width=600,height=400');
+    
+    // Generate the explanation content
+    const explanationContent = `
+        <html>
+        <head>
+            <title>Calculations Explained</title>
+            <style>
+                body {
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+                    line-height: 1.6;
+                    padding: 20px;
+                    max-width: 800px;
+                    margin: 0 auto;
+                }
+                h1, h2 { color: #0F192E; }
+                .section { margin-bottom: 20px; }
+                .formula { 
+                    background: #f8f9fa;
+                    padding: 10px;
+                    border-radius: 4px;
+                    margin: 10px 0;
+                }
+                .note {
+                    background: #fff3cd;
+                    padding: 10px;
+                    border-radius: 4px;
+                    margin: 10px 0;
+                }
+            </style>
+        </head>
+        <body>
+            <h1>TIRE Calculations Explained</h1>
+            
+            <div class="section">
+                <h2>Score Calculation</h2>
+                <p>Each question's score is calculated based on the answer and weight:</p>
+                <div class="formula">
+                    <strong>Yes:</strong> Full weight value<br>
+                    <strong>Partial/Unsure:</strong> Half of weight value (rounded)<br>
+                    <strong>No:</strong> 0 points
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2>Distribution Calculation</h2>
+                <p>For each TIRE category (Tolerate, Invest, Replace, Eliminate):</p>
+                <div class="formula">
+                    Distribution = (Total Client Score / Total Possible Score) × 100%
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2>TIRE Placement</h2>
+                <p>The confirmed TIRE placement is determined by:</p>
+                <ol>
+                    <li>Calculating distribution for each category</li>
+                    <li>Finding the category with the highest distribution</li>
+                    <li>Checking if the highest distribution meets or exceeds the threshold (${distributionThreshold}%)</li>
+                </ol>
+                <div class="note">
+                    If no category meets the threshold, the result will show as "Below Threshold"
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2>Weight Scale</h2>
+                <p>Questions are weighted on a scale of 1-5:</p>
+                <ul>
+                    <li>1: Lowest importance</li>
+                    <li>5: Highest importance</li>
+                </ul>
+            </div>
+        </body>
+        </html>
+    `;
+    
+    // Write the content to the window
+    explanationWindow.document.write(explanationContent);
+    explanationWindow.document.close();
 });
 
 // Listen for the distribution threshold sent from the main process

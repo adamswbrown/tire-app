@@ -45,22 +45,21 @@ function displayData(data) {
             row.classList.add('completed-row');
         }
 
+        // Application Name cell
         const appNameCell = document.createElement("td");
         appNameCell.textContent = item['Application Name'];
-        if (isCompleted) {
-            const checkmark = document.createElement("span");
-            checkmark.textContent = " ✓";
-            checkmark.className = "checkmark";
-            appNameCell.appendChild(checkmark);
-        }
 
+        // Assessment Scope cell
         const scopeCell = document.createElement("td");
         scopeCell.textContent = item['Assessment Scope'];
 
+        // Data Center cell
         const dataCenterCell = document.createElement("td");
         dataCenterCell.textContent = item['Data Center'];
 
+        // Action cell
         const actionCell = document.createElement("td");
+        actionCell.className = 'action-cell';
         const actionButton = document.createElement("button");
         
         if (isCompleted) {
