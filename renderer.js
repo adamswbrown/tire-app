@@ -66,7 +66,6 @@ async function displayData(data) {
         tr.classList.add('app-row');
         const isCompleted = completedAppsList.includes(row['Application Name']);
         
-        // Add completed-app class for styling
         if (isCompleted) {
             tr.classList.add('completed-app');
         }
@@ -75,24 +74,24 @@ async function displayData(data) {
         tr.dataset.status = isCompleted ? 'completed' : 'uncompleted';
         tr.dataset.scope = row['Assessment Scope'] || '';
 
-        const fields = ['Application Name', 'Assessment Scope', 'Data Center'];
-        const scope = (row['Assessment Scope'] || '').trim();
+        // Create cells for each column
+        const appNameCell = document.createElement('td');
+        appNameCell.textContent = row['Application Name'] || '';
+        if (isCompleted) {
+            const badge = document.createElement('span');
+            badge.className = 'status-badge completed';
+            badge.textContent = '✓ Completed';
+            appNameCell.appendChild(badge);
+        }
+        tr.appendChild(appNameCell);
 
-        totalApps++;
-        if (scope === 'In Scope') inScope++;
-        if (scope === 'Out of Scope') outScope++;
+        const scopeCell = document.createElement('td');
+        scopeCell.textContent = row['Assessment Scope'] || '';
+        tr.appendChild(scopeCell);
 
-        fields.forEach(field => {
-            const td = document.createElement('td');
-            td.textContent = row[field] || '';
-            if (field === 'Application Name' && isCompleted) {
-                const badge = document.createElement('span');
-                badge.className = 'status-badge completed';
-                badge.textContent = '✓ Completed';
-                td.appendChild(badge);
-            }
-            tr.appendChild(td);
-        });
+        const dataCenterCell = document.createElement('td');
+        dataCenterCell.textContent = row['Data Center'] || ''; // Use the Data Center field directly
+        tr.appendChild(dataCenterCell);
 
         // Add action button cell
         const buttonCell = document.createElement('td');
@@ -107,6 +106,12 @@ async function displayData(data) {
         });
         buttonCell.appendChild(button);
         tr.appendChild(buttonCell);
+
+        // Update counters
+        totalApps++;
+        const scope = (row['Assessment Scope'] || '').trim();
+        if (scope === 'In Scope') inScope++;
+        if (scope === 'Out of Scope') outScope++;
 
         tableBody.appendChild(tr);
     });
