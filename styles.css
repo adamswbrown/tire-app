@@ -635,7 +635,7 @@ tr.completed-row .action-cell button:hover {
     text-align: right;
     color: #000000 !important;
     mix-blend-mode: difference;
-    text-shadow: 0 0 2px rgba(255, 255, 255, 0.8);
+    text-shadow: 0 0 2px rgba(244, 240, 240, 0.8);
 }
 
 /* Remove any inherited background colors from rows */
@@ -1035,9 +1035,9 @@ tr.completed-row .action-cell button:hover {
     display: block;
     width: 100%;
     text-align: center;
-    color: #000000 !important;
+    color: #ffffff !important;
     mix-blend-mode: difference;
-    text-shadow: 0 0 2px rgba(255, 255, 255, 0.8);
+    text-shadow: 0 0 2px rgba(0, 0, 0, 0.8);
     padding: 0;
 }
 
