@@ -245,14 +245,30 @@ ipcMain.on('open-strategy-questions-window', (event, appName) => {
 // Modify the markAppCompleted function to store full application data
 function markAppCompleted(appName, initialPlacement, confirmedPlacement, confirmedPlacementSet, fullData) {
     const existingAppIndex = completedApps.findIndex(app => app.name === appName);
+    const previousPlacement = existingAppIndex !== -1 ? 
+        (completedApps[existingAppIndex].confirmedTIREPlacement !== "Not Set" ? 
+            completedApps[existingAppIndex].confirmedTIREPlacement : 
+            completedApps[existingAppIndex].initialTIREPlacement) : null;
+
     const appData = {
         name: appName,
         completedOn: new Date().toISOString(),
         initialTIREPlacement: initialPlacement || "Not Set",
         confirmedTIREPlacement: confirmedPlacement || "Not Set",
         confirmedPlacementSet,
+        previousTIREPlacement: previousPlacement,
         answers: fullData.answers,
-        summary: fullData.summary
+        summary: fullData.summary,
+        assessmentHistory: {
+            previousPlacements: existingAppIndex !== -1 ? 
+                [...(completedApps[existingAppIndex].assessmentHistory?.previousPlacements || []), 
+                    { 
+                        date: new Date().toISOString(),
+                        previousStatus: previousPlacement,
+                        newStatus: confirmedPlacement !== "Not Set" ? confirmedPlacement : initialPlacement
+                    }
+                ] : []
+        }
     };
 
     if (existingAppIndex !== -1) {
@@ -423,18 +439,41 @@ function exportCompletedAppsToExcel() {
         const wsData = [];
 
         // Add headers
-        wsData.push(['Application Name', 'TIRE Status']);
+        wsData.push(['Application Name', 'Current TIRE Status', 'Previous TIRE Status', 'Status Change History']);
 
         // Add data rows
         completedApps.forEach(app => {
-            const placement = app.confirmedTIREPlacement !== "Not Set" 
+            const currentPlacement = app.confirmedTIREPlacement !== "Not Set" 
                 ? app.confirmedTIREPlacement 
                 : app.initialTIREPlacement;
-            wsData.push([app.name, placement]);
+            
+            // Create status change history string
+            const statusHistory = app.assessmentHistory?.previousPlacements
+                ?.map(change => {
+                    const date = new Date(change.date).toLocaleDateString();
+                    return `${date}: ${change.previousStatus || 'Initial'} → ${change.newStatus}`;
+                })
+                .join('\n') || '';
+
+            wsData.push([
+                app.name, 
+                currentPlacement,
+                app.previousTIREPlacement || 'N/A',
+                statusHistory
+            ]);
         });
 
         // Create worksheet from data
         const worksheet = xlsx.utils.aoa_to_sheet(wsData);
+
+        // Set column widths
+        const colWidths = [
+            { wch: 30 }, // Application Name
+            { wch: 20 }, // Current TIRE Status
+            { wch: 20 }, // Previous TIRE Status
+            { wch: 50 }  // Status Change History
+        ];
+        worksheet['!cols'] = colWidths;
 
         // Add worksheet to workbook
         xlsx.utils.book_append_sheet(workbook, worksheet, 'Completed Apps');
@@ -523,6 +562,18 @@ ipcMain.handle('store-uploaded-data', (event, data) => {
 // Get uploaded data
 ipcMain.handle('get-uploaded-data', () => {
     return uploadedData;
+});
+
+// Handle returning to start screen
+ipcMain.on('return-to-start', () => {
+    // Close main window
+    if (mainWindow) {
+        mainWindow.close();
+        mainWindow = null;
+    }
+    
+    // Create new start window
+    createStartWindow();
 });
 
 app.whenReady().then(() => {

@@ -172,13 +172,74 @@ async function viewResults(appName) {
     ipcRenderer.send('open-strategy-questions-window', appName);
 }
 
-// Event listener for clearing data
+// Function to show the clear data modal
+function showClearDataModal() {
+    const modal = document.getElementById('clearDataModal');
+    modal.classList.add('show');
+}
+
+// Function to hide the clear data modal
+function hideClearDataModal() {
+    const modal = document.getElementById('clearDataModal');
+    modal.classList.remove('show');
+}
+
+// Function to clear all data and return to start screen
+async function clearAllData() {
+    try {
+        // Clear local storage
+        localStorage.clear();
+        
+        // Reset application state
+        currentData = [];
+        completedAppsList = [];
+        
+        // Clear the table and metrics
+        displayData([]);
+        updateMetrics([]);
+        
+        // Show status message
+        document.getElementById("statusMessage").textContent = "Data cleared successfully";
+        
+        // Hide the modal
+        hideClearDataModal();
+        
+        // Return to start screen
+        ipcRenderer.send('return-to-start');
+    } catch (error) {
+        console.error('Error clearing data:', error);
+        document.getElementById("statusMessage").textContent = "Error clearing data";
+    }
+}
+
+// Event listener for clearing data button
 document.getElementById("clearStorageBtn").addEventListener("click", () => {
-    localStorage.clear();
-    currentData = [];
-    completedAppsList = [];
-    document.getElementById("statusMessage").textContent = "Data cleared successfully";
-    filterTable();
+    showClearDataModal();
+});
+
+// Event listeners for modal buttons
+document.addEventListener('DOMContentLoaded', () => {
+    // Cancel button hides the modal
+    const cancelButton = document.getElementById('cancelClearBtn');
+    if (cancelButton) {
+        cancelButton.addEventListener('click', hideClearDataModal);
+    }
+
+    // Confirm button triggers the clear
+    const confirmButton = document.getElementById('confirmClearBtn');
+    if (confirmButton) {
+        confirmButton.addEventListener('click', clearAllData);
+    }
+
+    // Close modal when clicking outside
+    const modal = document.getElementById('clearDataModal');
+    if (modal) {
+        modal.addEventListener('click', (event) => {
+            if (event.target === modal) {
+                hideClearDataModal();
+            }
+        });
+    }
 });
 
 // Event listeners for filtering

@@ -1,7 +1,8 @@
 [
     {
       "config": {
-        "distributionThreshold": 80
+        "distributionThreshold": 80,
+        "tiebreakThreshold": 3
     },
 
         "time": "Tolerate",

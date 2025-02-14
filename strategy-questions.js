@@ -8,6 +8,7 @@ let totalQuestions = 0;
 let answeredQuestions = 0;
 
 let distributionThreshold = 80; // Default threshold, if not found in JSON
+let tiebreakThreshold = 3; // Default threshold for considering scores as ties
 
 async function loadStrategyQuestions() {
     try {
@@ -18,9 +19,14 @@ async function loadStrategyQuestions() {
         const data = await response.json();
         console.log("Strategy questions loaded:", data);
 
-        // Extract and set the threshold
-        if (data.length > 0 && data[0].config && data[0].config.distributionThreshold) {
-            distributionThreshold = data[0].config.distributionThreshold;
+        // Extract and set the thresholds
+        if (data.length > 0 && data[0].config) {
+            if (data[0].config.distributionThreshold) {
+                distributionThreshold = data[0].config.distributionThreshold;
+            }
+            if (data[0].config.tiebreakThreshold) {
+                tiebreakThreshold = data[0].config.tiebreakThreshold;
+            }
         }
 
         strategyQuestions = data; // Store the rest of the data as strategy questions
@@ -232,70 +238,90 @@ function updateClientScores() {
         if (scores[category]) {
             const weight = parseInt(row.weight) || 0;
             scores[category].score += parseInt(row.clientScore) || 0;
-            scores[category].total += weight; // Add weight to total regardless of answer
+            scores[category].total += weight;
         }
     });
 
-    // Calculate distributions and find max
+    // Calculate distributions and find categories above threshold
+    let categoriesAboveThreshold = [];
     let maxDistribution = 0;
     let maxCategory = '';
     
     Object.entries(scores).forEach(([category, data]) => {
-        // Ensure we're working with integers
         const score = parseInt(data.score) || 0;
         const total = parseInt(data.total) || 0;
-        // Calculate distribution as a percentage
         const distribution = total > 0 ? Math.round((score / total) * 100) : 0;
         
+        // Store distribution in the scores object
+        scores[category].distribution = distribution;
+        
+        // Track the highest distribution regardless of threshold
         if (distribution > maxDistribution) {
             maxDistribution = distribution;
             maxCategory = category;
+        }
+        
+        if (distribution >= distributionThreshold) {
+            categoriesAboveThreshold.push({ category, distribution });
         }
     });
 
     // Update summary table
     const summaryTableBody = document.querySelector('#summaryTable tbody');
-    summaryTableBody.innerHTML = ''; // Clear existing rows
+    summaryTableBody.innerHTML = '';
 
     Object.entries(scores).forEach(([category, data]) => {
-        const score = parseInt(data.score) || 0;
-        const total = parseInt(data.total) || 0;
-        const distribution = total > 0 ? Math.round((score / total) * 100) : 0;
-        
         const row = document.createElement('tr');
+        const distribution = data.distribution;
         
         row.innerHTML = `
             <td>${category.charAt(0).toUpperCase() + category.slice(1)}</td>
-            <td>${score}</td>
-            <td>${total}</td>
+            <td>${data.score}</td>
+            <td>${data.total}</td>
             <td class="distribution-column">${distribution}%</td>
         `;
 
-        // Apply highlighting if distribution meets threshold
         if (distribution >= distributionThreshold) {
-            row.style.backgroundColor = '#28a745';
-            row.style.color = 'white';
+            row.classList.add('meets-threshold');
         }
 
         summaryTableBody.appendChild(row);
     });
 
-    // Update confirmed placement
+    // Handle TIRE placement logic
     const confirmedPlacementElement = document.getElementById('confirmedTimePlacement');
     if (confirmedPlacementElement) {
-        if (maxDistribution >= distributionThreshold) {
-            const displayCategory = maxCategory.charAt(0).toUpperCase() + maxCategory.slice(1);
-            confirmedPlacementElement.textContent = displayCategory;
-            confirmedPlacementElement.style.backgroundColor = '#d2ebd2';
-            confirmedPlacementElement.style.color = '#357a38';
-            confirmedPlacementElement.style.borderColor = '#357a38';
-            confirmedPlacementElement.classList.remove('below-threshold');
-        } else {
+        if (categoriesAboveThreshold.length === 0) {
+            // No categories above threshold - show the highest distribution
             confirmedPlacementElement.textContent = `Below Threshold (${maxDistribution}%)`;
             confirmedPlacementElement.style.backgroundColor = '#fff3cd';
             confirmedPlacementElement.style.color = '#856404';
             confirmedPlacementElement.style.borderColor = '#ffeeba';
             confirmedPlacementElement.classList.add('below-threshold');
+        } else if (categoriesAboveThreshold.length === 1) {
+            // Single category above threshold
+            updateConfirmedPlacement(categoriesAboveThreshold[0].category);
+        } else {
+            // Multiple categories above threshold
+            const maxDist = Math.max(...categoriesAboveThreshold.map(c => c.distribution));
+            const highestCategories = categoriesAboveThreshold.filter(c => {
+                // Consider categories within tiebreakThreshold% of the highest as ties
+                return maxDist - c.distribution <= tiebreakThreshold;
+            });
+
+            if (highestCategories.length === 1) {
+                // Clear winner by percentage
+                updateConfirmedPlacement(highestCategories[0].category);
+            } else {
+                // Check for "Invest" category
+                const investCategory = highestCategories.find(c => c.category === 'invest');
+                if (investCategory) {
+                    updateConfirmedPlacement('invest');
+                } else {
+                    // Show tiebreaker modal for manual selection
+                    showTiebreakerModal(highestCategories);
+                }
+            }
         }
     }
 }
@@ -805,4 +831,79 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+
+// Function to show the tiebreaker modal
+function showTiebreakerModal(categories) {
+    const modal = document.createElement('div');
+    modal.className = 'modal show';
+    modal.id = 'tiebreakerModal';
+    
+    const modalContent = `
+        <div class="modal-content">
+            <h2>Multiple Categories Above Threshold</h2>
+            <p>Multiple categories have met or exceeded the distribution threshold (${distributionThreshold}%) 
+               and are within the tiebreaker threshold of ${tiebreakThreshold}% of each other.</p>
+            
+            <div class="category-scores">
+                ${categories.map(c => `
+                    <div class="category-score">
+                        <strong>${c.category.charAt(0).toUpperCase() + c.category.slice(1)}:</strong> ${c.distribution}%
+                    </div>
+                `).join('')}
+            </div>
+
+            <p>Please select the final TIRE placement:</p>
+            
+            <div class="category-buttons">
+                ${categories.map(c => `
+                    <button class="category-select-btn" data-category="${c.category}">
+                        ${c.category.toUpperCase()}
+                    </button>
+                `).join('')}
+            </div>
+            
+            <div class="tiebreaker-info">
+                <p><strong>Tiebreaker Rules Applied:</strong></p>
+                <ul>
+                    <li>Categories within ${tiebreakThreshold}% are considered ties</li>
+                    <li>"Invest" category is weighted more heavily</li>
+                    <li>Initial TIRE placement is considered as a tiebreaker</li>
+                </ul>
+            </div>
+        </div>
+    `;
+    
+    modal.innerHTML = modalContent;
+    document.body.appendChild(modal);
+
+    // Add event listeners for category selection
+    const buttons = modal.querySelectorAll('.category-select-btn');
+    buttons.forEach(button => {
+        button.addEventListener('click', () => {
+            const selectedCategory = button.dataset.category;
+            updateConfirmedPlacement(selectedCategory);
+            modal.remove();
+        });
+    });
+
+    // Close modal when clicking outside
+    modal.addEventListener('click', (event) => {
+        if (event.target === modal) {
+            modal.remove();
+        }
+    });
+}
+
+// Function to update the confirmed placement element
+function updateConfirmedPlacement(category) {
+    const confirmedPlacementElement = document.getElementById('confirmedTimePlacement');
+    if (confirmedPlacementElement) {
+        const displayCategory = category.charAt(0).toUpperCase() + category.slice(1);
+        confirmedPlacementElement.textContent = displayCategory;
+        confirmedPlacementElement.style.backgroundColor = '#d2ebd2';
+        confirmedPlacementElement.style.color = '#357a38';
+        confirmedPlacementElement.style.borderColor = '#357a38';
+        confirmedPlacementElement.classList.remove('below-threshold');
+    }
+}
 
