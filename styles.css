@@ -1095,3 +1095,108 @@ tr.completed-row .action-cell button:hover {
 .thresholds-container strong {
     color: var(--primary);
 }
+
+/* Admin Styles */
+.admin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-xl);
+}
+
+.admin-section {
+    background: white;
+    padding: var(--spacing-xl);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.admin-section h2 {
+    color: var(--primary);
+    margin-bottom: var(--spacing-xl);
+    font-size: var(--font-size-xl);
+}
+
+.threshold-setting {
+    margin-bottom: var(--spacing-xl);
+    padding: var(--spacing-lg);
+    background: var(--light);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+}
+
+.threshold-setting h3 {
+    color: var(--primary);
+    margin-bottom: var(--spacing-md);
+    font-size: var(--font-size-lg);
+}
+
+.threshold-explanation {
+    color: var(--gray);
+    margin-bottom: var(--spacing-lg);
+    line-height: 1.6;
+    font-size: var(--font-size-base);
+}
+
+.threshold-input-group {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.threshold-input-group input {
+    width: 100px;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-lg);
+    text-align: right;
+}
+
+.input-suffix {
+    font-size: var(--font-size-lg);
+    color: var(--gray);
+    font-weight: 500;
+}
+
+.admin-actions {
+    margin-top: var(--spacing-xl);
+    display: flex;
+    justify-content: flex-end;
+}
+
+.secondary-button {
+    background-color: var(--light);
+    color: var(--primary);
+    border: 1px solid var(--border);
+}
+
+.secondary-button:hover {
+    background-color: var(--border);
+    color: var(--primary);
+}
+
+.header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-lg);
+}
+
+.admin-button {
+    background-color: var(--primary);
+    color: white;
+    padding: var(--spacing-sm) var(--spacing-lg);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-base);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.admin-button:hover {
+    background-color: var(--primary-light);
+    transform: translateY(-1px);
+}

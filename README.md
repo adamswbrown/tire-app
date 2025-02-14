@@ -11,6 +11,15 @@ An Electron-based desktop application for managing and assessing applications us
 - Clear data functionality with confirmation
 - Export completed assessments to Excel format
 
+### Admin Settings
+- Accessible via "Admin Settings" button in the main interface
+- Threshold Management:
+  - Distribution Threshold: Minimum percentage required for TIRE placement (default: 80%)
+  - Tiebreak Threshold: Maximum percentage difference for considering scores as ties (default: 3%)
+- Real-time threshold updates across all windows
+- Persistent storage of threshold values
+- Automatic validation of threshold changes
+
 ### Dashboard Interface
 - Modern, clean dashboard with real-time metrics:
   - Total applications count
@@ -24,6 +33,7 @@ An Electron-based desktop application for managing and assessing applications us
   - Action buttons
 - Color-coded status indicators
 - Green "View Results" button for completed assessments
+- Admin settings access button
 
 ### Search and Filtering
 - Real-time search functionality across all fields
@@ -59,8 +69,34 @@ An Electron-based desktop application for managing and assessing applications us
 - Automatic score calculation based on answers
 - Distribution percentage calculations
 - Dynamic TIRE placement determination
-- Threshold-based validation (80% default)
+- Configurable thresholds through admin settings
 - Visual indicators for threshold achievement
+- Tiebreaker handling:
+  - Automatic detection of ties within tiebreak threshold
+  - Interactive tiebreaker modal for user decision
+  - Weighted preference for "Invest" category
+  - Consideration of initial TIRE placement
+
+### Score Calculations
+1. Question Scoring:
+   ```
+   Yes Answer: Full weight value
+   Partial/Unsure: Half of weight value (rounded)
+   No Answer: 0 points
+   ```
+
+2. Distribution Calculation:
+   ```
+   Category Distribution = (Total Category Score / Total Possible Score) × 100%
+   ```
+
+3. TIRE Placement Rules:
+   - Category must meet or exceed distribution threshold (configurable, default 80%)
+   - If multiple categories exceed threshold:
+     - Categories within tiebreak threshold of each other trigger tiebreaker
+     - "Invest" category given preference in ties
+     - Initial TIRE placement considered for tiebreaking
+   - If no category meets threshold, marked as "Below Threshold"
 
 ### Summary Dashboard
 - Category-wise score breakdown
@@ -68,12 +104,17 @@ An Electron-based desktop application for managing and assessing applications us
 - Total possible scores
 - Client scores
 - Highlighted rows for threshold achievement
+- Dynamic updates when thresholds change
 
 ### Progress Tracking
 - Question completion counter
 - Visual progress indicators
 - Completion status banner
 - Timestamp for completed assessments
+- Assessment history tracking:
+  - Initial assessment date
+  - Restart history with timestamps
+  - Previous TIRE placements
 
 ### Action Buttons
 - "Start Strategy Questions" for new assessments
@@ -81,6 +122,8 @@ An Electron-based desktop application for managing and assessing applications us
 - "Complete Strategy Questions" functionality
 - "Calculations Explained" popup with detailed methodology
 - "Clear Data" with danger styling
+- "Admin Settings" for threshold management
+- "Back to Main" navigation from admin section
 
 ### Data Persistence
 - Automatic saving of assessment progress
@@ -88,6 +131,8 @@ An Electron-based desktop application for managing and assessing applications us
 - Local storage for application state
 - Completed applications tracking
 - Export functionality for completed assessments
+- Threshold configuration storage
+- Assessment history preservation
 
 ## Setup
 
@@ -102,6 +147,14 @@ npm start
 ```
 
 ## Usage Guide
+
+### Accessing Admin Settings
+1. Click "Admin Settings" button in the main interface
+2. Adjust thresholds as needed:
+   - Distribution Threshold (default: 80%)
+   - Tiebreak Threshold (default: 3%)
+3. Save changes to update all windows
+4. Return to main window automatically after saving
 
 ### Importing Data
 1. Click "Upload Excel File" to import your application list
@@ -263,6 +316,39 @@ Distribution scores:
     }
   }
 }
+```
+
+## Example: Threshold Configuration
+
+#### Setting Distribution Threshold
+```
+Default: 80%
+Range: 0-100%
+Effect: Determines minimum percentage required for TIRE placement
+Example: If set to 85%, a category needs 85% or higher score for placement
+```
+
+#### Setting Tiebreak Threshold
+```
+Default: 3%
+Range: 0-20%
+Effect: Determines when scores are considered ties
+Example: If set to 5%, categories within 5% of each other trigger tiebreaker
+```
+
+#### Tiebreaker Scenario
+```
+Distribution Scores:
+- Tolerate: 88%
+- Invest: 86%
+- Replace: 75%
+- Eliminate: 60%
+
+With Distribution Threshold = 80% and Tiebreak Threshold = 3%:
+- Tolerate and Invest both exceed 80%
+- Difference (88% - 86% = 2%) is within 3% tiebreak threshold
+- System prompts for tiebreaker decision
+- "Invest" gets preference in ties
 ```
 
 ## Requirements

@@ -10,6 +10,7 @@ let explanationWindow = null;
 let distributionThreshold = 80;
 let completedApps = [];
 let uploadedData = null; // Store uploaded data
+let adminWindow = null;
 
 // Clear completed apps file when the app launches
 function resetCompletedAppsFile() {
@@ -576,10 +577,123 @@ ipcMain.on('return-to-start', () => {
     createStartWindow();
 });
 
+// Add this after other window creation functions
+function createAdminWindow() {
+    adminWindow = new BrowserWindow({
+        width: 1000,
+        height: 800,
+        webPreferences: {
+            nodeIntegration: true,
+            contextIsolation: false,
+        },
+        show: false
+    });
+
+    adminWindow.loadFile('admin.html');
+    adminWindow.maximize();
+    adminWindow.show();
+
+    adminWindow.on('closed', () => {
+        adminWindow = null;
+    });
+}
+
+// Update the IPC handlers for threshold management
+ipcMain.handle('get-thresholds', async () => {
+    const thresholdsPath = path.join(app.getPath('userData'), 'thresholds.json');
+    try {
+        if (fs.existsSync(thresholdsPath)) {
+            const data = fs.readFileSync(thresholdsPath, 'utf-8');
+            return JSON.parse(data);
+        }
+        return {
+            distributionThreshold: 80,
+            tiebreakThreshold: 3
+        };
+    } catch (error) {
+        console.error('Error reading thresholds:', error);
+        return {
+            distributionThreshold: 80,
+            tiebreakThreshold: 3
+        };
+    }
+});
+
+ipcMain.handle('save-thresholds', async (event, thresholds) => {
+    const thresholdsPath = path.join(app.getPath('userData'), 'thresholds.json');
+    const questionsPath = path.join(__dirname, 'questions.json');
+    try {
+        // Save to thresholds.json
+        fs.writeFileSync(thresholdsPath, JSON.stringify(thresholds, null, 2), 'utf-8');
+        
+        // Update questions.json
+        const questionsData = JSON.parse(fs.readFileSync(questionsPath, 'utf8'));
+        if (questionsData && questionsData[0]) {
+            if (!questionsData[0].config) {
+                questionsData[0].config = {};
+            }
+            questionsData[0].config.distributionThreshold = thresholds.distributionThreshold;
+            questionsData[0].config.tiebreakThreshold = thresholds.tiebreakThreshold;
+            fs.writeFileSync(questionsPath, JSON.stringify(questionsData, null, 2), 'utf-8');
+        }
+
+        // Update the global threshold values
+        distributionThreshold = thresholds.distributionThreshold;
+        tiebreakThreshold = thresholds.tiebreakThreshold;
+        
+        // Notify all windows of the updated thresholds
+        if (mainWindow) {
+            mainWindow.webContents.send('thresholds-updated', thresholds);
+        }
+        if (strategyQuestionsWindow) {
+            strategyQuestionsWindow.webContents.send('thresholds-updated', thresholds);
+        }
+        return true;
+    } catch (error) {
+        console.error('Error saving thresholds:', error);
+        return false;
+    }
+});
+
+// Add these IPC handlers for window management
+ipcMain.on('open-admin', () => {
+    if (adminWindow) {
+        adminWindow.focus();
+    } else {
+        createAdminWindow();
+    }
+});
+
+ipcMain.on('return-to-main', () => {
+    if (adminWindow) {
+        adminWindow.close();
+    }
+    if (mainWindow) {
+        mainWindow.focus();
+    } else {
+        createMainWindow();
+    }
+});
+
+// Modify the loadDistributionThreshold function to load both thresholds
+async function loadThresholds() {
+    try {
+        const thresholdsPath = path.join(app.getPath('userData'), 'thresholds.json');
+        if (fs.existsSync(thresholdsPath)) {
+            const thresholdsData = JSON.parse(fs.readFileSync(thresholdsPath, 'utf8'));
+            distributionThreshold = thresholdsData.distributionThreshold;
+            tiebreakThreshold = thresholdsData.tiebreakThreshold;
+        }
+    } catch (error) {
+        console.error('Error loading thresholds:', error);
+    }
+}
+
+// Update the app.whenReady() section
 app.whenReady().then(() => {
     resetCompletedAppsFile();
     loadCompletedApps();
-    loadDistributionThreshold();
+    loadThresholds();
     createStartWindow();
 });
 

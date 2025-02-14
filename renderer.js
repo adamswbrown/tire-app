@@ -212,11 +212,6 @@ async function clearAllData() {
     }
 }
 
-// Event listener for clearing data button
-document.getElementById("clearStorageBtn").addEventListener("click", () => {
-    showClearDataModal();
-});
-
 // Event listeners for modal buttons
 document.addEventListener('DOMContentLoaded', () => {
     // Cancel button hides the modal
@@ -242,13 +237,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// Event listeners for filtering
-document.getElementById("searchInput").addEventListener("input", filterTable);
-document.getElementById("inScopeCheckbox").addEventListener("change", filterTable);
-document.getElementById("outScopeCheckbox").addEventListener("change", filterTable);
-document.getElementById("completedCheckbox").addEventListener("change", filterTable);
-document.getElementById("uncompletedCheckbox").addEventListener("change", filterTable);
-
 // Event listener for completed apps
 ipcRenderer.on('app-completed', async (event, appName) => {
     await fetchCompletedApps();
@@ -261,39 +249,21 @@ ipcRenderer.on('refresh-data', async () => {
     filterTable();
 });
 
-// Export completed apps
-document.getElementById("exportBtn").addEventListener("click", async () => {
-    try {
-        const result = await ipcRenderer.invoke('export-completed-apps');
-        if (result.success) {
-            document.getElementById("statusMessage").textContent = `Exported to: ${result.path}`;
-        } else {
-            document.getElementById("statusMessage").textContent = `Export failed: ${result.error}`;
-        }
-    } catch (error) {
-        document.getElementById("statusMessage").textContent = "Error exporting data";
-        console.error('Export error:', error);
-    }
-});
-
-// Create export template
-document.getElementById("createExportBtn").addEventListener("click", async () => {
-    try {
-        const result = await ipcRenderer.invoke('create-export-template');
-        if (result.success) {
-            document.getElementById("statusMessage").textContent = `Clean export template created at: ${result.path}`;
-        } else {
-            document.getElementById("statusMessage").textContent = `Failed to create export template: ${result.error}`;
-        }
-    } catch (error) {
-        document.getElementById("statusMessage").textContent = "Error creating export template";
-        console.error('Export template error:', error);
-    }
-});
-
 // Initialize event listeners when DOM is loaded
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('DOM Content Loaded');
+    
+    // Initialize admin button
+    const adminBtn = document.getElementById('adminBtn');
+    if (adminBtn) {
+        console.log('Found admin button, attaching click listener');
+        adminBtn.addEventListener('click', () => {
+            console.log('Admin button clicked');
+            ipcRenderer.send('open-admin');
+        });
+    } else {
+        console.error('Admin button not found in the DOM');
+    }
     
     // Initialize filter elements
     const elements = {
@@ -301,26 +271,74 @@ document.addEventListener('DOMContentLoaded', async () => {
         inScopeCheckbox: document.getElementById("inScopeCheckbox"),
         outScopeCheckbox: document.getElementById("outScopeCheckbox"),
         completedCheckbox: document.getElementById("completedCheckbox"),
-        uncompletedCheckbox: document.getElementById("uncompletedCheckbox")
+        uncompletedCheckbox: document.getElementById("uncompletedCheckbox"),
+        clearStorageBtn: document.getElementById("clearStorageBtn"),
+        exportBtn: document.getElementById("exportBtn"),
+        cancelClearBtn: document.getElementById("cancelClearBtn"),
+        confirmClearBtn: document.getElementById("confirmClearBtn"),
+        clearDataModal: document.getElementById("clearDataModal")
     };
 
-    // Check if elements exist and attach listeners
-    Object.entries(elements).forEach(([name, element]) => {
-        if (element) {
-            console.log(`Found ${name} element`);
-            if (name === 'searchInput') {
-                element.addEventListener("input", () => {
-                    console.log('Search input changed:', element.value);
-                    filterTable();
-                });
-            } else {
-                element.addEventListener("change", () => {
-                    console.log(`${name} changed:`, element.checked);
-                    filterTable();
-                });
+    // Attach filter listeners
+    if (elements.searchInput) {
+        elements.searchInput.addEventListener("input", filterTable);
+    }
+    if (elements.inScopeCheckbox) {
+        elements.inScopeCheckbox.addEventListener("change", filterTable);
+    }
+    if (elements.outScopeCheckbox) {
+        elements.outScopeCheckbox.addEventListener("change", filterTable);
+    }
+    if (elements.completedCheckbox) {
+        elements.completedCheckbox.addEventListener("change", filterTable);
+    }
+    if (elements.uncompletedCheckbox) {
+        elements.uncompletedCheckbox.addEventListener("change", filterTable);
+    }
+
+    // Attach clear storage button listener
+    if (elements.clearStorageBtn) {
+        elements.clearStorageBtn.addEventListener("click", showClearDataModal);
+    }
+
+    // Attach export button listener
+    if (elements.exportBtn) {
+        elements.exportBtn.addEventListener("click", async () => {
+            try {
+                const result = await ipcRenderer.invoke('export-completed-apps');
+                if (result.success) {
+                    document.getElementById("statusMessage").textContent = `Exported to: ${result.path}`;
+                } else {
+                    document.getElementById("statusMessage").textContent = `Export failed: ${result.error}`;
+                }
+            } catch (error) {
+                document.getElementById("statusMessage").textContent = "Error exporting data";
+                console.error('Export error:', error);
             }
+        });
+    }
+
+    // Attach modal button listeners
+    if (elements.cancelClearBtn) {
+        elements.cancelClearBtn.addEventListener('click', hideClearDataModal);
+    }
+    if (elements.confirmClearBtn) {
+        elements.confirmClearBtn.addEventListener('click', clearAllData);
+    }
+    if (elements.clearDataModal) {
+        elements.clearDataModal.addEventListener('click', (event) => {
+            if (event.target === elements.clearDataModal) {
+                hideClearDataModal();
+            }
+        });
+    }
+
+    // Log any missing elements
+    Object.entries(elements).forEach(([name, element]) => {
+        if (!element) {
+            console.error(`Element not found: ${name}`);
         } else {
-            console.error(`${name} element not found`);
+            console.log(`Found element: ${name}`);
         }
     });
 
@@ -331,4 +349,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 // Listen for distributionThreshold value from the main process
 ipcRenderer.on('set-distribution-threshold', (event, threshold) => {
     document.getElementById('distributionThreshold').textContent = threshold;
+});
+
+// Listen for threshold updates
+ipcRenderer.on('thresholds-updated', (event, thresholds) => {
+    console.log('Thresholds updated:', thresholds);
+    if (document.getElementById('distribution-threshold')) {
+        document.getElementById('distribution-threshold').textContent = thresholds.distributionThreshold;
+    }
+    if (document.getElementById('tiebreaker-threshold')) {
+        document.getElementById('tiebreaker-threshold').textContent = thresholds.tiebreakThreshold;
+    }
 });

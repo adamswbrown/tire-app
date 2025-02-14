@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dr Migrate TIRE Admin</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="admin-header">
+            <h1>TIRE Assessment Admin</h1>
+            <button id="backToMain" class="secondary-button">Back to Main</button>
+        </div>
+
+        <div class="admin-section">
+            <h2>Threshold Settings</h2>
+            
+            <div class="threshold-setting">
+                <h3>Distribution Threshold</h3>
+                <div class="threshold-explanation">
+                    The minimum percentage score required for a TIRE category to be considered as a potential placement. 
+                    If no category meets this threshold, the application will be marked as "Below Threshold".
+                </div>
+                <div class="threshold-input-group">
+                    <input type="number" id="distributionThreshold" min="0" max="100" value="80">
+                    <span class="input-suffix">%</span>
+                </div>
+            </div>
+
+            <div class="threshold-setting">
+                <h3>Tiebreaker Threshold</h3>
+                <div class="threshold-explanation">
+                    The maximum percentage difference between top scoring categories to be considered a tie. 
+                    When multiple categories are within this range of each other, a tiebreaker selection will be required.
+                </div>
+                <div class="threshold-input-group">
+                    <input type="number" id="tiebreakThreshold" min="0" max="20" value="3">
+                    <span class="input-suffix">%</span>
+                </div>
+            </div>
+
+            <div class="admin-actions">
+                <button id="saveThresholds" class="primary-button">Save Changes</button>
+            </div>
+        </div>
+    </div>
+    <script src="admin.js"></script>
+</body>
+</html> 

@@ -10,12 +10,14 @@
     <div class="container">
         <!-- Fixed content area -->
         <div class="fixed-content">
-            <h1>Dr Migrate TIRE Questionnaire App</h1>
+            <div class="header-container">
+                <h1>Dr Migrate TIRE Questionnaire App</h1>
+                <button id="adminBtn" class="admin-button">Admin Settings</button>
+            </div>
 
             <!-- Upload Excel File -->
             <div class="button-container">
                 <!--<button id="uploadBtn">Upload Excel File</button>-->
-     
             </div>
             <p id="statusMessage"></p>
 
@@ -77,8 +79,6 @@
         </div>
     </div>
 
-    <script src="renderer.js"></script>
-
     <!-- Clear Data Confirmation Modal -->
     <div id="clearDataModal" class="modal">
         <div class="modal-content">
@@ -90,5 +90,8 @@
             </div>
         </div>
     </div>
+
+    <!-- Load renderer.js at the end of body -->
+    <script src="renderer.js"></script>
 </body>
 </html>

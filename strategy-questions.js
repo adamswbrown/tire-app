@@ -1058,3 +1058,24 @@ function updateConfirmedPlacement(category) {
     }
 }
 
+// Listen for threshold updates
+ipcRenderer.on('thresholds-updated', (event, thresholds) => {
+    console.log('Thresholds updated:', thresholds);
+    distributionThreshold = thresholds.distributionThreshold;
+    tiebreakThreshold = thresholds.tiebreakThreshold;
+    
+    // Update threshold displays
+    const thresholdElement = document.getElementById('distribution-threshold');
+    const tiebreakElement = document.getElementById('tiebreaker-threshold');
+    if (thresholdElement) {
+        thresholdElement.textContent = distributionThreshold;
+    }
+    if (tiebreakElement) {
+        tiebreakElement.textContent = tiebreakThreshold;
+    }
+    
+    // Recalculate scores and update UI
+    updateClientScores();
+    updateConfirmedTimePlacement();
+});
+
