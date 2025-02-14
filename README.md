@@ -78,7 +78,7 @@ An Electron-based desktop application for managing and assessing applications us
 ### Action Buttons
 - "Start Strategy Questions" for new assessments
 - "View Results" for completed assessments
-- "Save Answers to File" functionality
+- "Complete Strategy Questions" functionality
 - "Calculations Explained" popup with detailed methodology
 - "Clear Data" with danger styling
 
@@ -130,7 +130,7 @@ npm start
    - Verify threshold achievement
 4. Set Initial TIRE Placement
 5. Review Confirmed TIRE Placement
-6. Save assessment using "Save Answers to File"
+6. Complete assessment using "Complete Strategy Questions"
 
 ### Viewing Results
 1. Access completed assessments via "View Results"
@@ -214,7 +214,7 @@ Distribution scores:
    - System will automatically set Confirmed TIRE Placement to "Tolerate"
 
 ### Step 6: Saving the Assessment
-1. Click "Save Answers to File"
+1. Click "Complete Strategy Questions"
 2. Choose save location (e.g., "assessments/crm_system_assessment.json")
 3. File will save with:
    - All question answers
