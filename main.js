@@ -270,18 +270,71 @@ function saveCompletedApps() {
 
 // Function to export completed apps to Excel
 function exportCompletedAppsToExcel() {
-    const wb = xlsx.utils.book_new();
-    const wsData = completedApps.map(app => ({
-        'Application Name': app.name,
-        'TIRE Status': app.confirmedTIREPlacement !== "Not Set" ? app.confirmedTIREPlacement : app.initialTIREPlacement
-    }));
-    
-    const ws = xlsx.utils.json_to_sheet(wsData);
-    xlsx.utils.book_append_sheet(wb, ws, 'Completed Applications');
-    
-    const exportPath = path.join(app.getPath('downloads'), 'completed-applications.xlsx');
-    xlsx.writeFile(wb, exportPath);
-    return exportPath;
+    try {
+        // Validate if there are any completed apps to export
+        if (!completedApps || completedApps.length === 0) {
+            throw new Error('No completed applications to export');
+        }
+
+        console.log(`Starting export of ${completedApps.length} completed applications`);
+
+        // Get template path
+        const templatePath = path.join(__dirname, 'templates', 'Application Strategy Export Template.xlsx');
+        
+        // Validate template exists
+        if (!fs.existsSync(templatePath)) {
+            throw new Error('Export template file not found');
+        }
+
+        // Create export filename with timestamp
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const exportPath = path.join(app.getPath('downloads'), `completed-applications-${timestamp}.xlsx`);
+        
+        // Copy template to destination
+        fs.copyFileSync(templatePath, exportPath);
+        console.log('Template copied to:', exportPath);
+
+        // Open the copied file
+        const workbook = xlsx.readFile(exportPath);
+        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+
+        // Start from row 5 (index 4) to skip the instructions and headers
+        let currentRow = 4;
+
+        // Add data to the copied template
+        completedApps.forEach(app => {
+            // Add application name to column A
+            worksheet[xlsx.utils.encode_cell({r: currentRow, c: 0})] = {
+                t: 's',
+                v: app.name
+            };
+
+            // Add TIRE placement to column B
+            const placement = app.confirmedTIREPlacement !== "Not Set" 
+                ? app.confirmedTIREPlacement 
+                : app.initialTIREPlacement;
+
+            worksheet[xlsx.utils.encode_cell({r: currentRow, c: 1})] = {
+                t: 's',
+                v: placement || "Not Set"
+            };
+
+            currentRow++;
+        });
+
+        // Save the updated file
+        xlsx.writeFile(workbook, exportPath);
+
+        console.log('Export completed successfully:', {
+            totalApps: completedApps.length,
+            exportPath
+        });
+
+        return exportPath;
+    } catch (error) {
+        console.error('Error in exportCompletedAppsToExcel:', error);
+        throw error;
+    }
 }
 
 // Add IPC handler for exporting completed apps
