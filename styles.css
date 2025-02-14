@@ -557,11 +557,14 @@ tr.completed-row .action-cell button:hover {
 
 /* Distribution percentage styles */
 .distribution-percentage {
+    padding: var(--spacing-sm);
+    border-radius: var(--radius-sm);
     position: relative;
+    display: block;
     width: 100%;
-    height: 24px;
-    background-color: #f0f0f0;
-    border-radius: 4px;
+    text-align: right;
+    font-weight: 600;
+    background-color: transparent;
     overflow: hidden;
 }
 
@@ -571,53 +574,68 @@ tr.completed-row .action-cell button:hover {
     left: 0;
     top: 0;
     bottom: 0;
-    z-index: 1;
+    z-index: 0;
     transition: width 0.3s ease;
 }
 
 /* Temperature color classes for percentages */
 .temp-0-20 .distribution-bar {
     width: 20%;
-    background: #ffebee;
+    background: linear-gradient(to right, 
+        #ff0000 0%,
+        #ff4500 50%,
+        #ff6b6b 100%
+    );
 }
 
 .temp-21-40 .distribution-bar {
     width: 40%;
-    background: #fff3e0;
+    background: linear-gradient(to right, 
+        #ff6b6b 0%,
+        #ffa500 50%,
+        #ffd700 100%
+    );
 }
 
 .temp-41-60 .distribution-bar {
     width: 60%;
-    background: #fffde7;
+    background: linear-gradient(to right, 
+        #ffd700 0%,
+        #ffff00 50%,
+        #90ee90 100%
+    );
 }
 
 .temp-61-79 .distribution-bar {
     width: 79%;
-    background: #e8f5e9;
+    background: linear-gradient(to right, 
+        #90ee90 0%,
+        #32cd32 50%,
+        #228b22 100%
+    );
 }
 
 .temp-80-100 .distribution-bar {
     width: 100%;
-    background: #4caf50;
+    background: linear-gradient(to right, 
+        #228b22 0%,
+        #008000 50%,
+        #006400 100%
+    );
 }
 
-/* Keep text centered and on top of the gradient */
+/* Keep text black and on top of the gradient */
 .distribution-percentage span {
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    z-index: 2;
+    position: relative;
+    z-index: 1;
+    padding-right: var(--spacing-lg);
     font-weight: 600;
-    text-align: center;
-    color: #000000;
-    font-size: 14px;
-    text-shadow: 
-        -1px -1px 0 #fff,
-        1px -1px 0 #fff,
-        -1px 1px 0 #fff,
-        1px 1px 0 #fff;
+    display: block;
+    width: 100%;
+    text-align: right;
+    color: #000000 !important;
+    mix-blend-mode: difference;
+    text-shadow: 0 0 2px rgba(255, 255, 255, 0.8);
 }
 
 /* Remove any inherited background colors from rows */
