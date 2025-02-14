@@ -367,57 +367,33 @@ function exportCompletedAppsToExcel() {
             throw new Error('No completed applications to export');
         }
 
-        console.log(`Starting export of ${completedApps.length} completed applications`);
+        // Create a new workbook and worksheet
+        const workbook = xlsx.utils.book_new();
+        const wsData = [];
 
-        // Use the exact same template copying logic as createCleanExportTemplate
-        const templatePath = path.join(__dirname, 'templates', 'Application Strategy Export Template.xlsx');
-        
-        // Validate template exists
-        if (!fs.existsSync(templatePath)) {
-            throw new Error('Export template file not found at: ' + templatePath);
-        }
+        // Add headers
+        wsData.push(['Application Name', 'TIRE Status']);
 
-        // Create export filename with timestamp
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-        const exportPath = path.join(app.getPath('downloads'), `completed-applications-${timestamp}.xlsx`);
-        
-        // Copy template to destination - using exact same copy method
-        fs.copyFileSync(templatePath, exportPath);
-        
-        // Verify the file was copied successfully
-        if (!fs.existsSync(exportPath)) {
-            throw new Error('Failed to copy template file to: ' + exportPath);
-        }
-
-        // Now just update the values in cells A4 and B4 for each completed app
-        const workbook = xlsx.readFile(exportPath);
-        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-
-        // Start from row 4 (as per template format)
-        let currentRow = 4;
-
-        // Add data to the copied template
+        // Add data rows
         completedApps.forEach(app => {
-            // Add application name to column A
-            worksheet[xlsx.utils.encode_cell({r: currentRow, c: 0})] = { t: 's', v: app.name };
-
-            // Add TIRE placement to column B
             const placement = app.confirmedTIREPlacement !== "Not Set" 
                 ? app.confirmedTIREPlacement 
                 : app.initialTIREPlacement;
-
-            worksheet[xlsx.utils.encode_cell({r: currentRow, c: 1})] = { t: 's', v: placement || "Not Set" };
-
-            currentRow++;
+            wsData.push([app.name, placement]);
         });
 
-        // Save the updated file
+        // Create worksheet from data
+        const worksheet = xlsx.utils.aoa_to_sheet(wsData);
+
+        // Add worksheet to workbook
+        xlsx.utils.book_append_sheet(workbook, worksheet, 'Completed Apps');
+
+        // Create export filename with timestamp
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const exportPath = path.join(app.getPath('downloads'), `Completed-Applications-${timestamp}.xlsx`);
+
+        // Save the workbook
         xlsx.writeFile(workbook, exportPath);
-
-        console.log('Export completed successfully:', {
-            totalApps: completedApps.length,
-            exportPath
-        });
 
         return exportPath;
     } catch (error) {
