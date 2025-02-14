@@ -331,6 +331,11 @@ ipcRenderer.on('set-distribution-threshold', (event, distributionThreshold) => {
 function saveToFile() {
     const initialTimePlacement = document.getElementById('initialTimePlacement').value;
     const confirmedTimePlacement = document.getElementById('confirmedTimePlacement').textContent;
+    const appName = document.getElementById('applicationName').textContent;
+
+    // Get restart history for this application
+    const restartHistory = JSON.parse(localStorage.getItem('restartHistory') || '{}');
+    const appRestarts = restartHistory[appName] || [];
 
     // Calculate scores and distributions
     let scores = {
@@ -367,11 +372,17 @@ function saveToFile() {
     }));
 
     const outputData = {
-        applicationName: document.getElementById('applicationName').textContent,
+        applicationName: appName,
         initialTimePlacement,
         confirmedTimePlacement,
         answers: answersData,
-        summary: scores
+        summary: scores,
+        assessmentHistory: {
+            restarts: appRestarts,
+            hasBeenRestarted: appRestarts.length > 0,
+            totalRestarts: appRestarts.length,
+            lastRestartDate: appRestarts.length > 0 ? appRestarts[appRestarts.length - 1] : null
+        }
     };
 
     // Send the data to the main process to save to a file
@@ -534,46 +545,114 @@ loadStrategyQuestions();
 async function loadPreviousAnswers(appName) {
     const appData = await ipcRenderer.invoke('get-app-data', appName);
     if (appData) {
-        // Update completion status
+        // Update completion status and date
         const completionHeader = document.getElementById('completionStatus');
         completionHeader.classList.remove('incomplete');
         const completionDate = new Date(appData.completedOn).toLocaleDateString();
-        document.getElementById('completionDate').textContent = `Completed on ${completionDate}`;
+        
+        // Update completion text with restart information if available
+        let completionText = `40 / 40 questions answered`;
+        if (appData.assessmentHistory?.hasBeenRestarted) {
+            completionText += ` (Restarted ${appData.assessmentHistory.totalRestarts} time${appData.assessmentHistory.totalRestarts > 1 ? 's' : ''})`;
+        }
+        document.getElementById('completionText').textContent = completionText;
+        
+        // Show completion date and last restart date if applicable
+        let dateText = `Completed on ${completionDate}`;
+        if (appData.assessmentHistory?.lastRestartDate) {
+            const lastRestartDate = new Date(appData.assessmentHistory.lastRestartDate).toLocaleDateString();
+            dateText += ` (Last restarted on ${lastRestartDate})`;
+        }
+        document.getElementById('completionDate').textContent = dateText;
+        
+        completionHeader.style.backgroundColor = '#fff3cd';
+
+        // Load restart history into localStorage to maintain state
+        if (appData.assessmentHistory?.restarts) {
+            const restartHistory = JSON.parse(localStorage.getItem('restartHistory') || '{}');
+            restartHistory[appName] = appData.assessmentHistory.restarts;
+            localStorage.setItem('restartHistory', JSON.stringify(restartHistory));
+        }
 
         // Set initial TIRE placement
-        document.getElementById('initialTimePlacement').value = appData.initialTIREPlacement;
+        const initialPlacementSelect = document.getElementById('initialTimePlacement');
+        initialPlacementSelect.value = appData.initialTIREPlacement;
+        initialPlacementSelect.disabled = true;
         
-        // Set confirmed TIRE placement
-        document.getElementById('confirmedTimePlacement').textContent = appData.confirmedTIREPlacement;
+        // Set confirmed TIRE placement with styling
+        const confirmedPlacement = document.getElementById('confirmedTimePlacement');
+        confirmedPlacement.textContent = appData.confirmedTIREPlacement;
+        if (!appData.confirmedTIREPlacement.includes('Below Threshold')) {
+            confirmedPlacement.style.backgroundColor = '#d2ebd2';
+            confirmedPlacement.style.color = '#357a38';
+            confirmedPlacement.style.borderColor = '#357a38';
+        } else {
+            confirmedPlacement.style.backgroundColor = '#fff3cd';
+            confirmedPlacement.style.color = '#856404';
+            confirmedPlacement.style.borderColor = '#ffeeba';
+        }
 
-        // Load answers
+        // Update distribution threshold display
+        const thresholdElement = document.getElementById('distribution-threshold');
+        if (thresholdElement) {
+            thresholdElement.textContent = distributionThreshold;
+        }
+
+        // First, load the questions template
+        await loadStrategyQuestions();
+
+        // Then update with saved answers
         if (appData.answers) {
-            appData.answers.forEach(answer => {
-                const questionRow = Array.from(document.querySelectorAll('tr')).find(row => {
-                    const questionCell = row.querySelector('td:nth-child(6)');
-                    return questionCell && questionCell.textContent === answer.question;
-                });
+            strategyQuestions = appData.answers;
+            populateStrategyQuestionsTable();
 
-                if (questionRow) {
-                    const answerSelect = questionRow.querySelector('select');
-                    if (answerSelect) {
-                        answerSelect.value = answer.clientAnswer;
-                        // Trigger change event to update calculations
-                        answerSelect.dispatchEvent(new Event('change'));
-                    }
-
-                    const extendedAnswerInput = questionRow.querySelector('input[type="text"]');
-                    if (extendedAnswerInput && answer.extendedAnswer) {
-                        extendedAnswerInput.value = answer.extendedAnswer;
-                    }
-                }
+            // Disable all inputs after populating
+            document.querySelectorAll('#strategyQuestionsTable select, #strategyQuestionsTable input').forEach(element => {
+                element.disabled = true;
             });
         }
 
-        // Update summary
+        // Update summary table with the saved summary data
         if (appData.summary) {
-            updateSummaryTable(appData.summary);
+            const summaryTable = document.getElementById('summaryTable').querySelector('tbody');
+            summaryTable.innerHTML = '';
+
+            Object.entries(appData.summary).forEach(([category, data]) => {
+                const row = document.createElement('tr');
+                const distribution = parseInt(data.distribution);
+                
+                row.innerHTML = `
+                    <td>${category.charAt(0).toUpperCase() + category.slice(1)}</td>
+                    <td>${data.score}</td>
+                    <td>${data.total}</td>
+                    <td class="distribution-column">${data.distribution}</td>
+                `;
+
+                // Apply highlighting if distribution meets threshold
+                if (distribution >= distributionThreshold) {
+                    row.style.backgroundColor = '#28a745';
+                    row.style.color = 'white';
+                }
+
+                summaryTable.appendChild(row);
+            });
         }
+
+        // Show restart button and hide save button in view mode
+        const saveButton = document.getElementById('saveButton');
+        const restartButton = document.getElementById('restartBtn');
+        if (saveButton) {
+            saveButton.style.display = 'none';
+        }
+        if (restartButton) {
+            restartButton.style.display = 'inline-block';
+        }
+
+        // Generate and disable category buttons
+        generateCategoryButtons();
+        document.querySelectorAll('.category-button').forEach(button => {
+            button.classList.add('view-mode');
+        });
     }
 }
 
@@ -630,6 +709,100 @@ ipcRenderer.on('set-application-name', async (event, appName) => {
 document.addEventListener('change', event => {
     if (event.target.matches('select')) {
         updateCompletionStatus();
+    }
+});
+
+// Function to show the confirmation modal
+function showConfirmationModal() {
+    const modal = document.getElementById('confirmationModal');
+    modal.classList.add('show');
+}
+
+// Function to hide the confirmation modal
+function hideConfirmationModal() {
+    const modal = document.getElementById('confirmationModal');
+    modal.classList.remove('show');
+}
+
+// Function to restart assessment
+function restartAssessment() {
+    // Add restart timestamp
+    const restartTimestamp = new Date().toISOString();
+    const appName = document.getElementById('applicationName').textContent;
+    
+    // Store restart information in localStorage
+    const restartHistory = JSON.parse(localStorage.getItem('restartHistory') || '{}');
+    if (!restartHistory[appName]) {
+        restartHistory[appName] = [];
+    }
+    restartHistory[appName].push(restartTimestamp);
+    localStorage.setItem('restartHistory', JSON.stringify(restartHistory));
+
+    // Re-enable all inputs
+    document.querySelectorAll('#strategyQuestionsTable select, #strategyQuestionsTable input').forEach(element => {
+        element.disabled = false;
+    });
+
+    // Re-enable initial TIRE placement
+    const initialPlacementSelect = document.getElementById('initialTimePlacement');
+    initialPlacementSelect.disabled = false;
+
+    // Show save button
+    const saveButton = document.getElementById('saveButton');
+    if (saveButton) {
+        saveButton.style.display = 'inline-block';
+    }
+
+    // Hide restart button
+    const restartButton = document.getElementById('restartBtn');
+    if (restartButton) {
+        restartButton.style.display = 'none';
+    }
+
+    // Update completion header
+    const completionHeader = document.getElementById('completionStatus');
+    if (completionHeader) {
+        completionHeader.style.backgroundColor = '#fff3cd';
+        document.getElementById('completionDate').textContent = `Assessment Restarted on ${new Date(restartTimestamp).toLocaleDateString()}`;
+    }
+
+    // Remove view-mode class from category buttons
+    document.querySelectorAll('.category-button').forEach(button => {
+        button.classList.remove('view-mode');
+    });
+
+    // Hide the confirmation modal
+    hideConfirmationModal();
+}
+
+// Add event listeners for modal interaction
+document.addEventListener('DOMContentLoaded', () => {
+    // Restart button shows the confirmation modal
+    const restartButton = document.getElementById('restartBtn');
+    if (restartButton) {
+        restartButton.addEventListener('click', showConfirmationModal);
+    }
+
+    // Cancel button hides the modal
+    const cancelButton = document.getElementById('cancelRestartBtn');
+    if (cancelButton) {
+        cancelButton.addEventListener('click', hideConfirmationModal);
+    }
+
+    // Confirm button triggers the restart
+    const confirmButton = document.getElementById('confirmRestartBtn');
+    if (confirmButton) {
+        confirmButton.addEventListener('click', restartAssessment);
+    }
+
+    // Close modal when clicking outside
+    const modal = document.getElementById('confirmationModal');
+    if (modal) {
+        modal.addEventListener('click', (event) => {
+            if (event.target === modal) {
+                hideConfirmationModal();
+            }
+        });
     }
 });
 

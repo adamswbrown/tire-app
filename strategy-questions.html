@@ -79,6 +79,7 @@
                 </div>
                 <div class="action-buttons">
                     <button id="explanationBtn">Calculations Explained</button>
+                    <button id="restartBtn" class="restart-button">Restart Assessment</button>
                     <button id="saveButton">Complete Strategy Questions</button>
                 </div>
             </div>
@@ -133,5 +134,17 @@
     </div>
 
     <script src="strategy-questions.js"></script>
+
+    <!-- Confirmation Modal -->
+    <div id="confirmationModal" class="modal">
+        <div class="modal-content">
+            <h2>Are you sure?</h2>
+            <p>This will allow you to modify all answers for this assessment. This action cannot be undone.</p>
+            <div class="modal-buttons">
+                <button id="cancelRestartBtn" class="cancel-button">Cancel</button>
+                <button id="confirmRestartBtn" class="confirm-button">Restart Assessment</button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

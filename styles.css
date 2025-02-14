@@ -236,6 +236,24 @@ tr.completed-row .action-cell button:hover {
     background-color: #218838;
 }
 
+#createExportBtn {
+    background-color: var(--secondary);
+    padding: var(--spacing-sm) var(--spacing-lg);
+    color: white;
+    font-weight: 500;
+    margin-right: var(--spacing-md);
+}
+
+#createExportBtn:hover {
+    background-color: var(--secondary-hover);
+}
+
+.export-container {
+    display: flex;
+    gap: var(--spacing-md);
+    align-items: center;
+}
+
 /* Status badges */
 .status-badge {
     display: inline-flex;
@@ -619,4 +637,126 @@ tr.completed-row .action-cell button:hover {
 
 .clear-btn:hover {
     background-color: #c82333;
+}
+
+/* View mode specific styles */
+.category-button.view-mode {
+    opacity: 0.8;
+    cursor: pointer;
+}
+
+.category-button.view-mode:hover {
+    opacity: 1;
+}
+
+#strategyQuestionsTable input[disabled],
+#strategyQuestionsTable select[disabled] {
+    background-color: #f8f9fa;
+    border-color: #dee2e6;
+    cursor: not-allowed;
+    opacity: 0.8;
+}
+
+#initialTimePlacement[disabled] {
+    background-color: #f8f9fa;
+    border-color: #dee2e6;
+    cursor: not-allowed;
+    opacity: 0.8;
+}
+
+.completion-header {
+    transition: background-color 0.3s ease;
+}
+
+/* Restart Button */
+.restart-button {
+    padding: var(--spacing-sm) var(--spacing-xl);
+    background: var(--warning);
+    color: var(--yellow-text);
+    border: none;
+    border-radius: var(--radius-md);
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.restart-button:hover {
+    background: #e0a800;
+    color: #533f03;
+}
+
+/* Hide restart button by default */
+.restart-button {
+    display: none;
+}
+
+/* Show restart button in view mode */
+.view-mode .restart-button {
+    display: inline-block;
+}
+
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal.show {
+    display: flex;
+}
+
+.modal-content {
+    background-color: white;
+    padding: var(--spacing-xl);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    max-width: 500px;
+    width: 90%;
+}
+
+.modal-content h2 {
+    color: var(--primary);
+    margin-bottom: var(--spacing-md);
+    font-size: var(--font-size-lg);
+}
+
+.modal-content p {
+    color: var(--dark);
+    margin-bottom: var(--spacing-xl);
+    line-height: 1.5;
+}
+
+.modal-buttons {
+    display: flex;
+    gap: var(--spacing-md);
+    justify-content: flex-end;
+}
+
+.cancel-button {
+    background-color: var(--light);
+    color: var(--dark);
+    border: 1px solid var(--border);
+}
+
+.cancel-button:hover {
+    background-color: var(--gray);
+    color: white;
+    border-color: var(--gray);
+}
+
+.confirm-button {
+    background-color: var(--warning);
+    color: var(--yellow-text);
+}
+
+.confirm-button:hover {
+    background-color: #e0a800;
+    color: #533f03;
 }

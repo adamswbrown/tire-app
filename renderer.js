@@ -102,11 +102,8 @@ function startStrategyQuestions(appName) {
 
 // Function to view results
 async function viewResults(appName) {
-    const appData = await ipcRenderer.invoke('get-app-data', appName);
-    if (appData) {
-        // Handle viewing results (you can implement this based on your needs)
-        console.log('Viewing results for:', appData);
-    }
+    // Open strategy questions window in view mode
+    ipcRenderer.send('open-strategy-questions-window', appName);
 }
 
 // Event listener for file upload
@@ -167,6 +164,21 @@ document.getElementById("exportBtn").addEventListener("click", async () => {
     } catch (error) {
         document.getElementById("statusMessage").textContent = "Error exporting data";
         console.error('Export error:', error);
+    }
+});
+
+// Create export template
+document.getElementById("createExportBtn").addEventListener("click", async () => {
+    try {
+        const result = await ipcRenderer.invoke('create-export-template');
+        if (result.success) {
+            document.getElementById("statusMessage").textContent = `Clean export template created at: ${result.path}`;
+        } else {
+            document.getElementById("statusMessage").textContent = `Failed to create export template: ${result.error}`;
+        }
+    } catch (error) {
+        document.getElementById("statusMessage").textContent = "Error creating export template";
+        console.error('Export template error:', error);
     }
 });
 

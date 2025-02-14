@@ -268,7 +268,98 @@ function saveCompletedApps() {
     fs.writeFileSync(completedAppsPath, JSON.stringify(completedApps, null, 2), 'utf-8');
 }
 
-// Function to export completed apps to Excel
+// Function to copy template file
+function copyTemplateFile() {
+    // Get template path
+    const templatePath = path.join(__dirname, 'templates', 'Application Strategy Export Template.xlsx');
+    
+    // Validate template exists
+    if (!fs.existsSync(templatePath)) {
+        throw new Error('Export template file not found at: ' + templatePath);
+    }
+
+    // Create export filename with timestamp
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const exportPath = path.join(app.getPath('downloads'), `completed-applications-${timestamp}.xlsx`);
+    
+    // Copy template to destination
+    fs.copyFileSync(templatePath, exportPath);
+    
+    // Verify the file was copied successfully
+    if (!fs.existsSync(exportPath)) {
+        throw new Error('Failed to copy template file to: ' + exportPath);
+    }
+
+    console.log('Template successfully copied to:', exportPath);
+    return exportPath;
+}
+
+// Function to update exported file with data
+function updateExportedFile(exportPath) {
+    // Validate export file exists
+    if (!fs.existsSync(exportPath)) {
+        throw new Error('Export file not found at: ' + exportPath);
+    }
+
+    // Open the copied file with full formatting and structure preserved
+    const workbook = xlsx.readFile(exportPath, { cellFormula: true, cellStyles: true, bookVBA: true });
+    
+    // Get the first worksheet (assuming it's the main sheet)
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+
+    // Validate worksheet exists
+    if (!worksheet) {
+        throw new Error('Could not find worksheet in exported file');
+    }
+
+    // Start from row 5 (index 4) to skip the instructions and headers
+    let currentRow = 4;
+
+    // Add data to the copied template while preserving formatting
+    completedApps.forEach(app => {
+        // Add application name to column A
+        worksheet[xlsx.utils.encode_cell({r: currentRow, c: 0})] = {
+            t: 's',
+            v: app.name,
+            s: worksheet[xlsx.utils.encode_cell({r: 4, c: 0})]?.s || {} // Copy style from template
+        };
+
+        // Add TIRE placement to column B
+        const placement = app.confirmedTIREPlacement !== "Not Set" 
+            ? app.confirmedTIREPlacement 
+            : app.initialTIREPlacement;
+
+        worksheet[xlsx.utils.encode_cell({r: currentRow, c: 1})] = {
+            t: 's',
+            v: placement || "Not Set",
+            s: worksheet[xlsx.utils.encode_cell({r: 4, c: 1})]?.s || {} // Copy style from template
+        };
+
+        currentRow++;
+    });
+
+    // Save the updated file with all formatting preserved
+    const writeOpts = {
+        bookType: 'xlsx',
+        bookSST: false,
+        type: 'file',
+        cellStyles: true,
+        compression: true
+    };
+
+    xlsx.writeFile(workbook, exportPath, writeOpts);
+    
+    // Verify file still exists after saving
+    if (!fs.existsSync(exportPath)) {
+        throw new Error('Failed to save updated export file');
+    }
+
+    console.log('Successfully updated export file with', completedApps.length, 'applications');
+    return true;
+}
+
+// Main export function that coordinates the steps
 function exportCompletedAppsToExcel() {
     try {
         // Validate if there are any completed apps to export
@@ -278,46 +369,44 @@ function exportCompletedAppsToExcel() {
 
         console.log(`Starting export of ${completedApps.length} completed applications`);
 
-        // Get template path
+        // Use the exact same template copying logic as createCleanExportTemplate
         const templatePath = path.join(__dirname, 'templates', 'Application Strategy Export Template.xlsx');
         
         // Validate template exists
         if (!fs.existsSync(templatePath)) {
-            throw new Error('Export template file not found');
+            throw new Error('Export template file not found at: ' + templatePath);
         }
 
         // Create export filename with timestamp
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
         const exportPath = path.join(app.getPath('downloads'), `completed-applications-${timestamp}.xlsx`);
         
-        // Copy template to destination
+        // Copy template to destination - using exact same copy method
         fs.copyFileSync(templatePath, exportPath);
-        console.log('Template copied to:', exportPath);
+        
+        // Verify the file was copied successfully
+        if (!fs.existsSync(exportPath)) {
+            throw new Error('Failed to copy template file to: ' + exportPath);
+        }
 
-        // Open the copied file
+        // Now just update the values in cells A4 and B4 for each completed app
         const workbook = xlsx.readFile(exportPath);
         const worksheet = workbook.Sheets[workbook.SheetNames[0]];
 
-        // Start from row 5 (index 4) to skip the instructions and headers
+        // Start from row 4 (as per template format)
         let currentRow = 4;
 
         // Add data to the copied template
         completedApps.forEach(app => {
             // Add application name to column A
-            worksheet[xlsx.utils.encode_cell({r: currentRow, c: 0})] = {
-                t: 's',
-                v: app.name
-            };
+            worksheet[xlsx.utils.encode_cell({r: currentRow, c: 0})] = { t: 's', v: app.name };
 
             // Add TIRE placement to column B
             const placement = app.confirmedTIREPlacement !== "Not Set" 
                 ? app.confirmedTIREPlacement 
                 : app.initialTIREPlacement;
 
-            worksheet[xlsx.utils.encode_cell({r: currentRow, c: 1})] = {
-                t: 's',
-                v: placement || "Not Set"
-            };
+            worksheet[xlsx.utils.encode_cell({r: currentRow, c: 1})] = { t: 's', v: placement || "Not Set" };
 
             currentRow++;
         });
@@ -360,6 +449,42 @@ ipcMain.handle('refresh-main-window', () => {
         mainWindow.webContents.send('refresh-data');
     }
     return true;
+});
+
+// Function to create a clean export template
+function createCleanExportTemplate() {
+    try {
+        // Get template path
+        const templatePath = path.join(__dirname, 'templates', 'Application Strategy Export Template.xlsx');
+        
+        // Validate template exists
+        if (!fs.existsSync(templatePath)) {
+            throw new Error('Export template file not found at: ' + templatePath);
+        }
+
+        // Create export filename with timestamp
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const exportPath = path.join(app.getPath('downloads'), `Application-Strategy-Export-${timestamp}.xlsx`);
+        
+        // Copy template to destination
+        fs.copyFileSync(templatePath, exportPath);
+        
+        // Verify the file was copied successfully
+        if (!fs.existsSync(exportPath)) {
+            throw new Error('Failed to copy template file to: ' + exportPath);
+        }
+
+        console.log('Template successfully copied to:', exportPath);
+        return { success: true, path: exportPath };
+    } catch (error) {
+        console.error('Error creating export template:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+// Add IPC handler for creating clean export template
+ipcMain.handle('create-export-template', async () => {
+    return createCleanExportTemplate();
 });
 
 app.whenReady().then(() => {
