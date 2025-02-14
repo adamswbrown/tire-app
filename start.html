@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dr Migrate TIRE Questionnaire App - Start</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="start-screen">
+    <div class="start-container">
+        <div class="upload-widget">
+            <h1>Welcome to Dr Migrate TIRE Questionnaire</h1>
+            <p class="instructions">
+                To begin, please upload the <strong>App to Server Export (Bulk upload template)</strong> from your Dr Migrate instance's CMDB Assistant.
+            </p>
+            <div class="upload-area" id="uploadArea">
+                <img src="upload-icon.svg" alt="Upload" class="upload-icon">
+                <p>Drag and drop your Excel file here</p>
+                <p>or</p>
+                <button id="uploadBtn" class="primary-button">Choose File</button>
+            </div>
+            <p class="file-requirements">
+                Supported file: Excel (.xlsx) containing "App-to-Server List" sheet
+            </p>
+            <p id="statusMessage" class="status-message"></p>
+        </div>
+    </div>
+    <script src="start.js"></script>
+</body>
+</html> 

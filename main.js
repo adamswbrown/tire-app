@@ -4,10 +4,12 @@ const fs = require('fs');
 const xlsx = require('xlsx');
 
 let mainWindow;
+let startWindow;
 let strategyQuestionsWindow = null;
 let explanationWindow = null;
 let distributionThreshold = 80;
 let completedApps = [];
+let uploadedData = null; // Store uploaded data
 
 // Clear completed apps file when the app launches
 function resetCompletedAppsFile() {
@@ -49,6 +51,28 @@ function loadDistributionThreshold() {
     }
 }
 
+// Create the start window
+function createStartWindow() {
+    startWindow = new BrowserWindow({
+        width: 1200,
+        height: 800,
+        webPreferences: {
+            nodeIntegration: true,
+            contextIsolation: false,
+        },
+        show: false
+    });
+
+    startWindow.maximize();
+    startWindow.show();
+
+    startWindow.loadFile('start.html');
+
+    startWindow.on('closed', () => {
+        startWindow = null;
+    });
+}
+
 // Create the main window
 function createMainWindow() {
     mainWindow = new BrowserWindow({
@@ -58,10 +82,33 @@ function createMainWindow() {
             nodeIntegration: true,
             contextIsolation: false,
         },
+        show: false
     });
 
+    mainWindow.maximize();
+    mainWindow.show();
+
     mainWindow.loadFile('index.html').catch(err => console.error('Error loading index.html:', err));
+
+    // Send the uploaded data once the window is ready
+    mainWindow.webContents.on('did-finish-load', () => {
+        if (uploadedData) {
+            mainWindow.webContents.send('uploaded-data', uploadedData);
+        }
+    });
+
+    mainWindow.on('closed', () => {
+        mainWindow = null;
+    });
 }
+
+// Handle showing main window after successful upload
+ipcMain.on('show-main-window', () => {
+    createMainWindow();
+    if (startWindow) {
+        startWindow.close();
+    }
+});
 
 // Expose completed apps list to renderer process
 ipcMain.handle('get-completed-apps', () => {
@@ -179,7 +226,11 @@ ipcMain.on('open-strategy-questions-window', (event, appName) => {
             nodeIntegration: true,
             contextIsolation: false,
         },
+        show: false  // Don't show until we maximize
     });
+
+    strategyQuestionsWindow.maximize();  // Maximize the window
+    strategyQuestionsWindow.show();      // Show after maximizing
 
     strategyQuestionsWindow.loadFile('strategy-questions.html').then(() => {
         strategyQuestionsWindow.webContents.send('set-application-name', appName);
@@ -463,9 +514,32 @@ ipcMain.handle('create-export-template', async () => {
     return createCleanExportTemplate();
 });
 
+// Store uploaded data
+ipcMain.handle('store-uploaded-data', (event, data) => {
+    uploadedData = data;
+    return true;
+});
+
+// Get uploaded data
+ipcMain.handle('get-uploaded-data', () => {
+    return uploadedData;
+});
+
 app.whenReady().then(() => {
     resetCompletedAppsFile();
     loadCompletedApps();
     loadDistributionThreshold();
-    createMainWindow();
+    createStartWindow();
+});
+
+app.on('window-all-closed', () => {
+    if (process.platform !== 'darwin') {
+        app.quit();
+    }
+});
+
+app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) {
+        createStartWindow();
+    }
 });

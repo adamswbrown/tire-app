@@ -760,3 +760,111 @@ tr.completed-row .action-cell button:hover {
     background-color: #e0a800;
     color: #533f03;
 }
+
+/* Start Screen Styles */
+.start-screen {
+    background-color: #f8f9fa;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-xl);
+}
+
+.start-container {
+    max-width: 800px;
+    width: 100%;
+    background: white;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    padding: var(--spacing-xl);
+}
+
+.upload-widget {
+    text-align: center;
+}
+
+.upload-widget h1 {
+    color: var(--primary);
+    margin-bottom: var(--spacing-lg);
+    font-size: 32px;
+}
+
+.instructions {
+    color: var(--dark);
+    font-size: var(--font-size-lg);
+    margin-bottom: var(--spacing-xl);
+    line-height: 1.6;
+}
+
+.upload-area {
+    border: 2px dashed var(--border);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-xl);
+    margin: var(--spacing-xl) 0;
+    background-color: #f8f9fa;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.upload-area:hover {
+    border-color: var(--secondary);
+    background-color: #f1f8ff;
+}
+
+.upload-area.drag-over {
+    border-color: var(--secondary);
+    background-color: #e3f2fd;
+}
+
+.upload-icon {
+    width: 64px;
+    height: 64px;
+    margin-bottom: var(--spacing-md);
+}
+
+.upload-area p {
+    margin: var(--spacing-sm) 0;
+    color: var(--gray);
+}
+
+.primary-button {
+    background-color: var(--secondary);
+    color: white;
+    padding: var(--spacing-sm) var(--spacing-xl);
+    border-radius: var(--radius-md);
+    border: none;
+    font-size: var(--font-size-base);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin: var(--spacing-md) 0;
+}
+
+.primary-button:hover {
+    background-color: var(--secondary-hover);
+    transform: translateY(-1px);
+}
+
+.file-requirements {
+    color: var(--gray);
+    font-size: var(--font-size-sm);
+    margin-top: var(--spacing-lg);
+}
+
+.status-message {
+    margin-top: var(--spacing-lg);
+    padding: var(--spacing-sm);
+    border-radius: var(--radius-sm);
+    font-weight: 500;
+}
+
+.status-message.success {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status-message.error {
+    background-color: #f8d7da;
+    color: #721c24;
+}

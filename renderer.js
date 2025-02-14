@@ -7,29 +7,95 @@ async function fetchCompletedApps() {
     completedAppsList = await ipcRenderer.invoke('get-completed-apps');
 }
 
+// Listen for uploaded data from main process
+ipcRenderer.on('uploaded-data', (event, data) => {
+    if (data) {
+        currentData = data;
+        filterTable();
+        updateMetrics(data);
+        document.getElementById("statusMessage").textContent = "Data loaded successfully";
+    }
+});
+
+// Function to initialize data on load
+async function initializeData() {
+    // Try to get any stored data
+    const data = await ipcRenderer.invoke('get-uploaded-data');
+    if (data) {
+        currentData = data;
+        filterTable();
+        updateMetrics(data);
+    }
+}
+
 // Function to filter table data
 function filterTable() {
-    const inScope = document.getElementById("inScopeCheckbox").checked;
-    const outScope = document.getElementById("outScopeCheckbox").checked;
-    const completed = document.getElementById("completedCheckbox").checked;
-    const uncompleted = document.getElementById("uncompletedCheckbox").checked;
-    const searchText = document.getElementById("searchInput").value.toLowerCase();
+    console.log('Filter function called');
+    
+    // Get filter elements
+    const inScopeCheckbox = document.getElementById("inScopeCheckbox");
+    const outScopeCheckbox = document.getElementById("outScopeCheckbox");
+    const completedCheckbox = document.getElementById("completedCheckbox");
+    const uncompletedCheckbox = document.getElementById("uncompletedCheckbox");
+    const searchInput = document.getElementById("searchInput");
+
+    // Check if elements exist
+    if (!inScopeCheckbox || !outScopeCheckbox || !completedCheckbox || !uncompletedCheckbox || !searchInput) {
+        console.error('Filter elements not found');
+        return;
+    }
+
+    const inScope = inScopeCheckbox.checked;
+    const outScope = outScopeCheckbox.checked;
+    const completed = completedCheckbox.checked;
+    const uncompleted = uncompletedCheckbox.checked;
+    const searchText = searchInput.value.toLowerCase().trim();
+
+    console.log('Filter states:', { inScope, outScope, completed, uncompleted, searchText });
 
     const filteredData = currentData.filter(item => {
-        const isCompleted = completedAppsList.includes(item['Application Name']);
-        const inScopeMatch = !inScope || item['Assessment Scope'] === "In Scope";
-        const outScopeMatch = !outScope || item['Assessment Scope'] === "Out of Scope";
-        const completedMatch = !completed || isCompleted;
-        const uncompletedMatch = !uncompleted || !isCompleted;
-        const searchMatch = !searchText || 
-            item['Application Name'].toLowerCase().includes(searchText) ||
-            item['Assessment Scope'].toLowerCase().includes(searchText) ||
-            item['Data Center'].toLowerCase().includes(searchText);
+        // Debug log each item's scope
+        console.log(`Processing item: ${item['Application Name']}, Scope: ${item['Assessment Scope']}`);
 
-        return inScopeMatch && outScopeMatch && completedMatch && uncompletedMatch && searchMatch;
+        // Scope filtering
+        let scopeMatch = true;
+        if (inScope && !outScope) {
+            scopeMatch = item['Assessment Scope'] === "In Scope";
+        } else if (!inScope && outScope) {
+            scopeMatch = item['Assessment Scope'] === "Out of Scope";
+        } else if (inScope && outScope) {
+            scopeMatch = true; // Show both if both are checked
+        }
+
+        // Completion status
+        const isCompleted = completedAppsList.includes(item['Application Name']);
+        let completionMatch = true;
+        if (completed && !uncompleted) {
+            completionMatch = isCompleted;
+        } else if (!completed && uncompleted) {
+            completionMatch = !isCompleted;
+        } else if (completed && uncompleted) {
+            completionMatch = true; // Show both if both are checked
+        }
+
+        // Search text
+        let searchMatch = true;
+        if (searchText) {
+            searchMatch = item['Application Name'].toLowerCase().includes(searchText) ||
+                         item['Assessment Scope'].toLowerCase().includes(searchText) ||
+                         (item['Data Center'] && item['Data Center'].toLowerCase().includes(searchText));
+        }
+
+        const shouldInclude = scopeMatch && completionMatch && searchMatch;
+        console.log(`Filter results for ${item['Application Name']}: `, 
+            { scopeMatch, completionMatch, searchMatch, shouldInclude });
+        
+        return shouldInclude;
     });
 
+    console.log(`Filtered data length: ${filteredData.length} (from ${currentData.length} total)`);
     displayData(filteredData);
+    updateMetrics(filteredData);
 }
 
 // Function to display data in the table
@@ -106,24 +172,6 @@ async function viewResults(appName) {
     ipcRenderer.send('open-strategy-questions-window', appName);
 }
 
-// Event listener for file upload
-document.getElementById("uploadBtn").addEventListener("click", async () => {
-    try {
-        const result = await ipcRenderer.invoke('upload-file');
-        if (result.error) {
-            document.getElementById("statusMessage").textContent = result.error;
-            return;
-        }
-        currentData = result;
-        await fetchCompletedApps();
-        filterTable();
-        document.getElementById("statusMessage").textContent = "File uploaded successfully";
-    } catch (error) {
-        document.getElementById("statusMessage").textContent = "Error uploading file";
-        console.error('Error:', error);
-    }
-});
-
 // Event listener for clearing data
 document.getElementById("clearStorageBtn").addEventListener("click", () => {
     localStorage.clear();
@@ -182,12 +230,41 @@ document.getElementById("createExportBtn").addEventListener("click", async () =>
     }
 });
 
-// Initialize the display when the page loads
+// Initialize event listeners when DOM is loaded
 document.addEventListener('DOMContentLoaded', async () => {
+    console.log('DOM Content Loaded');
+    
+    // Initialize filter elements
+    const elements = {
+        searchInput: document.getElementById("searchInput"),
+        inScopeCheckbox: document.getElementById("inScopeCheckbox"),
+        outScopeCheckbox: document.getElementById("outScopeCheckbox"),
+        completedCheckbox: document.getElementById("completedCheckbox"),
+        uncompletedCheckbox: document.getElementById("uncompletedCheckbox")
+    };
+
+    // Check if elements exist and attach listeners
+    Object.entries(elements).forEach(([name, element]) => {
+        if (element) {
+            console.log(`Found ${name} element`);
+            if (name === 'searchInput') {
+                element.addEventListener("input", () => {
+                    console.log('Search input changed:', element.value);
+                    filterTable();
+                });
+            } else {
+                element.addEventListener("change", () => {
+                    console.log(`${name} changed:`, element.checked);
+                    filterTable();
+                });
+            }
+        } else {
+            console.error(`${name} element not found`);
+        }
+    });
+
     await fetchCompletedApps();
-    if (currentData.length > 0) {
-        filterTable();
-    }
+    await initializeData();
 });
 
 // Listen for distributionThreshold value from the main process

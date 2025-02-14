@@ -14,19 +14,11 @@
 
             <!-- Upload Excel File -->
             <div class="button-container">
-                <button id="uploadBtn">Upload Excel File</button>
-                <button id="clearStorageBtn" class="clear-btn">Clear Data</button>
+                <!--<button id="uploadBtn">Upload Excel File</button>-->
+     
             </div>
             <p id="statusMessage"></p>
 
-            <!-- Search and filter container -->
-            <div class="search-filter-container">
-                <input type="text" id="searchInput" placeholder="Search applications..." />
-                <label><input type="checkbox" id="inScopeCheckbox" /> In Scope</label>
-                <label><input type="checkbox" id="outScopeCheckbox" /> Out of Scope</label>
-                <label><input type="checkbox" id="completedCheckbox" /> Completed</label>
-                <label><input type="checkbox" id="uncompletedCheckbox" /> Uncompleted</label>
-            </div>
 
             <!-- Dashboard metrics -->
             <div class="dashboard">
@@ -48,10 +40,22 @@
                 </div>
             </div>
 
+                 <!-- Search and filter container -->
+                 <div class="search-filter-container">
+                    <input type="text" id="searchInput" placeholder="Search applications..." />
+                    <div class="filter-options">
+                        <label><input type="checkbox" id="inScopeCheckbox" /> In Scope</label>
+                        <label><input type="checkbox" id="outScopeCheckbox" /> Out of Scope</label>
+                        <label><input type="checkbox" id="completedCheckbox" /> Completed</label>
+                        <label><input type="checkbox" id="uncompletedCheckbox" /> Uncompleted</label>
+                    </div>
+                </div>
+
             <!-- Export button -->
             <div class="export-container">
                 <!--<button id="createExportBtn">Create Export</button>-->
                 <button id="exportBtn">Export Completed Apps</button>
+                <button id="clearStorageBtn" class="clear-btn">Clear Data</button>
             </div>
         </div>
 
