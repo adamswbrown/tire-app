@@ -197,10 +197,10 @@ loadStrategyQuestions().then(() => {
 
 
 function updateAnsweredQuestionsCounter() {
-    answeredQuestions = strategyQuestions.filter(q => q.clientAnswer !== '-').length; // Count answered questions
-    const counterElement = document.getElementById('questionsAnsweredCounter');
+    answeredQuestions = strategyQuestions.filter(q => q.clientAnswer !== '-').length;
+    const counterElement = document.getElementById('completionText');
     if (counterElement) {
-        counterElement.textContent = `${answeredQuestions} / ${totalQuestions} questions answered`; // Update the counter display
+        counterElement.textContent = `${answeredQuestions} / ${totalQuestions} questions answered`;
     }
 }
 
@@ -221,6 +221,15 @@ function calculateClientScore(clientAnswer, weight) {
         return Math.round(weight / 2);
     }
     return 0;  // Default to 0 if the answer is empty or invalid
+}
+
+// Helper function to get temperature class based on percentage
+function getTemperatureClass(percentage) {
+    if (percentage >= 80) return 'temp-80-100';
+    if (percentage >= 60) return 'temp-61-79';
+    if (percentage >= 40) return 'temp-41-60';
+    if (percentage >= 20) return 'temp-21-40';
+    return 'temp-0-20';
 }
 
 // Update Client Scores in the summary table
@@ -255,35 +264,40 @@ function updateClientScores() {
         // Store distribution in the scores object
         scores[category].distribution = distribution;
         
-        // Track the highest distribution regardless of threshold
+        if (distribution >= distributionThreshold) {
+            categoriesAboveThreshold.push({ category, distribution });
+        }
+
+        // Track the highest distribution
         if (distribution > maxDistribution) {
             maxDistribution = distribution;
             maxCategory = category;
         }
-        
-        if (distribution >= distributionThreshold) {
-            categoriesAboveThreshold.push({ category, distribution });
-        }
     });
 
-    // Update summary table
+    // Update summary table with new styling
     const summaryTableBody = document.querySelector('#summaryTable tbody');
     summaryTableBody.innerHTML = '';
 
     Object.entries(scores).forEach(([category, data]) => {
         const row = document.createElement('tr');
         const distribution = data.distribution;
+        const temperatureClass = getTemperatureClass(distribution);
+        
+        // Apply temperature class to the entire row
+        row.className = temperatureClass;
         
         row.innerHTML = `
             <td>${category.charAt(0).toUpperCase() + category.slice(1)}</td>
             <td>${data.score}</td>
             <td>${data.total}</td>
-            <td class="distribution-column">${distribution}%</td>
+            <td class="distribution-column">
+                <div class="distribution-percentage">
+                    <div class="distribution-bar" style="width: ${distribution}%"></div>
+                    <span>${distribution}%</span>
+                </div>
+            </td>
         `;
-
-        if (distribution >= distributionThreshold) {
-            row.classList.add('meets-threshold');
-        }
 
         summaryTableBody.appendChild(row);
     });
@@ -302,24 +316,28 @@ function updateClientScores() {
             // Single category above threshold
             updateConfirmedPlacement(categoriesAboveThreshold[0].category);
         } else {
-            // Multiple categories above threshold
-            const maxDist = Math.max(...categoriesAboveThreshold.map(c => c.distribution));
-            const highestCategories = categoriesAboveThreshold.filter(c => {
-                // Consider categories within tiebreakThreshold% of the highest as ties
-                return maxDist - c.distribution <= tiebreakThreshold;
-            });
-
-            if (highestCategories.length === 1) {
-                // Clear winner by percentage
-                updateConfirmedPlacement(highestCategories[0].category);
+            // Check if Invest is among categories above threshold
+            const investCategory = categoriesAboveThreshold.find(c => c.category === 'invest');
+            if (investCategory && investCategory.distribution === 100) {
+                // If Invest is at 100%, automatically select it
+                updateConfirmedPlacement('invest');
             } else {
-                // Check for "Invest" category
-                const investCategory = highestCategories.find(c => c.category === 'invest');
-                if (investCategory) {
-                    updateConfirmedPlacement('invest');
+                // Find if categories are within tiebreaker threshold of each other
+                const maxAboveThreshold = Math.max(...categoriesAboveThreshold.map(c => c.distribution));
+                const categoriesNeedingTiebreak = categoriesAboveThreshold.filter(
+                    c => maxAboveThreshold - c.distribution <= tiebreakThreshold
+                );
+
+                // Only show tiebreaker if we have multiple categories within the tiebreak threshold
+                if (categoriesNeedingTiebreak.length > 1) {
+                    console.log('Multiple categories within tiebreak threshold:', categoriesNeedingTiebreak);
+                    showTiebreakerModal(categoriesNeedingTiebreak);
                 } else {
-                    // Show tiebreaker modal for manual selection
-                    showTiebreakerModal(highestCategories);
+                    // If categories aren't within tiebreak threshold, select the highest
+                    const highestCategory = categoriesAboveThreshold.reduce((prev, current) => 
+                        (current.distribution > prev.distribution) ? current : prev
+                    );
+                    updateConfirmedPlacement(highestCategory.category);
                 }
             }
         }
@@ -354,16 +372,17 @@ ipcRenderer.on('set-distribution-threshold', (event, distributionThreshold) => {
 
 
 // Function to save answers, notes, and summary outcomes to an external file
-function saveToFile() {
+async function saveToFile() {
+    // Check Initial TIRE Placement first
     const initialTimePlacement = document.getElementById('initialTimePlacement').value;
-    const confirmedTimePlacement = document.getElementById('confirmedTimePlacement').textContent;
-    const appName = document.getElementById('applicationName').textContent;
+    if (!initialTimePlacement) {
+        // Show error message if Initial TIRE Placement is not set
+        const errorMessage = 'Please set an Initial TIRE Placement before saving.';
+        alert(errorMessage);
+        return;
+    }
 
-    // Get restart history for this application
-    const restartHistory = JSON.parse(localStorage.getItem('restartHistory') || '{}');
-    const appRestarts = restartHistory[appName] || [];
-
-    // Calculate scores and distributions
+    // Check for tiebreaker scenario first
     let scores = {
         tolerate: { score: 0, total: 0 },
         invest: { score: 0, total: 0 },
@@ -375,15 +394,50 @@ function saveToFile() {
     strategyQuestions.forEach(row => {
         const category = row.time.toLowerCase();
         if (scores[category]) {
-            scores[category].score += row.clientScore || 0;
-            scores[category].total += row.weight || 0;
+            const weight = parseInt(row.weight) || 0;
+            scores[category].score += parseInt(row.clientScore) || 0;
+            scores[category].total += weight;
         }
     });
 
-    // Calculate distributions
+    // Find categories above threshold
+    let categoriesAboveThreshold = [];
     Object.entries(scores).forEach(([category, data]) => {
-        data.distribution = data.total > 0 ? Math.round((data.score / data.total) * 100) + '%' : '0%';
+        const score = parseInt(data.score) || 0;
+        const total = parseInt(data.total) || 0;
+        const distribution = total > 0 ? Math.round((score / total) * 100) : 0;
+        if (distribution >= distributionThreshold) {
+            categoriesAboveThreshold.push({ category, distribution });
+        }
     });
+
+    // If multiple categories are above threshold, show tiebreaker modal
+    if (categoriesAboveThreshold.length > 1) {
+        try {
+            const selectedCategory = await showTiebreakerModalWithPromise(categoriesAboveThreshold);
+            if (selectedCategory === 'go-back') {
+                return; // User wants to go back and edit answers
+            }
+            updateConfirmedPlacement(selectedCategory);
+        } catch (error) {
+            console.error('Tiebreaker modal error:', error);
+            return; // Don't proceed with save if there's an error
+        }
+    }
+
+    // Get the current values after potential tiebreaker selection
+    const confirmedTimePlacement = document.getElementById('confirmedTimePlacement').textContent;
+    const appName = document.getElementById('applicationName').textContent;
+
+    // Verify Initial TIRE Placement is still set (in case it was changed)
+    if (!initialTimePlacement || initialTimePlacement === '-') {
+        alert('Please set an Initial TIRE Placement before saving.');
+        return;
+    }
+
+    // Get restart history for this application
+    const restartHistory = JSON.parse(localStorage.getItem('restartHistory') || '{}');
+    const appRestarts = restartHistory[appName] || [];
 
     const answersData = strategyQuestions.map(row => ({
         time: row.time,
@@ -396,6 +450,11 @@ function saveToFile() {
         extendedAnswer: row.extendedAnswer,
         sampleDrivers: row.sampleDrivers
     }));
+
+    // Calculate final distributions for saving
+    Object.entries(scores).forEach(([category, data]) => {
+        data.distribution = data.total > 0 ? Math.round((data.score / data.total) * 100) + '%' : '0%';
+    });
 
     const outputData = {
         applicationName: appName,
@@ -415,7 +474,81 @@ function saveToFile() {
     ipcRenderer.send('save-answers-to-file', outputData);
 }
 
+// Updated tiebreaker modal function that returns a Promise
+function showTiebreakerModalWithPromise(categories) {
+    return new Promise((resolve, reject) => {
+        const modal = document.createElement('div');
+        modal.className = 'modal show';
+        modal.id = 'tiebreakerModal';
+        
+        const modalContent = `
+            <div class="modal-content">
+                <h2>Multiple Categories Above Threshold</h2>
+                <p>Multiple categories have met or exceeded the distribution threshold (${distributionThreshold}%) 
+                   and are within the tiebreaker threshold of ${tiebreakThreshold}% of each other.</p>
+                
+                <div class="category-scores">
+                    ${categories.map(c => `
+                        <div class="category-score">
+                            <strong>${c.category.charAt(0).toUpperCase() + c.category.slice(1)}:</strong> ${c.distribution}%
+                        </div>
+                    `).join('')}
+                </div>
 
+                <p>Please select the final TIRE placement:</p>
+                
+                <div class="category-buttons">
+                    ${categories.map(c => `
+                        <button class="category-select-btn" data-category="${c.category}">
+                            ${c.category.toUpperCase()}
+                        </button>
+                    `).join('')}
+                </div>
+                
+                <div class="tiebreaker-info">
+                    <p><strong>Tiebreaker Rules Applied:</strong></p>
+                    <ul>
+                        <li>Categories within ${tiebreakThreshold}% are considered ties</li>
+                        <li>"Invest" category is weighted more heavily</li>
+                        <li>Initial TIRE placement is considered as a tiebreaker</li>
+                    </ul>
+                </div>
+
+                <div class="modal-buttons">
+                    <button class="go-back-btn">Go Back and Edit Answers</button>
+                </div>
+            </div>
+        `;
+        
+        modal.innerHTML = modalContent;
+        document.body.appendChild(modal);
+
+        // Add event listeners for category selection
+        const buttons = modal.querySelectorAll('.category-select-btn');
+        buttons.forEach(button => {
+            button.addEventListener('click', () => {
+                const selectedCategory = button.dataset.category;
+                modal.remove();
+                resolve(selectedCategory);
+            });
+        });
+
+        // Add event listener for go back button
+        const goBackBtn = modal.querySelector('.go-back-btn');
+        goBackBtn.addEventListener('click', () => {
+            modal.remove();
+            resolve('go-back');
+        });
+
+        // Close modal when clicking outside (treated as "go back")
+        modal.addEventListener('click', (event) => {
+            if (event.target === modal) {
+                modal.remove();
+                resolve('go-back');
+            }
+        });
+    });
+}
 
 // Populate the Confirmed TIME Placement based on the highest distribution in the summary table
 function updateConfirmedTimePlacement() {
@@ -556,9 +689,11 @@ ipcRenderer.on('set-distribution-threshold', (event, distributionThreshold) => {
 
 // Function to update the answered questions counter
 function updateAnsweredQuestionsCounter() {
-    answeredQuestions = strategyQuestions.filter(q => q.clientAnswer !== '-').length; // Count answered questions
-    const counterElement = document.getElementById('questionsAnsweredCounter');
-    counterElement.textContent = `${answeredQuestions} / ${totalQuestions} questions answered`; // Update the counter display
+    answeredQuestions = strategyQuestions.filter(q => q.clientAnswer !== '-').length;
+    const counterElement = document.getElementById('completionText');
+    if (counterElement) {
+        counterElement.textContent = `${answeredQuestions} / ${totalQuestions} questions answered`;
+    }
 }
 
 
