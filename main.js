@@ -140,10 +140,22 @@ ipcMain.handle('upload-file', async () => {
                 row['Application Name'] !== 'Unassociated'
             );
 
-            console.log('Sample transformed row:', filteredData[0]);
-            console.log('Total rows after filtering:', filteredData.length);
+            // Deduplicate applications by using a Map to keep only the first occurrence
+            const uniqueApps = new Map();
+            filteredData.forEach(row => {
+                const appKey = row['Application Name'];
+                if (!uniqueApps.has(appKey)) {
+                    uniqueApps.set(appKey, row);
+                }
+            });
 
-            return filteredData;
+            // Convert Map back to array
+            const deduplicatedData = Array.from(uniqueApps.values());
+
+            console.log('Sample transformed row:', deduplicatedData[0]);
+            console.log('Total rows after filtering and deduplication:', deduplicatedData.length);
+
+            return deduplicatedData;
         } else {
             return { error: 'Sheet "App-to-Server List" not found in the Excel file.' };
         }
