@@ -632,10 +632,10 @@ tr.completed-row .action-cell button:hover {
     font-weight: 600;
     display: block;
     width: 100%;
-    text-align: right;
-    color: #000000 !important;
+    text-align: center;
+    color: #ffffff !important;
     mix-blend-mode: difference;
-    text-shadow: 0 0 2px rgba(244, 240, 240, 0.8);
+    text-shadow: 0 0 2px rgba(0, 0, 0, 0.8);
 }
 
 /* Remove any inherited background colors from rows */
@@ -1025,20 +1025,6 @@ tr.completed-row .action-cell button:hover {
     text-align: right;
     padding-right: var(--spacing-lg) !important;
     position: relative;
-}
-
-/* Make sure percentage text stays above the bar */
-.distribution-percentage span {
-    position: relative;
-    z-index: 1;
-    font-weight: 600;
-    display: block;
-    width: 100%;
-    text-align: center;
-    color: #ffffff !important;
-    mix-blend-mode: difference;
-    text-shadow: 0 0 2px rgba(0, 0, 0, 0.8);
-    padding: 0;
 }
 
 /* Temperature color classes for entire rows */
