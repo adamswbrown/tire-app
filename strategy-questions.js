@@ -362,10 +362,13 @@ ipcRenderer.on('open-strategy-questions-window', (event, applicationName) => {
 });
 
 ipcRenderer.on('set-distribution-threshold', (event, distributionThreshold) => {
-    console.log('Received distribution threshold:', distributionThreshold); // Check if the value is received correctly
     const thresholdElement = document.getElementById('distribution-threshold');
+    const tiebreakElement = document.getElementById('tiebreaker-threshold');
     if (thresholdElement) {
         thresholdElement.textContent = distributionThreshold;
+    }
+    if (tiebreakElement) {
+        tiebreakElement.textContent = tiebreakThreshold;
     }
 });
 
@@ -376,13 +379,11 @@ async function saveToFile() {
     // Check Initial TIRE Placement first
     const initialTimePlacement = document.getElementById('initialTimePlacement').value;
     if (!initialTimePlacement) {
-        // Show error message if Initial TIRE Placement is not set
-        const errorMessage = 'Please set an Initial TIRE Placement before saving.';
-        alert(errorMessage);
+        alert('Please set an Initial TIRE Placement before saving.');
         return;
     }
 
-    // Check for tiebreaker scenario first
+    // Calculate scores and check if any category is above threshold
     let scores = {
         tolerate: { score: 0, total: 0 },
         invest: { score: 0, total: 0 },
@@ -400,7 +401,24 @@ async function saveToFile() {
         }
     });
 
-    // Find categories above threshold
+    // Check if any category is above threshold
+    let hasAboveThreshold = false;
+    Object.entries(scores).forEach(([category, data]) => {
+        const score = parseInt(data.score) || 0;
+        const total = parseInt(data.total) || 0;
+        const distribution = total > 0 ? Math.round((score / total) * 100) : 0;
+        if (distribution >= distributionThreshold) {
+            hasAboveThreshold = true;
+        }
+    });
+
+    if (!hasAboveThreshold) {
+        alert(`At least one TIRE category must be above the distribution threshold (${distributionThreshold}%) to complete the assessment.`);
+        return;
+    }
+
+    // Rest of the existing save logic...
+    // Find categories above threshold for tiebreaker
     let categoriesAboveThreshold = [];
     Object.entries(scores).forEach(([category, data]) => {
         const score = parseInt(data.score) || 0;
@@ -411,7 +429,7 @@ async function saveToFile() {
         }
     });
 
-    // If multiple categories are above threshold, show tiebreaker modal
+    // Continue with existing tiebreaker logic...
     if (categoriesAboveThreshold.length > 1) {
         try {
             const selectedCategory = await showTiebreakerModalWithPromise(categoriesAboveThreshold);
@@ -421,19 +439,13 @@ async function saveToFile() {
             updateConfirmedPlacement(selectedCategory);
         } catch (error) {
             console.error('Tiebreaker modal error:', error);
-            return; // Don't proceed with save if there's an error
+            return;
         }
     }
 
     // Get the current values after potential tiebreaker selection
     const confirmedTimePlacement = document.getElementById('confirmedTimePlacement').textContent;
     const appName = document.getElementById('applicationName').textContent;
-
-    // Verify Initial TIRE Placement is still set (in case it was changed)
-    if (!initialTimePlacement || initialTimePlacement === '-') {
-        alert('Please set an Initial TIRE Placement before saving.');
-        return;
-    }
 
     // Get restart history for this application
     const restartHistory = JSON.parse(localStorage.getItem('restartHistory') || '{}');
@@ -681,8 +693,12 @@ document.getElementById('explanationBtn').addEventListener('click', () => {
 // Listen for the distribution threshold sent from the main process
 ipcRenderer.on('set-distribution-threshold', (event, distributionThreshold) => {
     const thresholdElement = document.getElementById('distribution-threshold');
+    const tiebreakElement = document.getElementById('tiebreaker-threshold');
     if (thresholdElement) {
         thresholdElement.textContent = distributionThreshold;
+    }
+    if (tiebreakElement) {
+        tiebreakElement.textContent = tiebreakThreshold;
     }
 });
 
