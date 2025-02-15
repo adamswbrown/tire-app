@@ -57,45 +57,53 @@ jobs:
           node-version: '18'
 
       - name: Install dependencies
-        run: npm install
+        run: |
+          npm install
+          npm audit fix --force || true  # Fix audit issues but don't fail if can't fix all
 
       - name: Build Electron app
+        shell: ${{ matrix.os == 'windows-latest' && 'pwsh' || 'bash' }}
         run: |
           # Create a backup of package.json
-          cp package.json package.json.backup
+          Copy-Item -Path package.json -Destination package.json.backup
           
           # Create a new package.json without publish config
           node -e "const pkg = require('./package.json'); delete pkg.build.publish; require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2))"
           
-          # Build the app
-          if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            npm run build:win
-          else
-            npm run build:mac
-          fi
+          # Build the app with verbose output
+          if ('${{ matrix.os }}' -eq 'windows-latest') {
+            npm run build:win -- --debug
+            Get-ChildItem dist
+          } else {
+            DEBUG=electron-builder npm run build:mac
+            ls -la dist/
+          }
           
           # Restore original package.json
-          cp package.json.backup package.json
-          rm package.json.backup
+          Copy-Item -Path package.json.backup -Destination package.json
+          Remove-Item package.json.backup
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           USE_HARD_LINKS: false
           CSC_IDENTITY_AUTO_DISCOVERY: false  # Disable code signing
           EP_GH_IGNORE: true  # Disable electron-builder GitHub publishing
           PUBLISH_FOR_PULL_REQUEST: false  # Disable publishing for both platforms
+          DEBUG: electron-builder,electron-builder:*  # Enable debug output
 
       # Clean up unnecessary files for Windows
       - name: Clean Windows artifacts
         if: matrix.os == 'windows-latest'
+        shell: pwsh
         run: |
-          cd dist
-          rm -f *.blockmap
-          rm -f *.yaml
-          rm -f *.yml
+          Set-Location dist
+          Remove-Item -Path *.blockmap -ErrorAction SilentlyContinue
+          Remove-Item -Path *.yaml -ErrorAction SilentlyContinue
+          Remove-Item -Path *.yml -ErrorAction SilentlyContinue
 
       # Clean up unnecessary files for Mac
       - name: Clean Mac artifacts
         if: matrix.os == 'macos-latest'
+        shell: bash
         run: |
           cd dist
           rm -f *.blockmap
