@@ -30,7 +30,12 @@
     ],
     "mac": {
       "category": "public.app-category.developer-tools",
-      "target": ["zip"]
+      "target": ["zip"],
+      "artifactName": "${productName}-${version}-${arch}-mac.${ext}",
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false,
+      "electronLanguages": ["en"],
+      "identity": null
     },
     "win": {
       "target": [
