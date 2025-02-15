@@ -60,7 +60,12 @@ jobs:
         run: npm install
 
       - name: Build Electron app
-        run: npm run build
+        run: |
+          # Temporarily disable publishing in package.json
+          mv package.json package.json.bak
+          jq 'del(.build.publish)' package.json.bak > package.json
+          npm run build
+          mv package.json.bak package.json
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           USE_HARD_LINKS: false
