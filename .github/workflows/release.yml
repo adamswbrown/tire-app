@@ -23,20 +23,14 @@ jobs:
           version=${GITHUB_REF#refs/tags/v}
           echo "version=$version" >> $GITHUB_OUTPUT
 
-      - name: Generate Release Notes
+      - name: Get Release Notes
         id: release_notes
         run: |
-          # Get commit messages since last tag
-          PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
-          if [ -n "$PREVIOUS_TAG" ]; then
-            COMMITS=$(git log --pretty=format:"- %s" $PREVIOUS_TAG..HEAD)
+          if [ -f "release-notes.md" ]; then
+            echo "NOTES=$(cat release-notes.md)" >> $GITHUB_OUTPUT
           else
-            COMMITS=$(git log --pretty=format:"- %s")
+            echo "NOTES=Release v${{ steps.extract_version.outputs.version }}" >> $GITHUB_OUTPUT
           fi
-          echo "COMMITS<<EOF" >> $GITHUB_OUTPUT
-          echo "## What's Changed" >> $GITHUB_OUTPUT
-          echo "$COMMITS" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Create Source Code Archive
         run: |
@@ -48,7 +42,7 @@ jobs:
           token: ${{ secrets.GH_TOKEN }}
           name: Dr Migrate TIRE App v${{ steps.extract_version.outputs.version }}
           tag: ${{ github.ref_name }}
-          body: ${{ steps.release_notes.outputs.COMMITS }}
+          body: ${{ steps.release_notes.outputs.NOTES }}
           allowUpdates: true
           updateOnlyUnreleased: false
           replacesArtifacts: true
