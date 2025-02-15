@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle -->
+  <circle cx="512" cy="512" r="460" fill="#2B3137"/>
+  
+  <!-- TIRE segments -->
+  <path d="M512 52 A460 460 0 0 1 972 512" stroke="#4CAF50" stroke-width="80" fill="none"/> <!-- Tolerate (Green) -->
+  <path d="M972 512 A460 460 0 0 1 512 972" stroke="#2196F3" stroke-width="80" fill="none"/> <!-- Invest (Blue) -->
+  <path d="M512 972 A460 460 0 0 1 52 512" stroke="#F44336" stroke-width="80" fill="none"/> <!-- Replace (Red) -->
+  <path d="M52 512 A460 460 0 0 1 512 52" stroke="#FFC107" stroke-width="80" fill="none"/> <!-- Eliminate (Yellow) -->
+  
+  <!-- Center circle -->
+  <circle cx="512" cy="512" r="180" fill="#FFFFFF"/>
+  
+  <!-- "TIRE" text -->
+  <text x="512" y="512" font-family="Arial-Bold, Arial" font-weight="bold" font-size="140" fill="#2B3137" text-anchor="middle" dominant-baseline="middle">TIRE</text>
+</svg> 
