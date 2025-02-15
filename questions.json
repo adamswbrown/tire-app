@@ -155,7 +155,7 @@
     "question": "Does this system offer features that our competitors do not have, potentially providing us with a competitive advantage?",
     "category": "competitive advantage",
     "extendedAnswer": "",
-    "sampleDrivers": ""
+    "sampleDrivers": "Market Differentiation: If the system provides unique capabilities that set your organization apart from competitors, investing in it can maintain or enhance competitive advantage. Consider features that improve customer experience, operational efficiency, or service delivery."
   },
   {
     "time": "Invest",
@@ -166,7 +166,7 @@
     "question": "Are there clear opportunities to integrate this system with other critical tools or processes to streamline workflows?",
     "category": "Integration",
     "extendedAnswer": "",
-    "sampleDrivers": ""
+    "sampleDrivers": "Process Optimization: The potential to integrate with other systems could lead to automated workflows, reduced manual intervention, and improved data consistency across the organization."
   },
   {
     "time": "Invest",
@@ -177,7 +177,7 @@
     "question": "Can we quantify potential ROI from the investment in terms of cost savings, revenue growth, or improved customer experiences?",
     "category": "cost/value",
     "extendedAnswer": "",
-    "sampleDrivers": ""
+    "sampleDrivers": "Financial Impact: Clear ROI metrics such as reduced operational costs, increased revenue through new capabilities, or measurable improvements in customer satisfaction scores justify investment."
   },
   {
     "time": "Invest",
@@ -188,7 +188,7 @@
     "question": "Are there industry trends or technological advancements that we could leverage by investing in this system?",
     "category": "cost/value",
     "extendedAnswer": "",
-    "sampleDrivers": ""
+    "sampleDrivers": "Technology Evolution: The system aligns with industry trends like cloud adoption, AI/ML capabilities, or emerging security standards, positioning the organization for future growth and innovation."
   },
   {
     "time": "Invest",
@@ -199,7 +199,7 @@
     "question": "Would the investment in this system align with our long-term strategic goals and business objectives?",
     "category": "cost/value",
     "extendedAnswer": "",
-    "sampleDrivers": ""
+    "sampleDrivers": "Strategic Alignment: Investment supports key business objectives such as digital transformation, market expansion, or operational excellence initiatives."
   },
   {
     "time": "Invest",
@@ -210,7 +210,7 @@
     "question": "Are there feasible plans for implementation and adoption of an enhanced system, including necessary training and support?",
     "category": "modernisation",
     "extendedAnswer": "",
-    "sampleDrivers": ""
+    "sampleDrivers": "Change Management: Clear implementation roadmap exists with defined training programs, support structures, and user adoption strategies to ensure successful deployment."
   },
   {
     "time": "Replace",
@@ -254,7 +254,7 @@
     "question": "Are there challenges with remote access or collaboration that could be addressed by moving to a different platform?",
     "category": "performance / stability",
     "extendedAnswer": "",
-    "sampleDrivers": ""
+    "sampleDrivers": "Remote Work Enablement: Current system limitations in remote access or collaboration capabilities impact productivity and team effectiveness, which could be resolved through migration."
   },
   {
     "time": "Replace",
@@ -265,7 +265,7 @@
     "question": "Would migrating this system align with our organization's overall strategy to leverage cloud technologies?",
     "category": "modernisation",
     "extendedAnswer": "",
-    "sampleDrivers": ""
+    "sampleDrivers": "Cloud Strategy: Migration aligns with organizational cloud-first initiatives and enables benefits like scalability, reduced infrastructure management, and improved disaster recovery capabilities."
   },
   {
     "time": "Replace",
@@ -276,7 +276,7 @@
     "question": "Is the current system's technology outdated, and would a migration provide access to more modern features and capabilities?",
     "category": "modernisation",
     "extendedAnswer": "",
-    "sampleDrivers": ""
+    "sampleDrivers": "Technology Modernization: Current system uses outdated technology stack, limiting access to modern features, integration capabilities, or security improvements available in newer platforms."
   },
   {
     "time": "Replace",
@@ -287,7 +287,7 @@
     "question": "Are there potential security improvements that could be gained by migrating to a more secure or compliant platform?",
     "category": "security",
     "extendedAnswer": "",
-    "sampleDrivers": ""
+    "sampleDrivers": "Security Enhancement: Migration would provide access to modern security features, improved compliance capabilities, or better threat protection mechanisms not available in the current system."
   },
   {
     "time": "Replace",
@@ -298,7 +298,7 @@
     "question": "Are there any risks associated with a migration, such as data loss, downtime, or disruption to business operations?",
     "category": "criticality",
     "extendedAnswer": "",
-    "sampleDrivers": ""
+    "sampleDrivers": "Risk Assessment: Evaluation of migration risks including potential data loss, service interruptions, or business impact, weighed against the benefits of migration."
   },
   {
     "time": "Replace",
@@ -309,7 +309,7 @@
     "question": "Would the benefits of migrating this system outweigh the costs and efforts associated with the migration process?",
     "category": "cost/value",
     "extendedAnswer": "",
-    "sampleDrivers": ""
+    "sampleDrivers": "Cost-Benefit Analysis: Comprehensive evaluation of migration costs (including implementation, training, and potential disruption) versus long-term benefits and improvements."
   },
   {
     "time": "Eliminate",
@@ -375,7 +375,7 @@
     "question": "Does the function of the system duplicate functions already present (or lower cost to run or higher feature sets / value to the business?",
     "category": "legacy / tech debt",
     "extendedAnswer": "",
-    "sampleDrivers": ""
+    "sampleDrivers": "Functional Redundancy: Assessment of system functionality overlap with existing solutions, considering operational costs and feature comparisons to identify unnecessary duplications."
   },
   {
     "time": "Eliminate",
@@ -408,7 +408,7 @@
     "question": "Are there user complaints or dissatisfaction with the system's performance, usability, or functionality?",
     "category": "user satisfaction",
     "extendedAnswer": "",
-    "sampleDrivers": ""
+    "sampleDrivers": "User Experience: Documented user feedback indicating persistent issues with system performance, interface design, or functional limitations that impact productivity and satisfaction."
   },
   {
     "time": "Eliminate",
