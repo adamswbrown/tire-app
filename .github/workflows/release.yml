@@ -65,6 +65,25 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           USE_HARD_LINKS: false
 
+      # Clean up unnecessary files for Windows
+      - name: Clean Windows artifacts
+        if: matrix.os == 'windows-latest'
+        run: |
+          cd dist
+          rm -f *.blockmap
+          rm -f *.yaml
+          rm -f *.yml
+
+      # Clean up unnecessary files for Mac
+      - name: Clean Mac artifacts
+        if: matrix.os == 'macos-latest'
+        run: |
+          cd dist
+          rm -f *.blockmap
+          rm -f *.yaml
+          rm -f *.yml
+          rm -f *.dmg
+
       - name: Upload Windows Build
         if: matrix.os == 'windows-latest'
         uses: ncipollo/release-action@v1
