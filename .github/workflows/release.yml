@@ -18,18 +18,16 @@ jobs:
           version=${GITHUB_REF#refs/tags/v}
           echo "version=$version" >> $GITHUB_OUTPUT
 
-      - name: Create Release
-        id: create_release
-        uses: softprops/action-gh-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+      - name: Create/Update Release
+        uses: ncipollo/release-action@v1
         with:
-          draft: false
-          prerelease: false
+          token: ${{ secrets.GH_TOKEN }}
           name: Dr Migrate TIRE App v${{ steps.extract_version.outputs.version }}
-          tag_name: ${{ github.ref }}
-          generate_release_notes: true
-          append_body: true
+          tag: ${{ github.ref_name }}
+          generateReleaseNotes: true
+          allowUpdates: true
+          updateOnlyUnreleased: false
+          replacesArtifacts: true
 
   build-and-upload:
     needs: create-release
@@ -59,20 +57,26 @@ jobs:
 
       - name: Upload Windows Build
         if: matrix.os == 'windows-latest'
-        uses: softprops/action-gh-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+        uses: ncipollo/release-action@v1
         with:
-          tag_name: ${{ github.ref }}
-          files: |
-            ./dist/Dr Migrate TIRE App ${{ needs.create-release.outputs.version }}.exe
+          token: ${{ secrets.GH_TOKEN }}
+          tag: ${{ github.ref_name }}
+          allowUpdates: true
+          updateOnlyUnreleased: false
+          omitBody: true
+          omitPrereleaseDuringUpdate: true
+          artifacts: "./dist/Dr Migrate TIRE App ${{ needs.create-release.outputs.version }}.exe"
+          artifactContentType: application/octet-stream
 
       - name: Upload Mac Build
         if: matrix.os == 'macos-latest'
-        uses: softprops/action-gh-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+        uses: ncipollo/release-action@v1
         with:
-          tag_name: ${{ github.ref }}
-          files: |
-            ./dist/Dr Migrate TIRE App-${{ needs.create-release.outputs.version }}-arm64-mac.zip 
+          token: ${{ secrets.GH_TOKEN }}
+          tag: ${{ github.ref_name }}
+          allowUpdates: true
+          updateOnlyUnreleased: false
+          omitBody: true
+          omitPrereleaseDuringUpdate: true
+          artifacts: "./dist/Dr Migrate TIRE App-${{ needs.create-release.outputs.version }}-arm64-mac.zip"
+          artifactContentType: application/zip 
