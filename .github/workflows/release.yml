@@ -1,32 +1,71 @@
-name: Build and Release
+name: Build and Release TIRE App
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches:
+      - main
 
 jobs:
-  release:
+  build:
     runs-on: ${{ matrix.os }}
-
+    
     strategy:
       matrix:
-        os: [macos-latest, windows-latest]
+        os: [windows-latest, macos-latest]
 
     steps:
-      - name: Check out Git repository
+      - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Install Node.js
+      - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version: '18'
 
       - name: Install dependencies
         run: npm install
 
-      - name: Build/release Electron app
-        uses: samuelmeuli/action-electron-builder@v1
+      - name: Extract Version
+        id: extract_version
+        run: |
+          $packageJson = Get-Content -Raw -Path "package.json" | ConvertFrom-Json
+          $version = $packageJson.version
+          echo "version=$version" >> $env:GITHUB_ENV
+        shell: pwsh
+
+      - name: Build Electron app
+        run: npm run build
+
+      - name: Create Release
+        if: matrix.os == 'windows-latest'
+        uses: actions/create-release@v1
+        id: create_release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          release: true 
+          draft: false
+          prerelease: false
+          release_name: Dr Migrate TIRE App v${{ env.version }}
+          tag_name: v${{ env.version }}
+
+      - name: Upload Windows Build
+        if: matrix.os == 'windows-latest'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./dist/Dr Migrate TIRE App ${{ env.version }}.exe
+          asset_name: Dr Migrate TIRE App ${{ env.version }}.exe
+          asset_content_type: application/octet-stream
+
+      - name: Upload Mac Build
+        if: matrix.os == 'macos-latest' && steps.create_release.outputs.upload_url != ''
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./dist/Dr Migrate TIRE App-${{ env.version }}-mac.zip
+          asset_name: Dr Migrate TIRE App ${{ env.version }}-mac.zip
+          asset_content_type: application/zip 
