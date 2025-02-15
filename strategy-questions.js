@@ -671,6 +671,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    // Initialize accordion functionality
+    initializeAccordions();
 });
 
 // Listen for threshold updates
@@ -784,5 +787,33 @@ function updateCompletionStatus() {
     
     // Update answered questions counter
     updateAnsweredQuestionsCounter();
+}
+
+// Initialize accordion functionality
+function initializeAccordions() {
+    const accordionHeaders = document.querySelectorAll('.accordion-header');
+    
+    // Open the first accordion by default
+    const firstAccordion = document.querySelector('.accordion-section');
+    if (firstAccordion) {
+        firstAccordion.classList.add('active');
+    }
+
+    accordionHeaders.forEach(header => {
+        header.addEventListener('click', () => {
+            const section = header.parentElement;
+            const isActive = section.classList.contains('active');
+            
+            // Close all sections
+            document.querySelectorAll('.accordion-section').forEach(s => {
+                s.classList.remove('active');
+            });
+            
+            // Open clicked section if it wasn't already open
+            if (!isActive) {
+                section.classList.add('active');
+            }
+        });
+    });
 }
 

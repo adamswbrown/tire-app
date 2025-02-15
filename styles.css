@@ -1313,46 +1313,180 @@ tr.completed-row .action-cell button:hover {
 
 /* Calculations Modal Specific Styles */
 #calculationsModal .modal-content {
-    max-width: 700px;
+    max-width: 1200px;
+    width: 90%;
+    padding: var(--spacing-lg);
+    max-height: 90vh;
+    overflow-y: auto;
+    background: white;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+#calculationsModal h2 {
+    margin-bottom: var(--spacing-lg);
+    padding-bottom: var(--spacing-md);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#calculationsModal .sections-container {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-lg);
 }
 
 #calculationsModal .section {
-    margin-bottom: var(--spacing-xl);
+    background: var(--light);
+    padding: var(--spacing-lg);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
 }
 
 #calculationsModal h3 {
     color: var(--primary);
     margin-bottom: var(--spacing-md);
     font-size: var(--font-size-lg);
+    font-weight: 600;
 }
 
 #calculationsModal p {
     margin-bottom: var(--spacing-md);
-    line-height: 1.5;
+    line-height: 1.6;
 }
 
 #calculationsModal .formula {
-    background-color: var(--light);
-    padding: var(--spacing-md);
+    background: white;
+    padding: var(--spacing-lg);
     border-radius: var(--radius-md);
-    border-left: 4px solid var(--secondary);
+    border: 1px solid var(--border);
     margin: var(--spacing-md) 0;
+    font-family: monospace;
+    font-size: var(--font-size-base);
+    line-height: 1.6;
 }
 
-#calculationsModal .note {
-    background-color: var(--yellow-bg);
-    color: var(--yellow-text);
-    padding: var(--spacing-md);
+#calculationsModal .example {
+    background: white;
+    padding: var(--spacing-lg);
     border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    margin: var(--spacing-md) 0;
+    font-size: var(--font-size-base);
+    line-height: 1.6;
+}
+
+#calculationsModal .modal-buttons {
+    margin-top: var(--spacing-lg);
+    padding-top: var(--spacing-md);
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: flex-end;
+}
+
+@media (max-width: 1200px) {
+    #calculationsModal .sections-container {
+        grid-template-columns: 1fr;
+    }
+    
+    #calculationsModal .modal-content {
+        width: 95%;
+        padding: var(--spacing-md);
+    }
+}
+
+/* Add styles for the admin note */
+.admin-note {
+    font-size: var(--font-size-sm);
+    color: var(--gray);
+    font-style: italic;
+    margin-left: var(--spacing-md);
+}
+
+/* Improve the layout of the tiebreaker rules */
+.tiebreaker-rules {
     margin-top: var(--spacing-md);
 }
 
-#calculationsModal ol,
-#calculationsModal ul {
-    margin-left: var(--spacing-xl);
-    margin-bottom: var(--spacing-md);
+.tiebreaker-rules ol {
+    list-style-type: decimal;
+    padding-left: var(--spacing-xl);
 }
 
-#calculationsModal li {
+/* Add some spacing between sections */
+.section + .section {
+    margin-top: var(--spacing-xl);
+}
+
+/* Accordion Styles */
+.accordion-container {
+    max-height: 70vh;
+    overflow-y: auto;
+    padding-right: var(--spacing-md);
+}
+
+.accordion-section {
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
     margin-bottom: var(--spacing-sm);
+    background: white;
+}
+
+.accordion-header {
+    padding: var(--spacing-md);
+    background: var(--bg-light);
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-radius: var(--radius-sm);
+}
+
+.accordion-header h3 {
+    margin: 0;
+    font-size: var(--font-size-md);
+    color: var(--primary);
+}
+
+.accordion-toggle {
+    color: var(--primary);
+    transition: transform 0.3s ease;
+}
+
+.accordion-section.active .accordion-toggle {
+    transform: rotate(180deg);
+}
+
+.accordion-content {
+    padding: var(--spacing-md);
+    display: none;
+    border-top: 1px solid var(--border-color);
+}
+
+.accordion-section.active .accordion-content {
+    display: block;
+}
+
+.accordion-content p {
+    margin-top: 0;
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+}
+
+.accordion-content .formula {
+    background: var(--bg-light);
+    padding: var(--spacing-md);
+    border-radius: var(--radius-sm);
+    margin: var(--spacing-sm) 0;
+}
+
+.accordion-content .example {
+    background: var(--bg-lightest);
+    padding: var(--spacing-md);
+    border-radius: var(--radius-sm);
+    margin: var(--spacing-sm) 0;
+    border-left: 3px solid var(--primary);
 }

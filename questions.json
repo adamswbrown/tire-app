@@ -1,8 +1,8 @@
 [
   {
     "config": {
-      "distributionThreshold": 80,
-      "tiebreakThreshold": 3
+      "distributionThreshold": 78,
+      "tiebreakThreshold": 6
     },
     "time": "Tolerate",
     "characteristics": "IT Qualities",

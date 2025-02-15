@@ -35,17 +35,27 @@ async function saveThresholds() {
             return;
         }
 
-        const success = await ipcRenderer.invoke('save-thresholds', thresholds);
-        if (success) {
+        try {
+            await ipcRenderer.invoke('save-thresholds', thresholds);
             alert('Thresholds saved successfully');
             // Return to main window after successful save
             ipcRenderer.send('return-to-main');
-        } else {
-            alert('Error saving thresholds');
+        } catch (saveError) {
+            console.error('Error saving thresholds:', saveError);
+            
+            // Provide platform-specific guidance
+            let errorMessage = `Error saving thresholds: ${saveError.message}\n\n`;
+            if (process.platform === 'win32') {
+                errorMessage += 'Please ensure you have write permissions to the AppData directory.';
+            } else {
+                errorMessage += 'Please ensure you have write permissions to the Application Support directory.';
+            }
+            
+            alert(errorMessage);
         }
     } catch (error) {
-        console.error('Error saving thresholds:', error);
-        alert('Error saving thresholds');
+        console.error('Error in saveThresholds:', error);
+        alert(`An unexpected error occurred: ${error.message}`);
     }
 }
 

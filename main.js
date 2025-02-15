@@ -602,14 +602,24 @@ function createAdminWindow() {
 ipcMain.handle('get-thresholds', async () => {
     const thresholdsPath = path.join(app.getPath('userData'), 'thresholds.json');
     try {
+        // Ensure userData directory exists
+        const userDataDir = app.getPath('userData');
+        if (!fs.existsSync(userDataDir)) {
+            fs.mkdirSync(userDataDir, { recursive: true });
+        }
+
         if (fs.existsSync(thresholdsPath)) {
             const data = fs.readFileSync(thresholdsPath, 'utf-8');
             return JSON.parse(data);
         }
-        return {
+        // Default values if file doesn't exist
+        const defaults = {
             distributionThreshold: 80,
             tiebreakThreshold: 3
         };
+        // Create the file with defaults if it doesn't exist
+        fs.writeFileSync(thresholdsPath, JSON.stringify(defaults, null, 2), 'utf-8');
+        return defaults;
     } catch (error) {
         console.error('Error reading thresholds:', error);
         return {
@@ -620,21 +630,61 @@ ipcMain.handle('get-thresholds', async () => {
 });
 
 ipcMain.handle('save-thresholds', async (event, thresholds) => {
-    const thresholdsPath = path.join(app.getPath('userData'), 'thresholds.json');
+    const userDataDir = app.getPath('userData');
+    const thresholdsPath = path.join(userDataDir, 'thresholds.json');
     const questionsPath = path.join(__dirname, 'questions.json');
+    
     try {
-        // Save to thresholds.json
-        fs.writeFileSync(thresholdsPath, JSON.stringify(thresholds, null, 2), 'utf-8');
-        
-        // Update questions.json
-        const questionsData = JSON.parse(fs.readFileSync(questionsPath, 'utf8'));
-        if (questionsData && questionsData[0]) {
-            if (!questionsData[0].config) {
-                questionsData[0].config = {};
+        // Ensure userData directory exists with proper permissions
+        if (!fs.existsSync(userDataDir)) {
+            fs.mkdirSync(userDataDir, { 
+                recursive: true, 
+                // Set proper permissions for both platforms
+                mode: 0o755 
+            });
+        }
+
+        // Save to thresholds.json with platform-specific error handling
+        try {
+            // First, try to write to a temporary file
+            const tempPath = path.join(userDataDir, `thresholds-${Date.now()}.tmp`);
+            fs.writeFileSync(tempPath, JSON.stringify(thresholds, null, 2), 'utf-8');
+
+            // If successful, rename/move the temp file to the actual file
+            if (process.platform === 'win32' && fs.existsSync(thresholdsPath)) {
+                // Windows requires the destination file to be deleted first
+                fs.unlinkSync(thresholdsPath);
             }
-            questionsData[0].config.distributionThreshold = thresholds.distributionThreshold;
-            questionsData[0].config.tiebreakThreshold = thresholds.tiebreakThreshold;
-            fs.writeFileSync(questionsPath, JSON.stringify(questionsData, null, 2), 'utf-8');
+            fs.renameSync(tempPath, thresholdsPath);
+        } catch (writeError) {
+            console.error('Error writing thresholds.json:', writeError);
+            throw new Error(`Failed to write thresholds.json: ${writeError.message}`);
+        }
+        
+        // Update questions.json with platform-specific error handling
+        try {
+            if (fs.existsSync(questionsPath)) {
+                const questionsData = JSON.parse(fs.readFileSync(questionsPath, 'utf8'));
+                if (questionsData && questionsData[0]) {
+                    if (!questionsData[0].config) {
+                        questionsData[0].config = {};
+                    }
+                    questionsData[0].config.distributionThreshold = thresholds.distributionThreshold;
+                    questionsData[0].config.tiebreakThreshold = thresholds.tiebreakThreshold;
+
+                    // Use the same temp file approach for questions.json
+                    const tempPath = path.join(__dirname, `questions-${Date.now()}.tmp`);
+                    fs.writeFileSync(tempPath, JSON.stringify(questionsData, null, 2), 'utf-8');
+
+                    if (process.platform === 'win32' && fs.existsSync(questionsPath)) {
+                        fs.unlinkSync(questionsPath);
+                    }
+                    fs.renameSync(tempPath, questionsPath);
+                }
+            }
+        } catch (questionsError) {
+            console.error('Error updating questions.json:', questionsError);
+            // Don't throw here, as thresholds.json was already saved
         }
 
         // Update the global threshold values
@@ -651,7 +701,7 @@ ipcMain.handle('save-thresholds', async (event, thresholds) => {
         return true;
     } catch (error) {
         console.error('Error saving thresholds:', error);
-        return false;
+        throw error; // Propagate the error with details
     }
 });
 
