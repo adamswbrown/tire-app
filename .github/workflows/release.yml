@@ -27,7 +27,9 @@ jobs:
         id: release_notes
         run: |
           if [ -f "release-notes.md" ]; then
-            echo "NOTES=$(cat release-notes.md)" >> $GITHUB_OUTPUT
+            echo "NOTES<<EOF" >> $GITHUB_OUTPUT
+            cat release-notes.md >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
           else
             echo "NOTES=Release v${{ steps.extract_version.outputs.version }}" >> $GITHUB_OUTPUT
           fi
@@ -42,7 +44,7 @@ jobs:
           token: ${{ secrets.GH_TOKEN }}
           name: Dr Migrate TIRE App v${{ steps.extract_version.outputs.version }}
           tag: ${{ github.ref_name }}
-          body: ${{ steps.release_notes.outputs.NOTES }}
+          bodyFile: "release-notes.md"
           allowUpdates: true
           updateOnlyUnreleased: false
           replacesArtifacts: true
