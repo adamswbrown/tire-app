@@ -134,6 +134,100 @@ An Electron-based desktop application for managing and assessing applications us
 - Threshold configuration storage
 - Assessment history preservation
 
+### Data Management
+1. Use "Clear Data" to reset application state (red button)
+2. Track completion status across sessions
+3. Manage local storage and application state
+
+### Export Functionality
+#### Exporting Completed Applications
+1. From the main dashboard, click "Export Completed Apps" button
+2. The application will automatically generate an Excel file containing:
+   - Application names
+   - Current TIRE status
+   - Previous TIRE status
+   - Status change history with timestamps
+3. The export file will be saved to your Downloads folder with format:
+   ```
+   Completed-Applications-YYYY-MM-DDTHH-mm-ss.xlsx
+   ```
+4. **Dr Migrate Integration**: The exported Excel file provides a structured starting point for updating application strategies in Dr Migrate, though it will require formatting adjustments for direct ingestion
+
+#### Export File Contents
+1. Main Sheet Contents:
+   ```
+   Column A: Application Name
+   Column B: Current TIRE Status
+   Column C: Previous TIRE Status
+   Column D: Status Change History
+   ```
+
+2. Status History Format:
+   ```
+   Date: Previous Status → New Status
+   Example: 2024-03-20: Initial → Tolerate
+   Example: 2024-03-25: Tolerate → Invest
+   ```
+
+#### Individual Assessment Export
+1. During or after completing an assessment:
+   - Click "Complete Strategy Questions" to save and export
+   - Choose save location for the JSON file
+2. JSON file contains:
+   ```json
+   {
+     "applicationName": "App Name",
+     "initialTimePlacement": "TIRE Category",
+     "confirmedTimePlacement": "TIRE Category",
+     "completedOn": "Timestamp",
+     "answers": [...],
+     "summary": {...},
+     "assessmentHistory": {
+       "restarts": ["Timestamp"],
+       "hasBeenRestarted": boolean,
+       "totalRestarts": number,
+       "lastRestartDate": "Timestamp"
+     }
+   }
+   ```
+
+#### Export File Locations
+- Completed Applications Excel: `Downloads/Completed-Applications-[timestamp].xlsx`
+- Individual Assessments: User-selected location with format `[app-name]-assessment.json`
+- Template Exports: `Downloads/Application-Strategy-Export-[timestamp].xlsx`
+
+#### Export Features
+- Automatic timestamp inclusion in filenames
+- Preservation of formatting in Excel exports
+- Comprehensive assessment history
+- Status change tracking
+- Error handling with user notifications
+- Progress indication for large exports
+- Automatic file opening option after export
+
+#### Dr Migrate Integration
+1. Export Usage:
+   - The "Export Completed Apps" function generates a comprehensive Excel file of TIRE assessments
+   - This export serves as a reference point for updating Dr Migrate's App Strategy section
+   - The data structure provides key information needed for Dr Migrate updates
+
+2. Data Preparation:
+   - Export contains all necessary TIRE assessment data
+   - Will require formatting adjustments to match Dr Migrate's import requirements
+   - Use as a structured reference for bulk updates in Dr Migrate
+
+3. Available Data:
+   - Current TIRE status for each application
+   - Historical status changes
+   - Assessment timestamps
+   - Complete assessment history
+
+4. Best Practices:
+   - Export regularly to maintain up-to-date reference data
+   - Use the export as a basis for Dr Migrate updates
+   - Verify application names match between systems
+   - Consider creating a template to streamline the conversion process for Dr Migrate ingestion
+
 ## Setup
 
 1. Install Dependencies:
