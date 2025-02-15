@@ -290,40 +290,33 @@ tr.completed-row .action-cell button:hover {
 
 /* Strategy Questions Screen */
 .app-header {
-    padding: var(--spacing-lg);
+    padding: 10px 20px;
     background: white;
     border-bottom: 1px solid var(--border);
 }
 
 .app-header h1 {
-    font-size: var(--font-size-xl);
-    color: var(--primary);
-    margin-bottom: var(--spacing-sm);
+    font-size: 18px;
+    margin-bottom: 5px;
 }
 
 /* Completion Status */
 .completion-header {
-    background-color: var(--yellow-bg);
-    color: var(--yellow-text);
-    padding: var(--spacing-md);
-    border-radius: var(--radius-md);
-    margin: var(--spacing-md) 0;
-    font-weight: 500;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    padding: 8px 12px;
+    margin: 5px 0;
+    font-size: 13px;
 }
 
 /* TIRE Placement Section */
 .time-placement-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px;
+    padding: 10px;
+    margin-bottom: 10px;
     background: white;
-    padding: var(--spacing-lg);
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
-    margin-bottom: var(--spacing-lg);
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-xl);
 }
 
 .time-placement-item {
@@ -360,8 +353,13 @@ tr.completed-row .action-cell button:hover {
 /* Action Buttons Container */
 .action-buttons {
     display: flex;
-    gap: var(--spacing-md);
+    gap: 8px;
     margin-left: auto;
+}
+
+.action-buttons button {
+    padding: 6px 12px;
+    font-size: 13px;
 }
 
 /* Save Button */
@@ -371,10 +369,17 @@ tr.completed-row .action-cell button:hover {
     padding: var(--spacing-sm) var(--spacing-xl);
     border-radius: var(--radius-md);
     font-weight: 500;
+    transition: all 0.3s ease;
 }
 
-#saveButton:hover {
+#saveButton:hover:not(:disabled) {
     background: #218838;
+}
+
+#saveButton:disabled {
+    cursor: not-allowed;
+    background: var(--success);
+    opacity: 0.5;
 }
 
 /* Calculations Button */
@@ -393,37 +398,17 @@ tr.completed-row .action-cell button:hover {
 }
 
 /* Category Filter Buttons */
-.category-buttons {
+#categoryButtonsContainer {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--spacing-sm);
-    margin-bottom: var(--spacing-lg);
-    padding: 0 var(--spacing-lg);
+    gap: 5px;
+    padding: 5px 0;
+    margin-bottom: 10px;
 }
 
 .category-button {
-    padding: var(--spacing-sm) var(--spacing-md);
-    background: var(--light);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    color: var(--dark);
-    font-size: var(--font-size-sm);
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.category-button:hover {
-    background: var(--secondary);
-    color: white;
-    border-color: var(--secondary);
-}
-
-.category-button.active {
-    background: var(--secondary);
-    color: white;
-    border-color: var(--secondary);
-    box-shadow: var(--shadow-sm);
-    transform: translateY(-1px);
+    padding: 5px 10px;
+    font-size: 12px;
 }
 
 /* Reset button specific styles */
@@ -470,14 +455,14 @@ tr.completed-row .action-cell button:hover {
     width: 100%;
     border-collapse: collapse;
     background: white;
-    font-size: var(--font-size-sm);
+    font-size: 13px;
 }
 
 #strategyQuestionsTable th {
     position: sticky;
     top: 0;
     background: var(--light);
-    padding: var(--spacing-md);
+    padding: 8px;
     font-weight: 600;
     text-align: left;
     color: var(--primary);
@@ -486,7 +471,7 @@ tr.completed-row .action-cell button:hover {
 }
 
 #strategyQuestionsTable td {
-    padding: var(--spacing-md);
+    padding: 8px;
     border-bottom: 1px solid var(--border);
     vertical-align: top;
 }
@@ -503,19 +488,17 @@ tr.completed-row .action-cell button:hover {
 
 /* Column Widths */
 #strategyQuestionsTable th:nth-child(1),
-#strategyQuestionsTable td:nth-child(1) { width: 80px; }  /* TIRE */
+#strategyQuestionsTable td:nth-child(1) { width: 60px; }  /* TIRE */
 #strategyQuestionsTable th:nth-child(2),
-#strategyQuestionsTable td:nth-child(2) { width: 120px; } /* Characteristics */
+#strategyQuestionsTable td:nth-child(2) { width: 100px; } /* Characteristics */
 #strategyQuestionsTable th:nth-child(3),
-#strategyQuestionsTable td:nth-child(3) { width: 100px; } /* Client Answer */
+#strategyQuestionsTable td:nth-child(3) { width: 90px; } /* Client Answer */
 #strategyQuestionsTable th:nth-child(4),
-#strategyQuestionsTable td:nth-child(4) { width: 80px; }  /* Score */
+#strategyQuestionsTable td:nth-child(4) { width: 60px; }  /* Score */
 #strategyQuestionsTable th:nth-child(5),
-#strategyQuestionsTable td:nth-child(5) { width: 100px; } /* Weight */
-#strategyQuestionsTable th:nth-child(6),
-#strategyQuestionsTable td:nth-child(6) { min-width: 300px; } /* Question */
+#strategyQuestionsTable td:nth-child(5) { width: 70px; } /* Weight */
 #strategyQuestionsTable th:nth-child(7),
-#strategyQuestionsTable td:nth-child(7) { width: 120px; } /* Category */
+#strategyQuestionsTable td:nth-child(7) { width: 100px; } /* Category */
 #strategyQuestionsTable th:nth-child(8),
 #strategyQuestionsTable td:nth-child(8) { min-width: 200px; } /* Extended Answer */
 #strategyQuestionsTable th:nth-child(9),
@@ -524,13 +507,92 @@ tr.completed-row .action-cell button:hover {
 /* Strategy Questions Summary */
 .summary-section {
     background: white;
-    padding: var(--spacing-lg);
-    border: 1px solid var(--border);
     border-radius: var(--radius-md);
-    margin-bottom: var(--spacing-lg);
-    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border);
+    padding: 10px;
+    height: 100%;
+    overflow: auto;
 }
 
+.summary-section h2 {
+    font-size: 14px;
+    margin-bottom: 10px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid var(--border);
+}
+
+#summaryTable {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+#summaryTable th,
+#summaryTable td {
+    padding: 8px;
+    border-bottom: 1px solid #eee;
+}
+
+#summaryTable th {
+    font-weight: 600;
+    color: #555;
+}
+
+.distribution-column {
+    width: 120px;
+}
+
+.table-container {
+    margin-top: 20px;
+    overflow-x: auto;
+    flex: 1;
+}
+
+#strategyQuestionsTable {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+}
+
+#strategyQuestionsTable th,
+#strategyQuestionsTable td {
+    padding: 10px;
+    border: 1px solid #ddd;
+    text-align: left;
+}
+
+#strategyQuestionsTable th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+
+/* Adjust column widths for better space utilization */
+#strategyQuestionsTable th:nth-child(1), /* TIRE */
+#strategyQuestionsTable td:nth-child(1) {
+    width: 80px;
+}
+
+#strategyQuestionsTable th:nth-child(3), /* Client Answer */
+#strategyQuestionsTable td:nth-child(3) {
+    width: 120px;
+}
+
+#strategyQuestionsTable th:nth-child(4), /* Client Score */
+#strategyQuestionsTable td:nth-child(4) {
+    width: 100px;
+}
+
+#strategyQuestionsTable th:nth-child(5), /* Weight */
+#strategyQuestionsTable td:nth-child(5) {
+    width: 100px;
+}
+
+#strategyQuestionsTable th:nth-child(7), /* Category */
+#strategyQuestionsTable td:nth-child(7) {
+    width: 120px;
+}
+
+/* Strategy Questions Summary */
 .summary-section h2 {
     font-size: var(--font-size-lg);
     color: var(--primary);
@@ -686,13 +748,20 @@ tr.completed-row .action-cell button:hover {
     color: inherit;
 }
 
-/* Content wrapper - adjust order */
+/* Content wrapper - main layout structure */
 .content-wrapper {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 20px;
+    height: calc(100vh - 150px);
+    padding: 10px 20px;
+    overflow: hidden;
+}
+
+.main-content {
     display: flex;
     flex-direction: column;
-    height: calc(100vh - 200px);
-    padding: var(--spacing-lg);
-    gap: var(--spacing-lg);
+    overflow: hidden;
 }
 
 /* Main content area - adjust to accommodate summary at top */
@@ -793,61 +862,107 @@ tr.completed-row .action-cell button:hover {
     height: 100%;
     background-color: rgba(0, 0, 0, 0.5);
     z-index: 1000;
-    align-items: center;
-    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
 }
 
 .modal.show {
     display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 1;
 }
 
 .modal-content {
     background-color: white;
-    padding: var(--spacing-xl);
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-lg);
-    max-width: 600px;
-    width: 90%;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    max-width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
 }
 
-.modal-content h2 {
+.calculations-content {
+    width: 700px;
+}
+
+.calculations-content h2 {
+    margin-bottom: 1.5rem;
     color: var(--primary);
-    margin-bottom: var(--spacing-md);
-    font-size: var(--font-size-lg);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
-.modal-content p {
-    color: var(--dark);
-    margin-bottom: var(--spacing-lg);
+.admin-note {
+    font-size: 0.8em;
+    color: #666;
+    font-weight: normal;
+}
+
+.calculations-content .section {
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #eee;
+}
+
+.calculations-content .section:last-child {
+    border-bottom: none;
+    margin-bottom: 1rem;
+}
+
+.calculations-content h3 {
+    color: var(--primary);
+    margin-bottom: 1rem;
+    font-size: 1.2rem;
+}
+
+.calculations-content p {
+    margin-bottom: 1rem;
     line-height: 1.5;
+}
+
+.calculations-content .formula {
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border-radius: 4px;
+    border-left: 4px solid var(--primary);
+    margin-bottom: 1rem;
+    line-height: 1.6;
+}
+
+.calculations-content .example {
+    background-color: #e8f4ff;
+    padding: 1rem;
+    border-radius: 4px;
+    margin-top: 0.5rem;
+    line-height: 1.6;
+}
+
+.calculations-content .example strong {
+    color: var(--primary);
 }
 
 .modal-buttons {
     display: flex;
-    gap: var(--spacing-md);
     justify-content: flex-end;
+    margin-top: 2rem;
 }
 
 .cancel-button {
-    background-color: var(--light);
-    color: var(--dark);
-    border: 1px solid var(--border);
+    padding: 0.5rem 1.5rem;
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
 }
 
 .cancel-button:hover {
-    background-color: var(--gray);
-    color: white;
-    border-color: var(--gray);
-}
-
-.confirm-button {
-    background-color: var(--warning);
-    color: var(--yellow-text);
-}
-
-.confirm-button:hover {
-    background-color: #e0a800;
-    color: #533f03;
+    background-color: #5a6268;
 }
 
 /* Start Screen Styles */
@@ -1079,13 +1194,8 @@ tr.completed-row .action-cell button:hover {
 
 /* Thresholds Container */
 .thresholds-container {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-sm);
-    padding: var(--spacing-md);
-    background: var(--light);
-    border-radius: var(--radius-md);
-    border: 1px solid var(--border);
+    padding: 8px;
+    font-size: 12px;
 }
 
 .thresholds-container div {
@@ -1199,4 +1309,50 @@ tr.completed-row .action-cell button:hover {
 .admin-button:hover {
     background-color: var(--primary-light);
     transform: translateY(-1px);
+}
+
+/* Calculations Modal Specific Styles */
+#calculationsModal .modal-content {
+    max-width: 700px;
+}
+
+#calculationsModal .section {
+    margin-bottom: var(--spacing-xl);
+}
+
+#calculationsModal h3 {
+    color: var(--primary);
+    margin-bottom: var(--spacing-md);
+    font-size: var(--font-size-lg);
+}
+
+#calculationsModal p {
+    margin-bottom: var(--spacing-md);
+    line-height: 1.5;
+}
+
+#calculationsModal .formula {
+    background-color: var(--light);
+    padding: var(--spacing-md);
+    border-radius: var(--radius-md);
+    border-left: 4px solid var(--secondary);
+    margin: var(--spacing-md) 0;
+}
+
+#calculationsModal .note {
+    background-color: var(--yellow-bg);
+    color: var(--yellow-text);
+    padding: var(--spacing-md);
+    border-radius: var(--radius-md);
+    margin-top: var(--spacing-md);
+}
+
+#calculationsModal ol,
+#calculationsModal ul {
+    margin-left: var(--spacing-xl);
+    margin-bottom: var(--spacing-md);
+}
+
+#calculationsModal li {
+    margin-bottom: var(--spacing-sm);
 }

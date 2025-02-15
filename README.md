@@ -71,11 +71,12 @@ An Electron-based desktop application for managing and assessing applications us
 - Dynamic TIRE placement determination
 - Configurable thresholds through admin settings
 - Visual indicators for threshold achievement
-- Tiebreaker handling:
+- Real-time display of highest scoring category
+- Tiebreaker handling during questionnaire completion:
   - Automatic detection of ties within tiebreak threshold
-  - Interactive tiebreaker modal for user decision
-  - Weighted preference for "Invest" category
+  - Interactive tiebreaker modal when completing assessment
   - Consideration of initial TIRE placement
+  - Option to go back and edit answers
 
 ### Score Calculations
 1. Question Scoring:
@@ -92,11 +93,11 @@ An Electron-based desktop application for managing and assessing applications us
 
 3. TIRE Placement Rules:
    - Category must meet or exceed distribution threshold (configurable, default 80%)
-   - If multiple categories exceed threshold:
-     - Categories within tiebreak threshold of each other trigger tiebreaker
-     - "Invest" category given preference in ties
+   - During questionnaire completion:
+     - If multiple categories exceed threshold and are within tiebreak threshold of each other, user selects final placement
      - Initial TIRE placement considered for tiebreaking
    - If no category meets threshold, marked as "Below Threshold"
+   - Real-time display shows highest scoring category during assessment
 
 ### Summary Dashboard
 - Category-wise score breakdown

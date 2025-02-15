@@ -5,45 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Strategy Questions</title>
     <link rel="stylesheet" href="styles.css">
-    <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            const appName = localStorage.getItem("appName") || "Default App Name";
-            document.getElementById("applicationName").innerText = appName;
-
-            // Assuming there's an event that signifies a questionnaire completion
-            document.addEventListener("questionnaireCompleted", () => {
-                // Refresh the table state
-                refreshTableState();
-            });
-        });
-
-        function refreshTableState() {
-            // Fetch the updated data (assuming fetchData is a function that fetches the data)
-            const updatedData = fetchData();
-            populateTable(updatedData);
-        }
-
-        function populateTable(data) {
-            const tableBody = document.querySelector("#strategyQuestionsTable tbody");
-            tableBody.innerHTML = ""; // Clear existing rows
-
-            data.forEach(item => {
-                const row = document.createElement("tr");
-                row.innerHTML = `
-                    <td>${item.tire}</td>
-                    <td>${item.characteristics}</td>
-                    <td>${item.clientAnswer}</td>
-                    <td>${item.clientScore}</td>
-                    <td>${item.weight}</td>
-                    <td>${item.question}</td>
-                    <td>${item.category}</td>
-                    <td>${item.extendedAnswer}</td>
-                    <td>${item.sampleDrivers}</td>
-                `;
-                tableBody.appendChild(row);
-            });
-        }
-    </script>
 </head>
 <body>
     <!-- Application Header -->
@@ -90,47 +51,43 @@
 
             <!-- Questions Table -->
             <div class="table-container">
-                <div id="strategyQuestionsTableWrapper">
-                    <table id="strategyQuestionsTable">
-                        <thead>
-                            <tr>
-                                <th>TIRE</th>
-                                <th>Characteristics</th>
-                                <th>Client Answer</th>
-                                <th>Client Score</th>
-                                <th>Weight (1 Low - 5 High)</th>
-                                <th>Question</th>
-                                <th>Category</th>
-                                <th>Extended Answer / Rationale</th>
-                                <th>Sample Drivers</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- Rows will be dynamically generated -->
-                        </tbody>
-                    </table>
-                </div>
+                <table id="strategyQuestionsTable">
+                    <thead>
+                        <tr>
+                            <th>TIRE</th>
+                            <th>Characteristics</th>
+                            <th>Client Answer</th>
+                            <th>Client Score</th>
+                            <th>Weight (1-5)</th>
+                            <th>Question</th>
+                            <th>Category</th>
+                            <th>Extended Answer</th>
+                            <th>Sample Drivers</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Rows will be dynamically generated -->
+                    </tbody>
+                </table>
             </div>
         </div>
 
         <!-- Summary Section (Right Side) -->
         <div class="summary-section">
-            <div class="summary-container">
-                <h2>Strategy Questions Summary</h2>
-                <table id="summaryTable">
-                    <thead>
-                        <tr>
-                            <th>Category</th>
-                            <th>Client Score</th>
-                            <th>Total Possible</th>
-                            <th>Distribution</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <!-- Summary rows will be dynamically generated -->
-                    </tbody>
-                </table>
-            </div>
+            <h2>Strategy Questions Summary</h2>
+            <table id="summaryTable">
+                <thead>
+                    <tr>
+                        <th>Category</th>
+                        <th>Score</th>
+                        <th>Total</th>
+                        <th>Distribution</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Summary rows will be dynamically generated -->
+                </tbody>
+            </table>
         </div>
     </div>
 
@@ -144,6 +101,67 @@
             <div class="modal-buttons">
                 <button id="cancelRestartBtn" class="cancel-button">Cancel</button>
                 <button id="confirmRestartBtn" class="confirm-button">Restart Assessment</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Calculations Explanation Modal -->
+    <div id="calculationsModal" class="modal">
+        <div class="modal-content calculations-content">
+            <h2>Calculations Explained <span class="admin-note">(Thresholds can be adjusted in Admin Settings)</span></h2>
+            
+            <div class="section">
+                <h3>Score Calculation</h3>
+                <p>Each question's score is calculated based on the answer and weight:</p>
+                <div class="formula">
+                    <strong>Yes:</strong> Full weight value<br>
+                    <strong>Partial/Unsure:</strong> Half of weight value (rounded)<br>
+                    <strong>No:</strong> 0 points
+                </div>
+            </div>
+            
+            <div class="section">
+                <h3>Distribution Threshold (<span id="modal-threshold">80</span>%)</h3>
+                <p>For each TIRE category, the distribution is calculated as:</p>
+                <div class="formula">
+                    Distribution = (Total Category Score / Total Possible Score) × 100%
+                </div>
+                <div class="example">
+                    <strong>Example:</strong><br>
+                    Category has 5 questions, each with weight of 4:<br>
+                    • Total Possible Score = 20 points<br>
+                    • If actual score = 17 points<br>
+                    • Distribution = (17/20) × 100% = 85%<br>
+                    • Since 85% > 80% threshold, this category qualifies
+                </div>
+            </div>
+            
+            <div class="section">
+                <h3>Tiebreaker Threshold (<span id="modal-tiebreak">3</span>%)</h3>
+                <div class="example">
+                    <strong>Example:</strong><br>
+                    If three categories exceed distribution threshold:<br>
+                    • Invest: 87%<br>
+                    • Tolerate: 85%<br>
+                    • Replace: 82%<br>
+                    Since all scores are within 3% of each other, tiebreaker is needed.<br>
+                    <strong>Tiebreaker Rules:</strong><br>
+                    1. "Invest" is weighted more heavily in ties<br>
+                    2. Initial TIRE placement is considered<br>
+                    3. Manual selection may be required
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>Weight Scale (1-5)</h3>
+                <div class="formula">
+                    1: Lowest importance<br>
+                    5: Highest importance
+                </div>
+            </div>
+
+            <div class="modal-buttons">
+                <button id="closeCalculationsBtn" class="cancel-button">Close</button>
             </div>
         </div>
     </div>
