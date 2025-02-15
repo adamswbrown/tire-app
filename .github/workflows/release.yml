@@ -25,7 +25,7 @@ jobs:
 
       - name: Create Source Code Archive
         run: |
-          git archive --format=zip --output="Dr.Migrate.TIRE.App-${{ steps.extract_version.outputs.version }}-source.zip" HEAD
+          git archive --format=zip --output="Dr-Migrate-TIRE-App-${{ steps.extract_version.outputs.version }}-source.zip" HEAD
 
       - name: Create/Update Release
         uses: ncipollo/release-action@v1
@@ -37,7 +37,7 @@ jobs:
           allowUpdates: true
           updateOnlyUnreleased: false
           replacesArtifacts: true
-          artifacts: "Dr.Migrate.TIRE.App-${{ steps.extract_version.outputs.version }}-source.zip"
+          artifacts: "Dr-Migrate-TIRE-App-${{ steps.extract_version.outputs.version }}-source.zip"
 
   build-and-upload:
     needs: create-release
@@ -99,7 +99,7 @@ jobs:
           updateOnlyUnreleased: false
           omitBody: true
           omitPrereleaseDuringUpdate: true
-          artifacts: "./dist/Dr Migrate TIRE App ${{ needs.create-release.outputs.version }}.exe"
+          artifacts: "./dist/Dr-Migrate-TIRE-App-${{ needs.create-release.outputs.version }}.exe"
           artifactContentType: application/octet-stream
 
       - name: Upload Mac Build
@@ -112,5 +112,5 @@ jobs:
           updateOnlyUnreleased: false
           omitBody: true
           omitPrereleaseDuringUpdate: true
-          artifacts: "./dist/Dr Migrate TIRE App-${{ needs.create-release.outputs.version }}-arm64-mac.zip"
+          artifacts: "./dist/Dr-Migrate-TIRE-App-${{ needs.create-release.outputs.version }}-arm64-mac.zip"
           artifactContentType: application/zip 

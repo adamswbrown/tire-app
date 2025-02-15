@@ -10,7 +10,7 @@
   },
   "build": {
     "appId": "com.drmigrate.tireapp",
-    "productName": "Dr Migrate TIRE App",
+    "productName": "Dr-Migrate-TIRE-App",
     "directories": {
       "output": "dist"
     },
