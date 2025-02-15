@@ -6,8 +6,7 @@
     "start": "electron .",
     "build": "electron-builder build",
     "build:mac": "electron-builder build --mac",
-    "build:win": "electron-builder build --win",
-    "build:linux": "electron-builder build --linux"
+    "build:win": "electron-builder build --win"
   },
   "build": {
     "appId": "com.drmigrate.tireapp",
@@ -31,34 +30,15 @@
     ],
     "mac": {
       "category": "public.app-category.developer-tools",
-      "target": ["dmg", "zip"],
-      "hardenedRuntime": true,
-      "gatekeeperAssess": false,
-      "entitlements": "build/entitlements.mac.plist",
-      "entitlementsInherit": "build/entitlements.mac.plist"
-    },
-    "dmg": {
-      "sign": false
+      "target": ["zip"]
     },
     "win": {
       "target": [
         {
-          "target": "nsis",
-          "arch": ["x64"]
-        },
-        {
           "target": "portable",
           "arch": ["x64"]
         }
-      ],
-      "publisherName": "Dr Migrate"
-    },
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut": true,
-      "createStartMenuShortcut": true,
-      "shortcutName": "Dr Migrate TIRE App"
+      ]
     },
     "publish": {
       "provider": "github",
