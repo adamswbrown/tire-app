@@ -14,6 +14,7 @@
     "directories": {
       "output": "dist"
     },
+    "icon": "build/icon",
     "files": [
       "**/*",
       "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}",
@@ -35,7 +36,8 @@
       "hardenedRuntime": false,
       "gatekeeperAssess": false,
       "electronLanguages": ["en"],
-      "identity": null
+      "identity": null,
+      "icon": "build/icon.icns"
     },
     "win": {
       "target": [
@@ -43,7 +45,8 @@
           "target": "portable",
           "arch": ["x64"]
         }
-      ]
+      ],
+      "icon": "build/icon.ico"
     }
   },
   "repository": {

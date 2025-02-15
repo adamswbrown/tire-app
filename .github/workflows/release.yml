@@ -71,8 +71,11 @@ jobs:
           # Create a new package.json without publish config
           node -e "const pkg = require('./package.json'); delete pkg.build.publish; require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2))"
           
-          # Build the app with verbose output
-          npm run build:win -- --debug
+          # Build the app
+          npm run build:win
+          
+          # Create dist directory if it doesn't exist and list contents
+          New-Item -ItemType Directory -Force -Path dist
           Get-ChildItem dist
           
           # Restore original package.json
