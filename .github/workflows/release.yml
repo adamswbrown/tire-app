@@ -61,8 +61,9 @@ jobs:
           npm install
           npm audit fix --force || true  # Fix audit issues but don't fail if can't fix all
 
-      - name: Build Electron app
-        shell: ${{ matrix.os == 'windows-latest' && 'pwsh' || 'bash' }}
+      - name: Build Windows App
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
         run: |
           # Create a backup of package.json
           Copy-Item -Path package.json -Destination package.json.backup
@@ -71,13 +72,8 @@ jobs:
           node -e "const pkg = require('./package.json'); delete pkg.build.publish; require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2))"
           
           # Build the app with verbose output
-          if ('${{ matrix.os }}' -eq 'windows-latest') {
-            npm run build:win -- --debug
-            Get-ChildItem dist
-          } else {
-            DEBUG=electron-builder npm run build:mac
-            ls -la dist/
-          }
+          npm run build:win -- --debug
+          Get-ChildItem dist
           
           # Restore original package.json
           Copy-Item -Path package.json.backup -Destination package.json
@@ -85,10 +81,35 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           USE_HARD_LINKS: false
-          CSC_IDENTITY_AUTO_DISCOVERY: false  # Disable code signing
-          EP_GH_IGNORE: true  # Disable electron-builder GitHub publishing
-          PUBLISH_FOR_PULL_REQUEST: false  # Disable publishing for both platforms
-          DEBUG: electron-builder,electron-builder:*  # Enable debug output
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+          EP_GH_IGNORE: true
+          PUBLISH_FOR_PULL_REQUEST: false
+          DEBUG: electron-builder,electron-builder:*
+
+      - name: Build Mac App
+        if: matrix.os == 'macos-latest'
+        shell: bash
+        run: |
+          # Create a backup of package.json
+          cp package.json package.json.backup
+          
+          # Create a new package.json without publish config
+          node -e "const pkg = require('./package.json'); delete pkg.build.publish; require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2))"
+          
+          # Build the app with verbose output
+          DEBUG=electron-builder npm run build:mac
+          ls -la dist/
+          
+          # Restore original package.json
+          cp package.json.backup package.json
+          rm package.json.backup
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          USE_HARD_LINKS: false
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+          EP_GH_IGNORE: true
+          PUBLISH_FOR_PULL_REQUEST: false
+          DEBUG: electron-builder,electron-builder:*
 
       # Clean up unnecessary files for Windows
       - name: Clean Windows artifacts
