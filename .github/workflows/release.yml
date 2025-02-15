@@ -61,14 +61,28 @@ jobs:
 
       - name: Build Electron app
         run: |
-          # Temporarily disable publishing in package.json
-          mv package.json package.json.bak
-          jq 'del(.build.publish)' package.json.bak > package.json
-          npm run build
-          mv package.json.bak package.json
+          # Create a backup of package.json
+          cp package.json package.json.backup
+          
+          # Create a new package.json without publish config
+          node -e "const pkg = require('./package.json'); delete pkg.build.publish; require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2))"
+          
+          # Build the app
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            npm run build:win
+          else
+            npm run build:mac
+          fi
+          
+          # Restore original package.json
+          cp package.json.backup package.json
+          rm package.json.backup
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           USE_HARD_LINKS: false
+          CSC_IDENTITY_AUTO_DISCOVERY: false  # Disable code signing
+          EP_GH_IGNORE: true  # Disable electron-builder GitHub publishing
+          PUBLISH_FOR_PULL_REQUEST: false  # Disable publishing for both platforms
 
       # Clean up unnecessary files for Windows
       - name: Clean Windows artifacts
@@ -99,7 +113,7 @@ jobs:
           updateOnlyUnreleased: false
           omitBody: true
           omitPrereleaseDuringUpdate: true
-          artifacts: "./dist/Dr-Migrate-TIRE-App-${{ needs.create-release.outputs.version }}.exe"
+          artifacts: "./dist/Dr-Migrate-TIRE-App ${{ needs.create-release.outputs.version }}.exe"
           artifactContentType: application/octet-stream
 
       - name: Upload Mac Build
