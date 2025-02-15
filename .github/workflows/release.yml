@@ -9,23 +9,27 @@ jobs:
   create-release:
     runs-on: ubuntu-latest
     outputs:
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
+      version: ${{ steps.extract_version.outputs.version }}
     
     steps:
       - name: Extract Version
         id: extract_version
-        run: echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+        run: |
+          version=${GITHUB_REF#refs/tags/v}
+          echo "version=$version" >> $GITHUB_OUTPUT
 
       - name: Create Release
         id: create_release
-        uses: actions/create-release@v1
+        uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
           draft: false
           prerelease: false
-          release_name: Dr Migrate TIRE App v${{ env.version }}
+          name: Dr Migrate TIRE App v${{ steps.extract_version.outputs.version }}
           tag_name: ${{ github.ref }}
+          generate_release_notes: true
+          append_body: true
 
   build-and-upload:
     needs: create-release
@@ -47,34 +51,28 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Extract Version
-        id: extract_version
-        run: echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
-        shell: bash
-
       - name: Build Electron app
         run: npm run build
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          USE_HARD_LINKS: false
 
       - name: Upload Windows Build
         if: matrix.os == 'windows-latest'
-        uses: actions/upload-release-asset@v1
+        uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: ./dist/Dr Migrate TIRE App ${{ env.version }}.exe
-          asset_name: Dr Migrate TIRE App ${{ env.version }}.exe
-          asset_content_type: application/octet-stream
+          tag_name: ${{ github.ref }}
+          files: |
+            ./dist/Dr Migrate TIRE App ${{ needs.create-release.outputs.version }}.exe
 
       - name: Upload Mac Build
         if: matrix.os == 'macos-latest'
-        uses: actions/upload-release-asset@v1
+        uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: ./dist/Dr Migrate TIRE App-${{ env.version }}-arm64-mac.zip
-          asset_name: Dr Migrate TIRE App ${{ env.version }}-mac.zip
-          asset_content_type: application/zip 
+          tag_name: ${{ github.ref }}
+          files: |
+            ./dist/Dr Migrate TIRE App-${{ needs.create-release.outputs.version }}-arm64-mac.zip 
