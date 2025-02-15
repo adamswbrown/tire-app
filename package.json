@@ -31,18 +31,46 @@
     ],
     "mac": {
       "category": "public.app-category.developer-tools",
-      "target": ["zip"]
+      "target": ["dmg", "zip"],
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist"
+    },
+    "dmg": {
+      "sign": false
     },
     "win": {
-      "target": ["nsis", "portable"]
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        },
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ],
+      "publisherName": "Dr Migrate"
     },
-    "linux": {
-      "target": ["AppImage", "deb"],
-      "category": "Development"
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Dr Migrate TIRE App"
+    },
+    "publish": {
+      "provider": "github",
+      "releaseType": "release"
     }
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/tire-app.git"
+  },
   "keywords": [],
-  "author": "",
+  "author": "Dr Migrate",
   "license": "ISC",
   "description": "An Electron-based desktop application for managing and assessing applications using the TIRE framework",
   "dependencies": {
