@@ -23,17 +23,6 @@ jobs:
           version=${GITHUB_REF#refs/tags/v}
           echo "version=$version" >> $GITHUB_OUTPUT
 
-      - name: Get Release Notes
-        id: release_notes
-        run: |
-          if [ -f "release-notes.md" ]; then
-            echo "NOTES<<EOF" >> $GITHUB_OUTPUT
-            cat release-notes.md >> $GITHUB_OUTPUT
-            echo "EOF" >> $GITHUB_OUTPUT
-          else
-            echo "NOTES=Release v${{ steps.extract_version.outputs.version }}" >> $GITHUB_OUTPUT
-          fi
-
       - name: Create Source Code Archive
         run: |
           git archive --format=zip --output="Dr.Migrate.TIRE.App-${{ steps.extract_version.outputs.version }}-source.zip" HEAD
@@ -44,7 +33,7 @@ jobs:
           token: ${{ secrets.GH_TOKEN }}
           name: Dr Migrate TIRE App v${{ steps.extract_version.outputs.version }}
           tag: ${{ github.ref_name }}
-          bodyFile: "release-notes.md"
+          bodyFile: release-notes.md
           allowUpdates: true
           updateOnlyUnreleased: false
           replacesArtifacts: true
