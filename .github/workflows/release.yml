@@ -2,8 +2,8 @@ name: Build and Release TIRE App
 
 on:
   push:
-    branches:
-      - main
+    tags:
+      - 'v*'
 
 jobs:
   build:
@@ -28,8 +28,7 @@ jobs:
       - name: Extract Version
         id: extract_version
         run: |
-          $packageJson = Get-Content -Raw -Path "package.json" | ConvertFrom-Json
-          $version = $packageJson.version
+          $version = "${{ github.ref }}".Replace('refs/tags/v', '')
           echo "version=$version" >> $env:GITHUB_ENV
         shell: pwsh
 
@@ -62,12 +61,12 @@ jobs:
           asset_content_type: application/octet-stream
 
       - name: Upload Mac Build
-        if: matrix.os == 'macos-latest' && steps.create_release.outputs.upload_url != ''
+        if: matrix.os == 'macos-latest'
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./dist/Dr Migrate TIRE App-${{ env.version }}-mac.zip
+          asset_path: ./dist/Dr Migrate TIRE App-${{ env.version }}-arm64-mac.zip
           asset_name: Dr Migrate TIRE App ${{ env.version }}-mac.zip
           asset_content_type: application/zip 
