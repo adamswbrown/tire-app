@@ -35,13 +35,15 @@ jobs:
 
       - name: Build Electron app
         run: npm run build
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
       - name: Create Release
         if: matrix.os == 'windows-latest'
         uses: actions/create-release@v1
         id: create_release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
           draft: false
           prerelease: false
@@ -52,7 +54,7 @@ jobs:
         if: matrix.os == 'windows-latest'
         uses: actions/upload-release-asset@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./dist/Dr Migrate TIRE App ${{ env.version }}.exe
@@ -63,7 +65,7 @@ jobs:
         if: matrix.os == 'macos-latest' && steps.create_release.outputs.upload_url != ''
         uses: actions/upload-release-asset@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./dist/Dr Migrate TIRE App-${{ env.version }}-mac.zip
