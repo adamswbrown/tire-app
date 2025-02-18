@@ -2,6 +2,7 @@ const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const xlsx = require('xlsx');
+const Store = require('electron-store');
 
 let mainWindow;
 let startWindow;
@@ -11,33 +12,7 @@ let distributionThreshold = 80;
 let completedApps = [];
 let uploadedData = null; // Store uploaded data
 let adminWindow = null;
-
-// Clear completed apps file when the app launches
-function resetCompletedAppsFile() {
-    const completedAppsPath = path.join(app.getPath('userData'), 'completed-apps.json');
-    try {
-        fs.writeFileSync(completedAppsPath, JSON.stringify([], null, 2), 'utf-8');
-        console.log('Completed apps file has been reset.');
-    } catch (error) {
-        console.error('Error resetting completed apps file:', error);
-    }
-}
-
-// Load completed apps into memory
-function loadCompletedApps() {
-    const completedAppsPath = path.join(app.getPath('userData'), 'completed-apps.json');
-    try {
-        if (fs.existsSync(completedAppsPath)) {
-            const data = fs.readFileSync(completedAppsPath, 'utf-8');
-            completedApps = JSON.parse(data);
-        } else {
-            completedApps = [];
-        }
-    } catch (error) {
-        console.error('Error loading completed apps file:', error);
-        completedApps = [];
-    }
-}
+const store = new Store();
 
 // Load the questions.json to extract the distributionThreshold
 function loadDistributionThreshold() {
@@ -100,6 +75,16 @@ function createMainWindow() {
 
     mainWindow.on('closed', () => {
         mainWindow = null;
+    });
+
+    // Add this after creating your window
+    mainWindow.webContents.on('before-input-event', (event, input) => {
+        // Cmd+Option+I on Mac, Ctrl+Shift+I on Windows/Linux
+        if ((input.meta && input.alt && input.key === 'i') || 
+            (input.control && input.shift && input.key === 'i')) {
+            mainWindow.webContents.openDevTools();
+            event.preventDefault();
+        }
     });
 }
 
@@ -284,52 +269,193 @@ function markAppCompleted(appName, initialPlacement, confirmedPlacement, confirm
     }
 }
 
-// Modify the save-answers-to-file handler
-ipcMain.on('save-answers-to-file', (event, outputData) => {
-    const appName = outputData.applicationName || 'strategy-questions-output';
-    const sanitizedAppName = appName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-
-    let TIREPlacement = "Not Set";
-    const initialPlacement = outputData.initialTimePlacement?.trim();
-    const confirmedPlacement = outputData.confirmedTimePlacement?.trim();
-    let confirmedPlacementSet = false;
-
-    if (confirmedPlacement && !confirmedPlacement.toLowerCase().includes("below threshold")) {
-        TIREPlacement = confirmedPlacement;
-        confirmedPlacementSet = true;
-    } else if (initialPlacement) {
-        TIREPlacement = initialPlacement;
-    } else {
-        dialog.showMessageBoxSync({
-            type: 'warning',
-            title: 'Incomplete Placement',
-            message: 'Please set an Initial TIRE Placement or Confirmed TIRE Placement.'
-        });
-        return;
+// Update getCompletedAppsDirectory to create directory if it doesn't exist
+function getCompletedAppsDirectory() {
+    console.log('Getting completed apps directory');
+    let dir = store.get('completedAppsDirectory');
+    console.log('Directory from store:', dir);
+    
+    if (!dir) {
+        console.log('No directory in store, using default');
+        dir = path.join(app.getPath('userData'));
+        console.log('Default directory:', dir);
+        store.set('completedAppsDirectory', dir);
     }
-
-    dialog.showSaveDialog({
-        title: 'Save Strategy Questions Data',
-        defaultPath: path.join(app.getPath('documents'), `${sanitizedAppName}.json`),
-        filters: [{ name: 'JSON Files', extensions: ['json'] }]
-    }).then(file => {
-        if (!file.canceled && file.filePath) {
-            fs.writeFileSync(file.filePath, JSON.stringify(outputData, null, 2), 'utf-8');
-            markAppCompleted(outputData.applicationName, initialPlacement, confirmedPlacement, confirmedPlacementSet, outputData);
-            saveCompletedApps();
-            
-            // Notify the main window that an app has been completed
-            if (mainWindow) {
-                mainWindow.webContents.send('app-completed', outputData.applicationName);
-            }
-            
-            if (strategyQuestionsWindow) {
-                strategyQuestionsWindow.close();
-            }
-            event.reply('save-status', 'File saved successfully');
+    
+    // Ensure the directory exists
+    if (!fs.existsSync(dir)) {
+        console.log('Directory does not exist, creating it');
+        try {
+            fs.mkdirSync(dir, { recursive: true });
+            console.log('Directory created successfully');
+        } catch (error) {
+            console.error('Error creating directory:', error);
+            return null;
         }
-    });
+    }
+    
+    console.log('Using directory:', dir);
+    return dir;
+}
+
+// Update select-directory handler
+ipcMain.handle('select-directory', async () => {
+    try {
+        const result = await dialog.showOpenDialog({
+            properties: ['openDirectory', 'createDirectory'],
+            title: 'Select Directory for Completed Applications',
+            message: 'Choose where to store completed application data',
+            buttonLabel: 'Select Directory'
+        });
+
+        if (!result.canceled && result.filePaths.length > 0) {
+            const dir = result.filePaths[0];
+            
+            // Create the directory if it doesn't exist
+            if (!fs.existsSync(dir)) {
+                fs.mkdirSync(dir, { recursive: true });
+            }
+
+            // Check for existing JSON files
+            const existingFiles = fs.readdirSync(dir)
+                .filter(file => file.endsWith('.json'))
+                .map(file => {
+                    try {
+                        const filePath = path.join(dir, file);
+                        const data = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+                        return {
+                            name: data.applicationName,
+                            lastModified: fs.statSync(filePath).mtime
+                        };
+                    } catch (error) {
+                        console.error(`Error reading file ${file}:`, error);
+                        return null;
+                    }
+                })
+                .filter(file => file !== null);
+            
+            // Update the store with the new directory
+            store.set('completedAppsDirectory', dir);
+            
+            // Reload completed apps from the new directory
+            await loadCompletedAppsFromDirectory();
+            
+            // Notify main window to refresh
+            if (mainWindow) {
+                mainWindow.webContents.send('refresh-data');
+            }
+            
+            return { 
+                path: dir,
+                existingFiles: existingFiles
+            };
+        }
+        return { path: null, existingFiles: [] };
+    } catch (error) {
+        console.error('Error selecting directory:', error);
+        throw error;
+    }
 });
+
+// Modify the save-answers-to-file handler
+ipcMain.on('save-answers-to-file', async (event, outputData) => {
+    console.log('Received save-answers-to-file request');
+    try {
+        let completedAppsDir = getCompletedAppsDirectory();
+        console.log('Completed apps directory:', completedAppsDir);
+        
+        // If no directory is set, prompt for one
+        if (!completedAppsDir) {
+            console.log('No directory set, prompting user');
+            completedAppsDir = await promptForCompletedAppsDirectory();
+            if (!completedAppsDir) {
+                console.error('No directory selected by user');
+                event.reply('save-error', 'No directory selected for storing completed applications.');
+                return;
+            }
+        }
+
+        const appName = outputData.applicationName;
+        console.log('Saving assessment for app:', appName);
+        
+        const sanitizedAppName = appName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+        const filePath = path.join(completedAppsDir, `${sanitizedAppName}.json`);
+        console.log('File will be saved to:', filePath);
+
+        // Save the file
+        console.log('Writing file...');
+        fs.writeFile(filePath, JSON.stringify(outputData, null, 2), (err) => {
+            if (err) {
+                console.error('Error saving file:', err);
+                event.reply('save-error', 'Failed to save answers to file: ' + err.message);
+                return;
+            }
+            
+            console.log('File saved successfully');
+            
+            // Update the completedApps array
+            console.log('Updating completedApps array');
+            markAppCompleted(
+                outputData.applicationName, 
+                outputData.initialTimePlacement, 
+                outputData.confirmedTimePlacement, 
+                true, 
+                outputData
+            );
+
+            // Notify the renderer process
+            console.log('Sending save-complete event to renderer');
+            event.reply('save-complete', filePath);
+
+            // Notify the main window
+            if (mainWindow) {
+                console.log('Notifying main window of completion');
+                mainWindow.webContents.send('app-completed', outputData.applicationName);
+            } else {
+                console.log('Main window not available for notification');
+            }
+        });
+
+    } catch (error) {
+        console.error('Error in save-answers-to-file handler:', error);
+        event.reply('save-error', `Failed to save application data: ${error.message}`);
+    }
+});
+
+// Add a function to load completed apps from the directory
+async function loadCompletedAppsFromDirectory() {
+    const dir = getCompletedAppsDirectory();
+    if (!dir) return;
+
+    try {
+        const files = fs.readdirSync(dir);
+        completedApps = [];
+
+        for (const file of files) {
+            if (file.endsWith('.json')) {
+                const filePath = path.join(dir, file);
+                const data = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+                
+                // Add the app data directly since it's already in the correct format
+                completedApps.push({
+                    name: data.applicationName,
+                    completedOn: data.assessmentHistory?.lastRestartDate || new Date().toISOString(),
+                    initialTIREPlacement: data.initialTimePlacement,
+                    confirmedTIREPlacement: data.confirmedTimePlacement,
+                    confirmedPlacementSet: true,
+                    previousTIREPlacement: data.assessmentHistory?.previousPlacements?.[0]?.previousStatus || null,
+                    answers: data.answers,
+                    summary: data.summary,
+                    assessmentHistory: data.assessmentHistory || {}
+                });
+            }
+        }
+
+        console.log(`Loaded ${completedApps.length} completed applications`);
+    } catch (error) {
+        console.error('Error loading completed apps:', error);
+    }
+}
 
 function saveCompletedApps() {
     const completedAppsPath = path.join(app.getPath('userData'), 'completed-apps.json');
@@ -504,10 +630,23 @@ ipcMain.handle('export-completed-apps', async () => {
     }
 });
 
-// Add new IPC handler to get full application data
-ipcMain.handle('get-app-data', (event, appName) => {
-    const appData = completedApps.find(app => app.name === appName);
-    return appData || null;
+// Add handler to get application data
+ipcMain.handle('get-app-data', async (event, appName) => {
+    const dir = getCompletedAppsDirectory();
+    if (!dir) return null;
+
+    const sanitizedAppName = appName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    const filePath = path.join(dir, `${sanitizedAppName}.json`);
+
+    try {
+        if (fs.existsSync(filePath)) {
+            const data = fs.readFileSync(filePath, 'utf-8');
+            return JSON.parse(data);
+        }
+    } catch (error) {
+        console.error('Error reading application data:', error);
+    }
+    return null;
 });
 
 // Add a new IPC handler to refresh the main window
@@ -739,10 +878,9 @@ async function loadThresholds() {
     }
 }
 
-// Update the app.whenReady() section
-app.whenReady().then(() => {
-    resetCompletedAppsFile();
-    loadCompletedApps();
+// Modify the app.whenReady() section
+app.whenReady().then(async () => {
+    await loadCompletedAppsFromDirectory();
     loadThresholds();
     createStartWindow();
 });
@@ -757,4 +895,137 @@ app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
         createStartWindow();
     }
+});
+
+// Add these IPC handlers for directory management
+ipcMain.handle('open-directory', async (event, dirPath) => {
+    try {
+        await require('electron').shell.openPath(dirPath);
+        return true;
+    } catch (error) {
+        console.error('Error opening directory:', error);
+        return false;
+    }
+});
+
+ipcMain.handle('reset-completed-apps', async () => {
+    completedApps = [];
+    await loadCompletedAppsFromDirectory();
+    return true;
+});
+
+// Add handler for saving strategy questions
+ipcMain.on('save-strategy-questions', (event, outputData) => {
+    try {
+        const dir = getCompletedAppsDirectory();
+        if (!dir) {
+            dialog.showMessageBoxSync({
+                type: 'error',
+                title: 'Save Failed',
+                message: 'No directory set for saving completed applications. Please set a directory in the admin settings.'
+            });
+            return;
+        }
+
+        const sanitizedAppName = outputData.applicationName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+        const filePath = path.join(dir, `${sanitizedAppName}.json`);
+
+        // Save the file
+        fs.writeFileSync(filePath, JSON.stringify(outputData, null, 2), 'utf-8');
+        
+        // Update the completedApps array with the data
+        markAppCompleted(outputData.applicationName, 
+            outputData.initialTimePlacement, 
+            outputData.confirmedTimePlacement, 
+            true, 
+            outputData);
+
+        // Notify the main window
+        if (mainWindow) {
+            mainWindow.webContents.send('app-completed', outputData.applicationName);
+        }
+
+        event.reply('save-status', 'File saved successfully');
+    } catch (error) {
+        console.error('Error saving file:', error);
+        dialog.showMessageBoxSync({
+            type: 'error',
+            title: 'Save Failed',
+            message: `Failed to save application data: ${error.message}`
+        });
+    }
+});
+
+// Save selected directory
+ipcMain.handle('save-directory', (event, dirPath) => {
+    store.set('saveDirectory', dirPath);
+    return true;
+});
+
+// Handle reset confirmation
+ipcMain.handle('confirm-reset', async () => {
+    const result = await dialog.showMessageBox({
+        type: 'warning',
+        title: 'Reset Application',
+        message: 'Are you sure you want to reset the application?',
+        detail: 'This will remove all saved assessments and settings. This action cannot be undone.',
+        buttons: ['Cancel', 'Reset'],
+        defaultId: 0,
+        cancelId: 0
+    });
+    
+    return result.response === 1;
+});
+
+// Handle application reset
+ipcMain.handle('reset-application', async () => {
+    try {
+        // Get the completed apps directory before clearing store
+        const completedAppsDir = getCompletedAppsDirectory();
+        
+        // Clear electron-store data
+        store.clear();
+        
+        if (completedAppsDir && fs.existsSync(completedAppsDir)) {
+            // Remove all JSON files in the directory
+            const files = fs.readdirSync(completedAppsDir);
+            for (const file of files) {
+                if (file.endsWith('.json')) {
+                    const filePath = path.join(completedAppsDir, file);
+                    try {
+                        fs.unlinkSync(filePath);
+                        console.log('Deleted file:', filePath);
+                    } catch (err) {
+                        console.error('Error deleting file:', filePath, err);
+                    }
+                }
+            }
+        }
+        
+        // Reset application state
+        completedApps = [];
+        uploadedData = null;
+        
+        // Reset thresholds to defaults
+        store.set('distributionThreshold', 80);
+        store.set('tiebreakThreshold', 3);
+        
+        // Clear the completed apps directory setting
+        store.delete('completedAppsDirectory');
+        
+        // Notify windows to refresh
+        if (mainWindow) {
+            mainWindow.webContents.send('refresh-data');
+        }
+        
+        return true;
+    } catch (error) {
+        console.error('Error resetting application:', error);
+        throw error;
+    }
+});
+
+// Add this IPC handler near other IPC handlers
+ipcMain.on('quit-app', () => {
+    app.quit();
 });

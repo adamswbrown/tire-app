@@ -3,48 +3,101 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dr Migrate TIRE Admin</title>
+    <title>Admin Settings - Dr Migrate TIRE App</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="container">
+    <div class="admin-section">
         <div class="admin-header">
-            <h1>TIRE Assessment Admin</h1>
-            <button id="backToMain" class="secondary-button">Back to Main</button>
+            <h1>Admin Settings</h1>
+            <button id="returnToMainBtn" class="secondary-button">Return to Main Screen</button>
         </div>
 
-        <div class="admin-section">
-            <h2>Threshold Settings</h2>
-            
-            <div class="threshold-setting">
-                <h3>Distribution Threshold</h3>
-                <div class="threshold-explanation">
-                    The minimum percentage score required for a TIRE category to be considered as a potential placement. 
-                    If no category meets this threshold, the application will be marked as "Below Threshold".
-                </div>
-                <div class="threshold-input-group">
-                    <input type="number" id="distributionThreshold" min="0" max="100" value="80">
-                    <span class="input-suffix">%</span>
-                </div>
+        <!-- Directory Management Section -->
+        <div class="threshold-setting">
+            <h3>Save Directory</h3>
+            <p class="threshold-explanation">
+                Set the directory where completed TIRE assessments will be saved.
+            </p>
+            <div class="directory-selection">
+                <input type="text" id="saveDirectoryPath" readonly class="selected-path">
+                <button id="changeDirBtn" class="primary-button">Change Directory</button>
             </div>
+        </div>
 
-            <div class="threshold-setting">
-                <h3>Tiebreaker Threshold</h3>
-                <div class="threshold-explanation">
-                    The maximum percentage difference between top scoring categories to be considered a tie. 
-                    When multiple categories are within this range of each other, a tiebreaker selection will be required.
-                </div>
-                <div class="threshold-input-group">
-                    <input type="number" id="tiebreakThreshold" min="0" max="20" value="3">
-                    <span class="input-suffix">%</span>
-                </div>
+        <!-- Thresholds Section -->
+        <div class="threshold-setting">
+            <h3>Distribution Threshold</h3>
+            <p class="threshold-explanation">
+                Set the minimum percentage required for a category to be considered dominant.
+            </p>
+            <div class="threshold-input-group">
+                <input type="number" id="distributionThreshold" min="0" max="100">
+                <span class="input-suffix">%</span>
             </div>
+        </div>
 
+        <div class="threshold-setting">
+            <h3>Tiebreak Threshold</h3>
+            <p class="threshold-explanation">
+                Set the maximum percentage difference between categories to trigger a tiebreaker.
+            </p>
+            <div class="threshold-input-group">
+                <input type="number" id="tiebreakThreshold" min="0" max="100">
+                <span class="input-suffix">%</span>
+            </div>
+        </div>
+
+        <!-- Reset Application Section -->
+        <div class="threshold-setting danger-zone">
+            <h3>Reset Application</h3>
+            <p class="threshold-explanation warning-text">
+                Warning: This will permanently delete all saved assessments and reset all settings.
+            </p>
             <div class="admin-actions">
-                <button id="saveThresholds" class="primary-button">Save Changes</button>
+                <button id="resetAppBtn" class="danger-button">Reset Application</button>
+            </div>
+        </div>
+
+        <div class="admin-actions">
+            <button id="saveBtn" class="primary-button">Save Changes</button>
+        </div>
+    </div>
+
+    <!-- Directory Change Confirmation Modal -->
+    <div id="directoryChangeModal" class="modal">
+        <div class="modal-content">
+            <h2>Change Save Directory</h2>
+            <p>Are you sure you want to change the save directory? This will:</p>
+            <ul>
+                <li>Move all future saves to the new location</li>
+                <li>Load existing assessments from the new location</li>
+            </ul>
+            <div class="modal-buttons">
+                <button id="cancelDirChangeBtn" class="cancel-button">Cancel</button>
+                <button id="confirmDirChangeBtn" class="confirm-button">Change Directory</button>
             </div>
         </div>
     </div>
+
+    <!-- Reset Confirmation Modal -->
+    <div id="resetConfirmModal" class="modal">
+        <div class="modal-content">
+            <h2>Reset Application</h2>
+            <p>Are you sure you want to reset the application? This will:</p>
+            <ul>
+                <li>Delete all saved assessments</li>
+                <li>Clear all application settings</li>
+                <li>Reset all thresholds to defaults</li>
+            </ul>
+            <p class="warning-text">This action cannot be undone!</p>
+            <div class="modal-buttons">
+                <button id="cancelResetBtn" class="cancel-button">Cancel</button>
+                <button id="confirmResetBtn" class="danger-button">Reset Everything</button>
+            </div>
+        </div>
+    </div>
+
     <script src="admin.js"></script>
 </body>
 </html> 

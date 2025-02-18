@@ -58,7 +58,8 @@
   "license": "ISC",
   "description": "An Electron-based desktop application for managing and assessing applications using the TIRE framework",
   "dependencies": {
-    "xlsx": "^0.18.5"
+    "xlsx": "^0.18.5",
+    "electron-store": "^8.1.0"
   },
   "devDependencies": {
     "electron": "^33.2.0",

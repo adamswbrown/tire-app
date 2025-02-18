@@ -4,6 +4,35 @@ const { ipcRenderer } = require('electron');
 const uploadArea = document.getElementById('uploadArea');
 const uploadBtn = document.getElementById('uploadBtn');
 const statusMessage = document.getElementById('statusMessage');
+const selectDirBtn = document.getElementById('selectDirBtn');
+const selectedDirPath = document.getElementById('selectedDirPath');
+
+// Handle directory selection
+selectDirBtn.addEventListener('click', async () => {
+    try {
+        const result = await ipcRenderer.invoke('select-directory');
+        if (result.path) {
+            selectedDirPath.textContent = result.path;
+            uploadBtn.disabled = false; // Enable upload button once directory is selected
+            
+            // Save the selected directory
+            await ipcRenderer.invoke('save-directory', result.path);
+
+            // Check if there are existing assessments
+            if (result.existingFiles && result.existingFiles.length > 0) {
+                statusMessage.textContent = `Directory selected. Found ${result.existingFiles.length} existing assessment(s) which will be loaded.`;
+                statusMessage.className = 'status-message success';
+            } else {
+                statusMessage.textContent = 'Directory selected. No existing assessments found.';
+                statusMessage.className = 'status-message success';
+            }
+        }
+    } catch (error) {
+        console.error('Error selecting directory:', error);
+        statusMessage.textContent = 'Error selecting directory';
+        statusMessage.className = 'status-message error';
+    }
+});
 
 // Handle drag and drop events
 uploadArea.addEventListener('dragover', (e) => {
@@ -23,6 +52,13 @@ uploadArea.addEventListener('drop', async (e) => {
     e.stopPropagation();
     uploadArea.classList.remove('drag-over');
     
+    // Check if directory is selected
+    if (!selectedDirPath.textContent) {
+        statusMessage.textContent = 'Please select a save directory first';
+        statusMessage.className = 'status-message error';
+        return;
+    }
+    
     // Handle the dropped file
     const files = e.dataTransfer.files;
     if (files.length > 0) {
@@ -32,6 +68,13 @@ uploadArea.addEventListener('drop', async (e) => {
 
 // Handle click upload
 uploadBtn.addEventListener('click', () => {
+    // Check if directory is selected
+    if (!selectedDirPath.textContent) {
+        statusMessage.textContent = 'Please select a save directory first';
+        statusMessage.className = 'status-message error';
+        return;
+    }
+    
     handleFileUpload();
 });
 

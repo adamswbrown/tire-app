@@ -10,19 +10,35 @@
     <div class="start-container">
         <div class="upload-widget">
             <h1>Welcome to Dr Migrate TIRE Questionnaire</h1>
-            <p class="instructions">
-                To begin, please upload the <strong>App to Server Export (Bulk upload template)</strong> from your Dr Migrate instance's CMDB Assistant.
-            </p>
-            <div class="upload-area" id="uploadArea">
-                <img src="upload-icon.svg" alt="Upload" class="upload-icon">
-                <p>Drag and drop your Excel file here</p>
-                <p>or</p>
-                <button id="uploadBtn" class="primary-button">Choose File</button>
+            
+            <!-- Add directory selection section -->
+            <div class="directory-section">
+                <h2>1. Select Save Location</h2>
+                <p class="instructions">
+                    Choose a directory where completed TIRE assessments will be saved.
+                </p>
+                <div class="directory-selection">
+                    <button id="selectDirBtn" class="primary-button">Select Directory</button>
+                    <p id="selectedDirPath" class="selected-path"></p>
+                </div>
             </div>
-            <p class="file-requirements">
-                Supported file: Excel (.xlsx) containing "App-to-Server List" sheet
-            </p>
-            <p id="statusMessage" class="status-message"></p>
+
+            <div class="upload-section">
+                <h2>2. Upload Application Data</h2>
+                <p class="instructions">
+                    To begin, please upload the <strong>App to Server Export (Bulk upload template)</strong> from your Dr Migrate instance's CMDB Assistant.
+                </p>
+                <div class="upload-area" id="uploadArea">
+                    <img src="upload-icon.svg" alt="Upload" class="upload-icon">
+                    <p>Drag and drop your Excel file here</p>
+                    <p>or</p>
+                    <button id="uploadBtn" class="primary-button" disabled>Choose File</button>
+                </div>
+                <p class="file-requirements">
+                    Supported file: Excel (.xlsx) containing "App-to-Server List" sheet
+                </p>
+                <p id="statusMessage" class="status-message"></p>
+            </div>
         </div>
     </div>
     <script src="start.js"></script>

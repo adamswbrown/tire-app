@@ -24,7 +24,7 @@
                 <div class="time-placement-item">
                     <label for="initialTimePlacement">Initial TIRE Placement</label>
                     <select id="initialTimePlacement">
-                        <option value="">-</option>
+                        <option value="">Select Initial TIRE Placement</option>
                         <option value="Tolerate">TOLERATE</option>
                         <option value="Invest">INVEST</option>
                         <option value="Replace">REPLACE</option>
@@ -36,8 +36,8 @@
                     <div id="confirmedTimePlacement">-</div>
                 </div>
                 <div class="thresholds-container">
-                    <div><strong>Distribution Threshold:</strong> <span id="distribution-threshold">Loading...</span>%</div>
-                    <div><strong>Tiebreaker Threshold:</strong> <span id="tiebreaker-threshold">Loading...</span>%</div>
+                    <div><strong>Distribution Threshold:</strong> <span id="distribution-threshold">80</span>%</div>
+                    <div><strong>Tiebreaker Threshold:</strong> <span id="tiebreaker-threshold">3</span>%</div>
                 </div>
                 <div class="action-buttons">
                     <button id="explanationBtn">Calculations Explained</button>
@@ -98,6 +98,10 @@
         <div class="modal-content">
             <h2>Are you sure?</h2>
             <p>This will allow you to modify all answers for this assessment. This action cannot be undone.</p>
+            <div class="restart-reason-container">
+                <label for="restartReason">Reason for Restart:</label>
+                <textarea id="restartReason" placeholder="Please provide a reason for restarting the assessment..." rows="3"></textarea>
+            </div>
             <div class="modal-buttons">
                 <button id="cancelRestartBtn" class="cancel-button">Cancel</button>
                 <button id="confirmRestartBtn" class="confirm-button">Restart Assessment</button>
@@ -105,18 +109,25 @@
         </div>
     </div>
 
-    <!-- Calculations Explanation Modal -->
+    <!-- Calculations Modal -->
     <div id="calculationsModal" class="modal">
-        <div class="modal-content">
+        <div class="modal-content calculations-content">
             <h2>Calculations Explained <span class="admin-note">(Thresholds can be adjusted in Admin Settings)</span></h2>
             
-            <div class="sections-container accordion-container">
-                <div class="accordion-section">
-                    <div class="accordion-header">
-                        <h3>1. Question Scoring</h3>
-                        <span class="accordion-toggle">▼</span>
-                    </div>
-                    <div class="accordion-content">
+            <div class="tabs-container">
+                <!-- Tab Navigation -->
+                <div class="tabs-navigation">
+                    <button class="tab-button active" data-tab="scoring">1. Question Scoring</button>
+                    <button class="tab-button" data-tab="distribution">2. Category Distribution</button>
+                    <button class="tab-button" data-tab="placement">3. TIRE Placement Logic</button>
+                    <button class="tab-button" data-tab="tiebreaker">4. Tiebreaker System</button>
+                    <button class="tab-button" data-tab="weights">5. Weight Scale Guide</button>
+                </div>
+
+                <!-- Tab Content -->
+                <div class="tab-content-container">
+                    <!-- Question Scoring Tab -->
+                    <div class="tab-content active" id="scoring">
                         <p>Individual question scores form the foundation of the TIRE assessment. Each question's importance is weighted from 1-5, and the answer determines the final score.</p>
                         
                         <div class="formula">
@@ -140,112 +151,79 @@
                             • No = 0 points (5 × 0%)
                         </div>
                     </div>
-                </div>
 
-                <div class="accordion-section">
-                    <div class="accordion-header">
-                        <h3>2. Category Distribution</h3>
-                        <span class="accordion-toggle">▼</span>
-                    </div>
-                    <div class="accordion-content">
-                        <p>Category distributions determine how well an application aligns with each TIRE category. Questions are grouped by their associated TIRE category (Tolerate, Invest, Replace, Eliminate), and their scores are aggregated.</p>
-
+                    <!-- Category Distribution Tab -->
+                    <div class="tab-content" id="distribution">
+                        <p>Category distributions are calculated by comparing the total score achieved to the maximum possible score for that category.</p>
+                        
                         <div class="formula">
                             <strong>Distribution Formula:</strong><br>
-                            Distribution % = (Total Category Score / Maximum Possible Score) × 100<br><br>
-                            <strong>Score Components:</strong><br>
-                            • Total Category Score = Sum of all question scores in category<br>
-                            • Maximum Possible Score = Sum of all weights in category<br>
-                            • Must meet/exceed threshold (<span id="modal-threshold2">80</span>%) to qualify
+                            Distribution % = (Total Category Score ÷ Total Possible Score) × 100<br><br>
+                            <strong>Example:</strong><br>
+                            If a category has:<br>
+                            • Total Score: 24 points<br>
+                            • Maximum Possible: 30 points<br>
+                            Distribution = (24 ÷ 30) × 100 = 80%
                         </div>
 
                         <div class="example">
-                            <strong>Detailed Example:</strong><br>
-                            Category "Invest" with 3 questions:<br>
-                            1. Weight 5, Answer: Yes = 5 points<br>
-                            2. Weight 3, Answer: Partial = 1.5 points<br>
-                            3. Weight 4, Answer: Yes = 4 points<br><br>
-                            Calculation:<br>
-                            • Total Score = 10.5 points (5 + 1.5 + 4)<br>
-                            • Maximum Possible = 12 points (5 + 3 + 4)<br>
-                            • Distribution = (10.5/12) × 100 = 87.5%
+                            <strong>Distribution Thresholds:</strong><br>
+                            • 80-100%: Strong alignment<br>
+                            • 60-79%: Moderate alignment<br>
+                            • 40-59%: Neutral alignment<br>
+                            • 20-39%: Weak alignment<br>
+                            • 0-19%: Very weak alignment
                         </div>
                     </div>
-                </div>
 
-                <div class="accordion-section">
-                    <div class="accordion-header">
-                        <h3>3. TIRE Placement Logic</h3>
-                        <span class="accordion-toggle">▼</span>
-                    </div>
-                    <div class="accordion-content">
-                        <p>The final TIRE placement is determined through a systematic evaluation of category distributions and tiebreaker rules when necessary.</p>
-
+                    <!-- TIRE Placement Logic Tab -->
+                    <div class="tab-content" id="placement">
+                        <p>TIRE placement is determined by analyzing category distributions against the configured threshold.</p>
+                        
                         <div class="formula">
-                            <strong>Placement Decision Tree:</strong><br>
-                            1. Check all category distributions against threshold<br>
-                            2. Count qualifying categories (≥ threshold)<br>
-                            3. Apply placement rules based on count<br>
-                            4. Implement tiebreaker if needed
+                            <strong>Placement Rules:</strong><br>
+                            1. Categories must meet or exceed the distribution threshold (default: 80%)<br>
+                            2. If multiple categories qualify, tiebreaker rules apply<br>
+                            3. If no categories meet the threshold, marked as "Below Threshold"
                         </div>
 
                         <div class="example">
-                            <strong>Placement Scenarios:</strong><br>
-                            <strong>Scenario 1 - Clear Winner:</strong><br>
-                            • Invest: 85% (Above threshold)<br>
-                            • Others: Below threshold<br>
-                            Result: Invest selected<br><br>
-                            <strong>Scenario 2 - Tiebreaker Needed:</strong><br>
-                            • Invest: 87%<br>
-                            • Tolerate: 85%<br>
-                            • Replace: 82%<br>
-                            Result: Tiebreaker rules apply<br><br>
-                            <strong>Scenario 3 - Below Threshold:</strong><br>
-                            • All categories < threshold<br>
-                            Result: "Below Threshold" status
+                            <strong>Example Scenario:</strong><br>
+                            Distribution Threshold: 80%<br>
+                            Results:<br>
+                            • Tolerate: 85% → Qualifies<br>
+                            • Invest: 75% → Does not qualify<br>
+                            • Replace: 60% → Does not qualify<br>
+                            • Eliminate: 45% → Does not qualify<br>
+                            <strong>Outcome:</strong> TIRE Placement = Tolerate
                         </div>
                     </div>
-                </div>
 
-                <div class="accordion-section">
-                    <div class="accordion-header">
-                        <h3>4. Tiebreaker System</h3>
-                        <span class="accordion-toggle">▼</span>
-                    </div>
-                    <div class="accordion-content">
-                        <p>The tiebreaker system resolves situations where multiple categories qualify and have similar distributions. It uses a combination of automatic rules and manual intervention when needed.</p>
-
+                    <!-- Tiebreaker System Tab -->
+                    <div class="tab-content" id="tiebreaker">
+                        <p>The tiebreaker system resolves situations where multiple categories exceed the distribution threshold.</p>
+                        
                         <div class="formula">
-                            <strong>Tiebreaker Conditions:</strong><br>
-                            • Multiple categories above threshold<br>
-                            • Score difference ≤ <span id="modal-tiebreak2">3</span>%<br><br>
-                            <strong>Resolution Priority:</strong><br>
-                            1. Invest category bias (if Invest is tied)<br>
-                            2. Initial TIRE placement influence<br>
-                            3. Manual selection if still unresolved
+                            <strong>Tiebreaker Rules:</strong><br>
+                            1. Categories within tiebreaker threshold (default: 3%) are considered ties<br>
+                            2. Initial TIRE placement is considered for tiebreaking<br>
+                            3. User can manually select final placement when tied
                         </div>
 
                         <div class="example">
-                            <strong>Tiebreaker Example:</strong><br>
-                            Scores:<br>
-                            • Invest: 83%<br>
+                            <strong>Example Tiebreaker:</strong><br>
+                            Distribution Threshold: 80%<br>
+                            Tiebreaker Threshold: 3%<br>
+                            Results:<br>
                             • Tolerate: 82%<br>
-                            • Replace: 81%<br><br>
-                            Resolution Process:<br>
-                            1. All within 3% → Tiebreaker needed<br>
-                            2. Invest present → Bias towards Invest<br>
-                            3. Check initial placement<br>
-                            4. If still tied → Manual selection
+                            • Invest: 83%<br>
+                            → Difference is 1% (within 3% threshold)<br>
+                            → Requires manual tiebreaker selection
                         </div>
                     </div>
-                </div>
 
-                <div class="accordion-section">
-                    <div class="accordion-header">
-                        <h3>5. Weight Scale Guide</h3>
-                        <span class="accordion-toggle">▼</span>
-                    </div>
-                    <div class="accordion-content">
+                    <!-- Weight Scale Guide Tab -->
+                    <div class="tab-content" id="weights">
                         <p>Question weights reflect the relative importance and impact of different aspects of the application assessment.</p>
 
                         <div class="formula">
@@ -271,6 +249,17 @@
 
             <div class="modal-buttons">
                 <button id="closeCalculationsBtn" class="cancel-button">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Completion Modal -->
+    <div id="completionModal" class="modal">
+        <div class="modal-content">
+            <h2>Assessment Completed!</h2>
+            <p id="completionMessage"></p>
+            <div class="modal-buttons">
+                <button id="completionOkBtn" class="confirm-button">OK</button>
             </div>
         </div>
     </div>

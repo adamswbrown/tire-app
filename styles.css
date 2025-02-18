@@ -341,11 +341,11 @@ tr.completed-row .action-cell button:hover {
 
 #confirmedTimePlacement {
     padding: var(--spacing-sm) var(--spacing-md);
-    background: var(--yellow-bg);
-    color: var(--yellow-text);
-    border: 1px solid #ffeeba;
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
     border-radius: var(--radius-sm);
-    font-weight: 500;
+    font-weight: 600;
     min-width: 150px;
     text-align: center;
 }
@@ -353,13 +353,14 @@ tr.completed-row .action-cell button:hover {
 /* Action Buttons Container */
 .action-buttons {
     display: flex;
-    gap: 8px;
-    margin-left: auto;
+    gap: var(--spacing-md);
+    align-items: center;
+    margin: var(--spacing-md) 0;
 }
 
 .action-buttons button {
-    padding: 6px 12px;
-    font-size: 13px;
+    flex: 0 0 auto;
+    white-space: nowrap;
 }
 
 /* Save Button */
@@ -409,6 +410,25 @@ tr.completed-row .action-cell button:hover {
 .category-button {
     padding: 5px 10px;
     font-size: 12px;
+    background-color: #f8f9fa;
+    border: 1px solid var(--border);
+    color: var(--dark);
+    transition: all 0.2s ease;
+}
+
+.category-button:hover {
+    background-color: var(--secondary);
+    color: white;
+    transform: translateY(-1px);
+}
+
+.category-button.active {
+    background-color: var(--secondary);
+    color: white;
+    border-color: var(--secondary);
+    box-shadow: 0 2px 4px rgba(0, 123, 255, 0.3);
+    transform: translateY(-1px);
+    font-weight: 600;
 }
 
 /* Reset button specific styles */
@@ -422,26 +442,19 @@ tr.completed-row .action-cell button:hover {
     position: relative;
 }
 
-.reset-button::before {
-    content: '';
-    position: absolute;
-    left: calc(var(--spacing-lg) * -0.5);
-    top: 0;
-    height: 100%;
-    width: 1px;
-    background-color: var(--border);
+.reset-button.active {
+    background-color: var(--danger);
+    color: white;
+    border-color: var(--danger);
+    box-shadow: 0 2px 4px rgba(220, 53, 69, 0.3);
+    transform: translateY(-1px);
+    font-weight: 600;
 }
 
 .reset-button:hover {
-    background-color: var(--gray);
+    background-color: var(--danger);
     color: white;
-    border-color: var(--gray);
-}
-
-.reset-button.active {
-    background-color: var(--gray);
-    color: white;
-    border-color: var(--gray);
+    border-color: var(--danger);
 }
 
 /* Questions Table */
@@ -628,6 +641,7 @@ tr.completed-row .action-cell button:hover {
     font-weight: 600;
     background-color: transparent;
     overflow: hidden;
+    min-height: 24px;
 }
 
 /* Distribution bar behind percentage */
@@ -636,8 +650,10 @@ tr.completed-row .action-cell button:hover {
     left: 0;
     top: 0;
     bottom: 0;
+    height: 100%;
     z-index: 0;
     transition: width 0.3s ease;
+    opacity: 0.7;
 }
 
 /* Temperature color classes for percentages */
@@ -828,28 +844,25 @@ tr.completed-row .action-cell button:hover {
 
 /* Restart Button */
 .restart-button {
-    padding: var(--spacing-sm) var(--spacing-xl);
-    background: var(--warning);
-    color: var(--yellow-text);
-    border: none;
-    border-radius: var(--radius-md);
+    display: none;  /* Hidden by default */
+    background-color: #ffc107;
+    color: #000;
+    border-color: #d39e00;
+    padding: 8px 16px;
+    border-radius: 4px;
     font-weight: 500;
     cursor: pointer;
+    transition: all 0.2s ease;
+    margin: 0 8px;
+}
+
+.assessment-completed .restart-button {
+    display: inline-block;  /* Show when assessment is completed */
 }
 
 .restart-button:hover {
-    background: #e0a800;
-    color: #533f03;
-}
-
-/* Hide restart button by default */
-.restart-button {
-    display: none;
-}
-
-/* Show restart button in view mode */
-.view-mode .restart-button {
-    display: inline-block;
+    background-color: #e0a800;
+    border-color: #d39e00;
 }
 
 /* Modal Styles */
@@ -863,29 +876,58 @@ tr.completed-row .action-cell button:hover {
     background-color: rgba(0, 0, 0, 0.5);
     z-index: 1000;
     opacity: 0;
+    visibility: hidden;
     transition: opacity 0.3s ease;
-}
-
-.modal.show {
     display: flex;
-    justify-content: center;
     align-items: center;
-    opacity: 1;
+    justify-content: center;
 }
 
 .modal-content {
-    background-color: white;
+    background-color: #fff;
     padding: 2rem;
     border-radius: 8px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    max-width: 90%;
-    max-height: 90vh;
-    overflow-y: auto;
+    max-width: 500px;
+    width: 90%;
     position: relative;
+    transform: translateY(-20px);
+    transition: transform 0.3s ease;
+    margin: 0 auto;
+}
+
+.modal.show {
+    opacity: 1;
+    visibility: visible;
+    display: flex;
+}
+
+.modal.show .modal-content {
+    transform: translateY(0);
+}
+
+/* Ensure all modals use the same z-index */
+#confirmationModal,
+#completionModal,
+#calculationsModal,
+#tiebreakerModal,
+#directoryChangeModal,
+#resetConfirmModal {
+    z-index: 1000;
+}
+
+/* Ensure modal content is always on top of overlay */
+#confirmationModal .modal-content,
+#completionModal .modal-content,
+#calculationsModal .modal-content,
+#tiebreakerModal .modal-content,
+#directoryChangeModal .modal-content,
+#resetConfirmModal .modal-content {
+    z-index: 1001;
 }
 
 .calculations-content {
-    width: 700px;
+    width: 100%;
 }
 
 .calculations-content h2 {
@@ -948,21 +990,35 @@ tr.completed-row .action-cell button:hover {
 .modal-buttons {
     display: flex;
     justify-content: flex-end;
+    gap: 1rem;
     margin-top: 2rem;
 }
 
-.cancel-button {
+.cancel-button, .confirm-button {
     padding: 0.5rem 1.5rem;
-    background-color: #6c757d;
-    color: white;
     border: none;
     border-radius: 4px;
     cursor: pointer;
+    font-weight: 500;
     transition: background-color 0.2s;
+}
+
+.cancel-button {
+    background-color: #6c757d;
+    color: white;
+}
+
+.confirm-button {
+    background-color: #007bff;
+    color: white;
 }
 
 .cancel-button:hover {
     background-color: #5a6268;
+}
+
+.confirm-button:hover {
+    background-color: #0056b3;
 }
 
 /* Start Screen Styles */
@@ -1313,15 +1369,24 @@ tr.completed-row .action-cell button:hover {
 
 /* Calculations Modal Specific Styles */
 #calculationsModal .modal-content {
-    max-width: 1200px;
+    max-width: 800px;
     width: 90%;
-    padding: var(--spacing-lg);
-    max-height: 90vh;
-    overflow-y: auto;
+    max-height: 80vh;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    overflow-y: auto;
+}
+
+#calculationsModal.show {
     display: flex;
-    flex-direction: column;
-    gap: var(--spacing-md);
+    align-items: center;
+    justify-content: center;
 }
 
 #calculationsModal h2 {
@@ -1333,52 +1398,111 @@ tr.completed-row .action-cell button:hover {
     align-items: center;
 }
 
-#calculationsModal .sections-container {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
+/* Tabs Container */
+.tabs-container {
+    display: flex;
+    flex-direction: column;
     gap: var(--spacing-lg);
 }
 
-#calculationsModal .section {
+/* Tab Navigation */
+.tabs-navigation {
+    display: flex;
+    gap: var(--spacing-md);
+    border-bottom: 2px solid var(--border);
+    padding-bottom: 2px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding: var(--spacing-sm);
+    margin: 0 calc(var(--spacing-sm) * -1);
+}
+
+.tab-button {
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: none;
+    border: none;
+    color: var(--gray);
+    cursor: pointer;
+    font-weight: 500;
+    position: relative;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    min-width: max-content;
+    font-size: var(--font-size-sm);
+}
+
+.tab-button:hover {
+    color: var(--primary);
+    background: none;
+    transform: none;
+}
+
+.tab-button.active {
+    color: var(--primary);
+}
+
+.tab-button.active::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background-color: var(--primary);
+}
+
+/* Tab Content */
+.tab-content-container {
+    padding: var(--spacing-md);
+    background: white;
+    border-radius: var(--radius-md);
+}
+
+.tab-content {
+    display: none;
+    animation: fadeIn 0.3s ease;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Content Styling */
+.tab-content p {
+    margin-bottom: var(--spacing-md);
+    line-height: 1.6;
+    color: var(--dark);
+}
+
+.tab-content .formula {
     background: var(--light);
     padding: var(--spacing-lg);
     border-radius: var(--radius-md);
-    border: 1px solid var(--border);
+    border-left: 4px solid var(--primary);
+    margin: var(--spacing-md) 0;
+    font-family: monospace;
+    line-height: 1.6;
 }
 
-#calculationsModal h3 {
+.tab-content .example {
+    background: #f8f9fa;
+    padding: var(--spacing-lg);
+    border-radius: var(--radius-md);
+    margin: var(--spacing-md) 0;
+    border-left: 4px solid var(--secondary);
+}
+
+.tab-content strong {
     color: var(--primary);
-    margin-bottom: var(--spacing-md);
-    font-size: var(--font-size-lg);
     font-weight: 600;
 }
 
-#calculationsModal p {
-    margin-bottom: var(--spacing-md);
-    line-height: 1.6;
-}
-
-#calculationsModal .formula {
-    background: white;
-    padding: var(--spacing-lg);
-    border-radius: var(--radius-md);
-    border: 1px solid var(--border);
-    margin: var(--spacing-md) 0;
-    font-family: monospace;
-    font-size: var(--font-size-base);
-    line-height: 1.6;
-}
-
-#calculationsModal .example {
-    background: white;
-    padding: var(--spacing-lg);
-    border-radius: var(--radius-md);
-    border: 1px solid var(--border);
-    margin: var(--spacing-md) 0;
-    font-size: var(--font-size-base);
-    line-height: 1.6;
-}
-
+/* Modal Buttons */
 #calculationsModal .modal-buttons {
     margin-top: var(--spacing-lg);
     padding-top: var(--spacing-md);
@@ -1387,14 +1511,31 @@ tr.completed-row .action-cell button:hover {
     justify-content: flex-end;
 }
 
-@media (max-width: 1200px) {
-    #calculationsModal .sections-container {
-        grid-template-columns: 1fr;
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .tabs-navigation {
+        flex-direction: column;
+        gap: var(--spacing-xs);
+        overflow-x: hidden;
     }
-    
-    #calculationsModal .modal-content {
-        width: 95%;
-        padding: var(--spacing-md);
+
+    .tab-button {
+        width: 100%;
+        text-align: left;
+        padding: var(--spacing-sm) var(--spacing-md);
+        font-size: var(--font-size-base);
+    }
+
+    .tab-button.active::after {
+        height: 100%;
+        width: 2px;
+        top: 0;
+        bottom: 0;
+        left: 0;
+    }
+
+    .tab-content-container {
+        padding: var(--spacing-sm);
     }
 }
 
@@ -1489,4 +1630,227 @@ tr.completed-row .action-cell button:hover {
     border-radius: var(--radius-sm);
     margin: var(--spacing-sm) 0;
     border-left: 3px solid var(--primary);
+}
+
+/* Directory Selection Styles */
+.directory-section,
+.upload-section,
+.reset-section {
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.directory-section h2,
+.upload-section h2,
+.reset-section h2 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    color: #2c3e50;
+    font-size: 1.5rem;
+}
+
+.directory-selection {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.selected-path {
+    flex: 1;
+    padding: 0.5rem;
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    color: #495057;
+    min-height: 2.5rem;
+    display: flex;
+    align-items: center;
+    word-break: break-all;
+}
+
+/* Reset Button Styles */
+.danger-button {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background-color 0.2s;
+}
+
+.danger-button:hover {
+    background-color: #c82333;
+}
+
+.danger-button:active {
+    background-color: #bd2130;
+}
+
+/* Disabled Upload Button */
+.primary-button:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+    opacity: 0.65;
+}
+
+.primary-button:disabled:hover {
+    background-color: #6c757d;
+}
+
+/* Status Message Styles */
+.status-message {
+    margin-top: 1rem;
+    padding: 0.75rem;
+    border-radius: 4px;
+    text-align: center;
+}
+
+.status-message.error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.status-message.success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.restart-reason-container {
+    margin: 20px 0;
+}
+
+.restart-reason-container label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #333;
+}
+
+.restart-reason-container textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    resize: vertical;
+    font-family: inherit;
+    font-size: 14px;
+}
+
+.restart-reason-container textarea:focus {
+    border-color: #4a90e2;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+}
+
+/* Status Indicators */
+.status-tolerate {
+    background-color: #d4edda !important;
+    color: #155724 !important;
+    border-color: #c3e6cb !important;
+}
+
+.status-invest {
+    background-color: #d4edda !important;
+    color: #155724 !important;
+    border-color: #c3e6cb !important;
+}
+
+.status-replace {
+    background-color: #d4edda !important;
+    color: #155724 !important;
+    border-color: #c3e6cb !important;
+}
+
+.status-eliminate {
+    background-color: #d4edda !important;
+    color: #155724 !important;
+    border-color: #c3e6cb !important;
+}
+
+.status-pending {
+    background-color: #f8f9fa !important;
+    color: #6c757d !important;
+    border-color: #dee2e6 !important;
+}
+
+/* Below threshold style remains yellow/warning */
+.below-threshold {
+    background-color: #fff3cd !important;
+    color: #856404 !important;
+    border-color: #ffeeba !important;
+}
+
+/* Button Styles */
+.action-buttons button {
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+}
+
+#explanationBtn {
+    background-color: #007bff;
+    color: white;
+    border-color: #0056b3;
+}
+
+#explanationBtn:hover {
+    background-color: #0056b3;
+}
+
+#saveButton {
+    background-color: #28a745;
+    color: white;
+    border-color: #1e7e34;
+}
+
+#saveButton:hover {
+    background-color: #218838;
+}
+
+#saveButton:disabled {
+    background-color: #6c757d;
+    border-color: #545b62;
+    cursor: not-allowed;
+    opacity: 0.65;
+}
+
+.restart-button {
+    background-color: #ffc107;
+    color: #000;
+    border-color: #d39e00;
+}
+
+.restart-button:hover {
+    background-color: #e0a800;
+}
+
+/* Completion Status */
+.completion-header {
+    padding: 10px;
+    border-radius: 4px;
+    margin: 10px 0;
+    transition: all 0.3s ease;
+}
+
+.completion-header.complete {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.completion-header.incomplete {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeeba;
 }
