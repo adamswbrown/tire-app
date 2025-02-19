@@ -1,5 +1,31 @@
 # Dr Migrate TIRE App Release Notes
 
+## Version 1.0.2
+
+### What's New
+- Added configurable save directory for completed applications
+- Enhanced export functionality with user-selected directory support
+- Improved logging system with daily log files
+- Added confirmation modal for application reset
+- Enhanced close button functionality in strategy questions window
+- Added comprehensive logging throughout the application
+- Improved error handling and user feedback
+- Enhanced cross-platform directory handling
+
+### Bug Fixes
+- Fixed issues with file saving in custom directories
+- Improved error handling for directory operations
+- Enhanced application state management
+- Fixed window management and focus handling
+- Improved IPC communication reliability
+
+### Technical Improvements
+- Added structured logging system with timestamp and log levels
+- Enhanced directory management with proper permissions
+- Improved application state persistence
+- Added robust error handling for file operations
+- Enhanced cross-platform compatibility
+
 ## Version 1.0.1
 
 ### What's New
