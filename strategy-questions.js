@@ -30,6 +30,13 @@ async function loadStrategyQuestions() {
         const appNameElement = document.getElementById('applicationName');
         const applicationName = appNameElement ? appNameElement.textContent : null;
 
+        if (!applicationName || applicationName === "Application Name") {
+            console.error("Application name not set properly");
+            return;
+        }
+
+        console.log("Loading questions for application:", applicationName);
+
         // Load template questions
         const response = await fetch('questions.json');
         const templateData = await response.json();
@@ -73,16 +80,66 @@ async function loadStrategyQuestions() {
                 // Set assessment state based on history
                 const mainContent = document.querySelector('.main-content');
                 if (mainContent) {
+                    // Check if it's a completed assessment (has valid confirmed placement)
+                    const isValidPlacement = savedData.confirmedTimePlacement && 
+                                          savedData.confirmedTimePlacement !== "Not Set" && 
+                                          savedData.confirmedTimePlacement !== "-" && 
+                                          !savedData.confirmedTimePlacement.includes('Below Threshold');
+
+                    if (isValidPlacement) {
+                        // Mark as completed if not currently being restarted
+                        if (!savedData.assessmentHistory?.hasBeenRestarted) {
+                            mainContent.classList.add('assessment-completed');
+                            console.log('Setting assessment-completed class for previously completed assessment');
+                            
+                            // Disable all inputs for completed assessments
+                            document.querySelectorAll('#strategyQuestionsTable select, #strategyQuestionsTable input').forEach(element => {
+                                element.disabled = true;
+                            });
+                            
+                            // Disable initial TIRE placement
+                            const initialTimePlacement = document.getElementById('initialTimePlacement');
+                            if (initialTimePlacement) {
+                                initialTimePlacement.disabled = true;
+                            }
+
+                            // Show restart button, hide save button
+                            const restartButton = document.getElementById('restartBtn');
+                            const saveButton = document.getElementById('saveButton');
+                            if (restartButton) restartButton.style.display = 'inline-block';
+                            if (saveButton) saveButton.style.display = 'none';
+                        }
+                    }
+                    
+                    // Handle restart state if applicable
                     if (savedData.assessmentHistory?.hasBeenRestarted) {
+                        mainContent.classList.remove('assessment-completed');
                         mainContent.classList.add('assessment-restarted');
-                    } else if (savedData.confirmedTimePlacement && 
-                              savedData.confirmedTimePlacement !== "Not Set" && 
-                              savedData.confirmedTimePlacement !== "-" && 
-                              !savedData.confirmedTimePlacement.includes('Below Threshold')) {
-                        mainContent.classList.add('assessment-completed');
+                        console.log('Setting assessment-restarted class');
+                        
+                        // Enable all inputs for restarted assessments
+                        document.querySelectorAll('#strategyQuestionsTable select, #strategyQuestionsTable input').forEach(element => {
+                            element.disabled = false;
+                        });
+                        
+                        // Enable initial TIRE placement
+                        const initialTimePlacement = document.getElementById('initialTimePlacement');
+                        if (initialTimePlacement) {
+                            initialTimePlacement.disabled = false;
+                        }
+
+                        // Show save button, hide restart button
+                        const restartButton = document.getElementById('restartBtn');
+                        const saveButton = document.getElementById('saveButton');
+                        if (restartButton) restartButton.style.display = 'none';
+                        if (saveButton) {
+                            saveButton.style.display = 'inline-block';
+                            saveButton.disabled = false;
+                        }
                     }
                 }
 
+                // Load saved answers and other data
                 if (savedData.answers) {
                     console.log("Found", savedData.answers.length, "saved answers");
                     let matchedCount = 0;
@@ -125,15 +182,6 @@ async function loadStrategyQuestions() {
                             confirmedPlacementDiv.textContent = savedData.confirmedTimePlacement;
                             // Add appropriate status class
                             updateConfirmedPlacement(savedData.confirmedTimePlacement);
-                        }
-                    }
-
-                    // Check if the assessment was completed
-                    if (savedData.confirmedTimePlacement && 
-                        savedData.confirmedTimePlacement !== "Not Set" && 
-                        !savedData.assessmentHistory?.hasBeenRestarted) {
-                        if (mainContent) {
-                            mainContent.classList.add('assessment-completed');
                         }
                     }
                 }
@@ -230,6 +278,9 @@ function createAnswerSelect(row) {
             scoreCell.textContent = row.clientScore;
         }
 
+        // Update the answered questions counter
+        updateAnsweredQuestionsCounter();
+        
         await updateClientScores();
         updateCompletionStatus();
         saveUpdatedStrategyQuestions();
@@ -333,11 +384,17 @@ function updateAnsweredQuestionsCounter() {
     // Count total questions
     totalQuestions = strategyQuestions.length;
     
-    // Count answered questions (where clientAnswer is not '-' and not undefined/null)
-    answeredQuestions = strategyQuestions.filter(q => q.clientAnswer && q.clientAnswer !== '-').length;
+    // Count answered questions (where clientAnswer is not '-' or empty)
+    answeredQuestions = strategyQuestions.filter(q => 
+        q.clientAnswer && 
+        q.clientAnswer !== '-' && 
+        q.clientAnswer !== ''
+    ).length;
     
     // Update the counter display
     const counterElement = document.getElementById('completionText');
+    const appNameElement = document.getElementById('applicationName');
+    
     if (counterElement) {
         counterElement.textContent = `${answeredQuestions} / ${totalQuestions} questions answered`;
         
@@ -353,6 +410,9 @@ function updateAnsweredQuestionsCounter() {
             }
         }
     }
+
+    // Update save button state
+    updateSaveButtonState();
 }
 
 // Helper function to calculate TIRE scores
@@ -591,20 +651,27 @@ async function updateClientScores() {
     const confirmedPlacementElement = document.getElementById('confirmedTimePlacement');
     if (confirmedPlacementElement) {
         if (categoriesAboveThreshold.length === 0) {
-            // No categories above threshold - show the highest distribution
+            // No categories above threshold
             confirmedPlacementElement.textContent = `Below Threshold (${maxDistribution}%)`;
-            confirmedPlacementElement.style.backgroundColor = '#fff3cd';
-            confirmedPlacementElement.style.color = '#856404';
-            confirmedPlacementElement.style.borderColor = '#ffeeba';
-            confirmedPlacementElement.classList.add('below-threshold');
+            confirmedPlacementElement.className = 'below-threshold';
         } else if (categoriesAboveThreshold.length === 1) {
             // Single category above threshold
             updateConfirmedPlacement(categoriesAboveThreshold[0].category);
         } else {
-            // Multiple categories above threshold - will be handled during save
+            // Check for ties within tiebreaker threshold
             const maxAboveThreshold = Math.max(...categoriesAboveThreshold.map(c => c.distribution));
-            const highestCategory = categoriesAboveThreshold.find(c => c.distribution === maxAboveThreshold);
-            updateConfirmedPlacement(highestCategory.category);
+            const tiedCategories = categoriesAboveThreshold.filter(c => 
+                Math.abs(c.distribution - maxAboveThreshold) <= tiebreakThreshold
+            );
+
+            if (tiedCategories.length > 1) {
+                // Show "Multiple Placements" during assessment
+                confirmedPlacementElement.textContent = 'Multiple Placements';
+                confirmedPlacementElement.className = 'status-pending';
+    } else {
+                // Use highest scoring category
+                updateConfirmedPlacement(categoriesAboveThreshold[0].category);
+            }
         }
     }
 
@@ -617,30 +684,33 @@ async function updateSaveButtonState() {
     const saveButton = document.getElementById('saveButton');
     const mainContent = document.querySelector('.main-content');
     const confirmedTimePlacement = document.getElementById('confirmedTimePlacement');
+    const initialTimePlacement = document.getElementById('initialTimePlacement');
     
-    if (!saveButton || !confirmedTimePlacement) return;
+    if (!saveButton || !confirmedTimePlacement || !initialTimePlacement) return;
 
     // Get the confirmed placement text
     const confirmedPlacement = confirmedTimePlacement.textContent;
+    const initialPlacement = initialTimePlacement.value;
     
-    // Check if there's a valid confirmed placement
-    const isValidPlacement = confirmedPlacement && 
-                           confirmedPlacement !== 'Not Set' && 
-                           confirmedPlacement !== '-' && 
-                           !confirmedPlacement.includes('Below Threshold');
+    // Check if there's a valid initial placement
+    const isValidInitialPlacement = initialPlacement && initialPlacement !== '';
 
-    // If the assessment has been restarted, enable save button when there's a valid placement
-    if (mainContent && mainContent.classList.contains('assessment-restarted')) {
-        saveButton.disabled = !isValidPlacement;
-        saveButton.title = isValidPlacement ? 
-            'Click to complete the assessment' : 
-            'A valid TIRE placement must be confirmed before completing';
+    // For completed assessments, keep the button disabled
+    if (mainContent.classList.contains('assessment-completed')) {
+        saveButton.disabled = true;
+        saveButton.title = 'Please restart the assessment to make changes';
         return;
     }
 
-    // For non-restarted assessments, keep the button disabled
-    saveButton.disabled = true;
-    saveButton.title = 'Please restart the assessment to make changes';
+    // For restarted assessments or new assessments
+    if (mainContent.classList.contains('assessment-restarted') || !mainContent.classList.contains('assessment-completed')) {
+        // Enable save button if there's a valid initial placement, even with Multiple Placements
+        // The tiebreaker modal will handle the resolution
+        saveButton.disabled = !isValidInitialPlacement;
+        saveButton.title = isValidInitialPlacement ? 
+            'Click to complete the assessment' : 
+            'Initial TIRE placement must be set before completing';
+    }
 }
 
 function showCompletionModal(appName) {
@@ -674,49 +744,53 @@ function showCompletionModal(appName) {
 // Updated tiebreaker modal function that returns a Promise
 function showTiebreakerModalWithPromise(categories) {
     return new Promise((resolve, reject) => {
+        // Create modal container
         const modal = document.createElement('div');
-        modal.className = 'modal show';
+        modal.className = 'modal';
         modal.id = 'tiebreakerModal';
+        modal.style.display = 'block';
+        modal.style.visibility = 'visible';
+        modal.style.opacity = '1';
+        modal.style.zIndex = '10000';
         
-        // Check if Invest is among the categories and has a high enough score
-        const investCategory = categories.find(c => c.category === 'invest');
-        const initialTimePlacement = document.getElementById('initialTimePlacement').value.toLowerCase();
-        
-        // Remove auto-selection of Invest
         const modalContent = `
-            <div class="modal-content">
-                <h2>Multiple Categories Above Threshold</h2>
-                <p>Multiple categories have met or exceeded the distribution threshold (${distributionThreshold}%) 
+            <div class="modal-content" style="width: 80%; max-width: 600px; margin: 50px auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                <h2 style="color: #333; margin-bottom: 20px;">Multiple Categories Above Threshold</h2>
+                <p style="margin-bottom: 15px;">Multiple categories have met or exceeded the distribution threshold (${distributionThreshold}%) 
                    and are within the tiebreaker threshold of ${tiebreakThreshold}% of each other.</p>
                 
-                <div class="category-scores">
+                <div class="category-scores" style="margin: 20px 0; padding: 15px; background: #f5f5f5; border-radius: 4px;">
                     ${categories.map(c => `
-                        <div class="category-score">
+                        <div class="category-score" style="margin: 10px 0;">
                             <strong>${c.category.charAt(0).toUpperCase() + c.category.slice(1)}:</strong> ${c.distribution}%
                         </div>
                     `).join('')}
                 </div>
 
-                <p>Please select the final TIRE placement:</p>
+                <p style="margin: 15px 0;">Please select the final TIRE placement:</p>
                 
-                <div class="category-buttons">
+                <div class="category-buttons" style="display: flex; gap: 10px; flex-wrap: wrap; margin: 20px 0;">
                     ${categories.map(c => `
-                        <button class="category-select-btn" data-category="${c.category}">
+                        <button class="category-select-btn" data-category="${c.category}"
+                                style="padding: 10px 20px; border: none; border-radius: 4px; background: #007bff; color: white; cursor: pointer; transition: background 0.3s;">
                             ${c.category.toUpperCase()}
                         </button>
                     `).join('')}
                 </div>
                 
-                <div class="tiebreaker-info">
-                    <p><strong>Tiebreaker Rules Applied:</strong></p>
-                    <ul>
+                <div class="tiebreaker-info" style="margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 4px;">
+                    <p><strong>Tiebreaker Rules:</strong></p>
+                    <ul style="margin: 10px 0 0 20px;">
                         <li>Categories within ${tiebreakThreshold}% are considered ties</li>
                         <li>Initial TIRE placement is considered as a tiebreaker</li>
                     </ul>
                 </div>
 
-                <div class="modal-buttons">
-                    <button class="go-back-btn">Go Back and Edit Answers</button>
+                <div class="modal-buttons" style="margin-top: 20px; text-align: right;">
+                    <button class="go-back-btn" 
+                            style="padding: 10px 20px; border: 1px solid #6c757d; border-radius: 4px; background: #6c757d; color: white; cursor: pointer;">
+                        Go Back and Edit Answers
+                    </button>
                 </div>
             </div>
         `;
@@ -727,6 +801,12 @@ function showTiebreakerModalWithPromise(categories) {
         // Add event listeners for category selection
         const buttons = modal.querySelectorAll('.category-select-btn');
         buttons.forEach(button => {
+            button.addEventListener('mouseover', () => {
+                button.style.background = '#0056b3';
+            });
+            button.addEventListener('mouseout', () => {
+                button.style.background = '#007bff';
+            });
             button.addEventListener('click', () => {
                 const selectedCategory = button.dataset.category;
                 modal.remove();
@@ -736,12 +816,18 @@ function showTiebreakerModalWithPromise(categories) {
 
         // Add event listener for go back button
         const goBackBtn = modal.querySelector('.go-back-btn');
+        goBackBtn.addEventListener('mouseover', () => {
+            goBackBtn.style.background = '#5a6268';
+        });
+        goBackBtn.addEventListener('mouseout', () => {
+            goBackBtn.style.background = '#6c757d';
+        });
         goBackBtn.addEventListener('click', () => {
             modal.remove();
             resolve('go-back');
         });
 
-        // Close modal when clicking outside (treated as "go back")
+        // Close modal when clicking outside
         modal.addEventListener('click', (event) => {
             if (event.target === modal) {
                 modal.remove();
@@ -793,13 +879,18 @@ function updateDistribution(clientScore, totalScore, category) {
 
 // Function to update the completion status of the assessment
 function updateCompletionStatus() {
+    console.log('Updating completion status');
     const completionStatus = document.getElementById('completionStatus');
     const mainContent = document.querySelector('.main-content');
     const saveButton = document.getElementById('saveButton');
     const restartButton = document.getElementById('restartBtn');
     const confirmedTimePlacement = document.getElementById('confirmedTimePlacement');
+    const initialTimePlacement = document.getElementById('initialTimePlacement');
 
-    if (!completionStatus || !mainContent || !confirmedTimePlacement) return;
+    if (!completionStatus || !mainContent || !confirmedTimePlacement || !initialTimePlacement) {
+        console.log('Missing required elements');
+        return;
+    }
 
     // Calculate completion percentage
     const percentageComplete = (answeredQuestions / totalQuestions) * 100;
@@ -815,68 +906,63 @@ function updateCompletionStatus() {
 
     // Check if assessment has been restarted
     const isRestarted = mainContent.classList.contains('assessment-restarted');
-    // Check if assessment was previously completed
+    // Check if assessment was previously completed (saved)
     const wasCompleted = mainContent.classList.contains('assessment-completed');
+
+    console.log('Assessment state:', { isRestarted, wasCompleted });
 
     // Get confirmed placement and check if it's valid
     const confirmedPlacement = confirmedTimePlacement.textContent;
-    const isValidPlacement = confirmedPlacement && 
-                           confirmedPlacement !== 'Not Set' && 
-                           confirmedPlacement !== '-' && 
-                           !confirmedPlacement.includes('Below Threshold');
+    const initialPlacement = initialTimePlacement.value;
+    const isValidConfirmedPlacement = confirmedPlacement && 
+                                    confirmedPlacement !== 'Not Set' && 
+                                    confirmedPlacement !== '-' && 
+                                    !confirmedPlacement.includes('Below Threshold');
+    const isValidInitialPlacement = initialPlacement && initialPlacement !== '';
+
+    console.log('Placement state:', { 
+        confirmedPlacement, 
+        initialPlacement,
+        isValidConfirmedPlacement,
+        isValidInitialPlacement 
+    });
 
     // Handle button visibility based on assessment state
     if (isRestarted) {
-        // For restarted assessments
-        if (isValidPlacement) {
-            // Show save button when there's a valid placement
-            if (saveButton) {
-                saveButton.style.display = 'inline-block';
-                saveButton.disabled = false;
-            }
-            if (restartButton) {
-                restartButton.style.display = 'none';
-            }
-        } else {
-            // Hide both buttons if no valid placement
-            if (saveButton) {
-                saveButton.style.display = 'inline-block';
-                saveButton.disabled = true;
-            }
-            if (restartButton) {
-                restartButton.style.display = 'none';
-            }
+        // For restarted assessments, show save button
+        console.log('Showing save button for restarted assessment');
+        if (restartButton) restartButton.style.display = 'none';
+    if (saveButton) {
+            saveButton.style.display = 'inline-block';
+            saveButton.disabled = !(isValidConfirmedPlacement && isValidInitialPlacement);
         }
     } else if (wasCompleted) {
-        // For completed, non-restarted assessments
+        // For completed (saved) assessments, show restart button
+        console.log('Showing restart button for completed assessment');
         if (restartButton) {
             restartButton.style.display = 'inline-block';
             restartButton.disabled = false;
         }
-        if (saveButton) {
-            saveButton.style.display = 'none';
-        }
+        if (saveButton) saveButton.style.display = 'none';
     } else {
-        // New assessment
-        if (restartButton) {
-            restartButton.style.display = 'none';
-        }
+        // New assessment or in progress
+        console.log('New/in-progress assessment - showing save button');
+        if (restartButton) restartButton.style.display = 'none';
         if (saveButton) {
             saveButton.style.display = 'inline-block';
-            saveButton.disabled = !isValidPlacement;
+            saveButton.disabled = !(isValidConfirmedPlacement && isValidInitialPlacement);
         }
     }
 
-    // Update input states
+    // Update input states - only disable if completed and not restarted
     const inputs = document.querySelectorAll('#strategyQuestionsTable select, #strategyQuestionsTable input');
     inputs.forEach(input => {
-        input.disabled = !isRestarted && wasCompleted;
+        input.disabled = wasCompleted && !isRestarted;
     });
 
     // Update initial TIRE placement state
-    const initialTimePlacement = document.getElementById('initialTimePlacement');
     if (initialTimePlacement) {
-        initialTimePlacement.disabled = !isRestarted && wasCompleted;
+        initialTimePlacement.disabled = wasCompleted && !isRestarted;
     }
 }
 
@@ -934,7 +1020,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (closeCalculationsBtn && calculationsModal) {
         closeCalculationsBtn.addEventListener('click', () => {
             calculationsModal.style.display = 'none';
-            calculationsModal.classList.remove('show');
+                calculationsModal.classList.remove('show');
         });
 
         // Close modal when clicking outside
@@ -951,11 +1037,18 @@ document.addEventListener('DOMContentLoaded', () => {
         restartBtn.addEventListener('click', () => {
             console.log('Restart button clicked');
             if (confirmationModal) {
+                // Reset the restart reason field
+                document.getElementById('restartReason').value = '';
+                
+                // Show the modal with proper styling
                 confirmationModal.style.display = 'block';
                 confirmationModal.style.visibility = 'visible';
                 confirmationModal.style.opacity = '1';
                 confirmationModal.style.zIndex = '10000';
                 confirmationModal.classList.add('show');
+                
+                // Focus the reason input
+                document.getElementById('restartReason').focus();
             }
         });
     }
@@ -1087,6 +1180,48 @@ document.addEventListener('DOMContentLoaded', () => {
     // Add save button event listener
     if (saveButton) {
         saveButton.addEventListener('click', async () => {
+            const confirmedPlacement = document.getElementById('confirmedTimePlacement').textContent;
+            
+            // Calculate scores and find categories above threshold
+            const scores = calculateTIREScores();
+            const categoriesAboveThreshold = Object.entries(scores)
+                .filter(([_, data]) => data.percentageScore >= distributionThreshold)
+                .map(([category, data]) => ({
+                    category: category.toLowerCase(),
+                    distribution: Math.round(data.percentageScore)
+                }));
+
+            // Handle Multiple Placements or tied categories
+            if (confirmedPlacement === 'Multiple Placements' || categoriesAboveThreshold.length > 1) {
+                const maxDistribution = Math.max(...categoriesAboveThreshold.map(c => c.distribution));
+                const tiedCategories = categoriesAboveThreshold.filter(c => 
+                    Math.abs(c.distribution - maxDistribution) <= tiebreakThreshold
+                );
+
+                if (tiedCategories.length > 1) {
+                    // Show tiebreaker modal and wait for selection
+                    const selectedCategory = await showTiebreakerModalWithPromise(tiedCategories);
+                    
+                    if (selectedCategory === 'go-back') {
+                        return; // Don't proceed with save if user chooses to go back
+                    }
+                    
+                    if (selectedCategory) {
+                        // Update the confirmed placement with the selected category
+                        updateConfirmedPlacement(selectedCategory);
+        } else {
+                        return; // Don't proceed if no category was selected
+                    }
+                }
+            }
+
+            // Get the final confirmed placement after potential tiebreaker
+            const finalConfirmedPlacement = document.getElementById('confirmedTimePlacement').textContent;
+            if (finalConfirmedPlacement === 'Multiple Placements') {
+                return; // Don't proceed if still showing Multiple Placements
+            }
+
+            // Proceed with saving...
             const appName = document.getElementById('applicationName').textContent;
             const restartHistory = JSON.parse(localStorage.getItem('restartHistory') || '{}')[appName] || [];
             const treatmentHistory = JSON.parse(localStorage.getItem('treatmentHistory') || '{}')[appName] || [];
@@ -1109,7 +1244,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     tireScores: calculateTIREScores()
                 },
                 assessmentHistory: {
-                    hasBeenRestarted: document.querySelector('.main-content').classList.contains('assessment-restarted'),
+                    hasBeenRestarted: false, // Reset restart state when saving
                     restarts: restartHistory.map(r => ({
                         date: r.date,
                         reason: r.reason,
@@ -1136,6 +1271,17 @@ document.addEventListener('DOMContentLoaded', () => {
             if (mainContent) {
                 mainContent.classList.remove('assessment-restarted');
                 mainContent.classList.add('assessment-completed');
+            }
+            
+            // Disable all inputs
+            document.querySelectorAll('#strategyQuestionsTable select, #strategyQuestionsTable input').forEach(element => {
+                element.disabled = true;
+            });
+            
+            // Disable initial TIRE placement
+            const initialTimePlacement = document.getElementById('initialTimePlacement');
+            if (initialTimePlacement) {
+                initialTimePlacement.disabled = true;
             }
             
             // Update completion status to show restart button
