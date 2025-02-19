@@ -688,11 +688,7 @@ async function updateSaveButtonState() {
     
     if (!saveButton || !confirmedTimePlacement || !initialTimePlacement) return;
 
-    // Get the confirmed placement text
-    const confirmedPlacement = confirmedTimePlacement.textContent;
     const initialPlacement = initialTimePlacement.value;
-    
-    // Check if there's a valid initial placement
     const isValidInitialPlacement = initialPlacement && initialPlacement !== '';
 
     // For completed assessments, keep the button disabled
@@ -704,8 +700,6 @@ async function updateSaveButtonState() {
 
     // For restarted assessments or new assessments
     if (mainContent.classList.contains('assessment-restarted') || !mainContent.classList.contains('assessment-completed')) {
-        // Enable save button if there's a valid initial placement, even with Multiple Placements
-        // The tiebreaker modal will handle the resolution
         saveButton.disabled = !isValidInitialPlacement;
         saveButton.title = isValidInitialPlacement ? 
             'Click to complete the assessment' : 
@@ -909,36 +903,26 @@ function updateCompletionStatus() {
     // Check if assessment was previously completed (saved)
     const wasCompleted = mainContent.classList.contains('assessment-completed');
 
-    console.log('Assessment state:', { isRestarted, wasCompleted });
-
     // Get confirmed placement and check if it's valid
     const confirmedPlacement = confirmedTimePlacement.textContent;
     const initialPlacement = initialTimePlacement.value;
     const isValidConfirmedPlacement = confirmedPlacement && 
                                     confirmedPlacement !== 'Not Set' && 
                                     confirmedPlacement !== '-' && 
+                                    confirmedPlacement !== 'Multiple Placements' &&
                                     !confirmedPlacement.includes('Below Threshold');
     const isValidInitialPlacement = initialPlacement && initialPlacement !== '';
-
-    console.log('Placement state:', { 
-        confirmedPlacement, 
-        initialPlacement,
-        isValidConfirmedPlacement,
-        isValidInitialPlacement 
-    });
 
     // Handle button visibility based on assessment state
     if (isRestarted) {
         // For restarted assessments, show save button
-        console.log('Showing save button for restarted assessment');
         if (restartButton) restartButton.style.display = 'none';
     if (saveButton) {
             saveButton.style.display = 'inline-block';
-            saveButton.disabled = !(isValidConfirmedPlacement && isValidInitialPlacement);
+            saveButton.disabled = !isValidInitialPlacement;
         }
     } else if (wasCompleted) {
         // For completed (saved) assessments, show restart button
-        console.log('Showing restart button for completed assessment');
         if (restartButton) {
             restartButton.style.display = 'inline-block';
             restartButton.disabled = false;
@@ -946,11 +930,10 @@ function updateCompletionStatus() {
         if (saveButton) saveButton.style.display = 'none';
     } else {
         // New assessment or in progress
-        console.log('New/in-progress assessment - showing save button');
         if (restartButton) restartButton.style.display = 'none';
         if (saveButton) {
             saveButton.style.display = 'inline-block';
-            saveButton.disabled = !(isValidConfirmedPlacement && isValidInitialPlacement);
+            saveButton.disabled = !isValidInitialPlacement || !isValidConfirmedPlacement;
         }
     }
 
