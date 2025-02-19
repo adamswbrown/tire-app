@@ -37,12 +37,12 @@
                 </div>
                 <div class="thresholds-container">
                     <div><strong>Distribution Threshold:</strong> <span id="distribution-threshold">80</span>%</div>
-                    <div><strong>Tiebreaker Threshold:</strong> <span id="tiebreaker-threshold">3</span>%</div>
                 </div>
                 <div class="action-buttons">
                     <button id="explanationBtn">Calculations Explained</button>
                     <button id="restartBtn" class="restart-button">Restart Assessment</button>
                     <button id="saveButton">Complete Strategy Questions</button>
+                    <button id="closeAppBtn" class="close-button">Close</button>
                 </div>
             </div>
 
@@ -274,6 +274,18 @@
             <p id="completionMessage"></p>
             <div class="modal-buttons">
                 <button id="completionOkBtn" class="confirm-button">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Close Confirmation Modal -->
+    <div id="closeConfirmModal" class="modal">
+        <div class="modal-content">
+            <h2>Close Assessment</h2>
+            <p>Are you sure you want to exit? Any unsaved changes will be lost.</p>
+            <div class="modal-buttons">
+                <button id="cancelCloseBtn" class="cancel-button">No, Stay Here</button>
+                <button id="confirmCloseBtn" class="confirm-button">Yes, Exit</button>
             </div>
         </div>
     </div>

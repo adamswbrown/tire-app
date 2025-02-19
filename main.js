@@ -1069,3 +1069,11 @@ ipcMain.handle('write-to-log', async (event, logEntry) => {
         return false;
     }
 });
+
+// Add this near other IPC handlers
+ipcMain.on('close-strategy-questions', () => {
+    if (strategyQuestionsWindow) {
+        strategyQuestionsWindow.close();
+        strategyQuestionsWindow = null;
+    }
+});

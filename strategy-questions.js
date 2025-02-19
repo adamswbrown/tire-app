@@ -1188,6 +1188,10 @@ function setupEventListeners() {
     const saveButton = document.getElementById('saveButton');
     const completionModal = document.getElementById('completionModal');
     const completionOkBtn = document.getElementById('completionOkBtn');
+    const closeAppBtn = document.getElementById('closeAppBtn');
+    const closeConfirmModal = document.getElementById('closeConfirmModal');
+    const cancelCloseBtn = document.getElementById('cancelCloseBtn');
+    const confirmCloseBtn = document.getElementById('confirmCloseBtn');
 
     // Add Calculations Explained button event listener
     if (explanationBtn && calculationsModal) {
@@ -1263,6 +1267,53 @@ function setupEventListeners() {
             if (completionModal) {
                 completionModal.style.display = 'none';
                 completionModal.classList.remove('show');
+            }
+        });
+    }
+
+    // Add close button event listener
+    if (closeAppBtn) {
+        closeAppBtn.addEventListener('click', () => {
+            const mainContent = document.querySelector('.main-content');
+            // If assessment is completed, close directly
+            if (mainContent?.classList.contains('assessment-completed')) {
+                ipcRenderer.send('close-strategy-questions');
+            } else {
+                // Show confirmation modal
+                if (closeConfirmModal) {
+                    closeConfirmModal.style.display = 'block';
+                    closeConfirmModal.style.visibility = 'visible';
+                    closeConfirmModal.style.opacity = '1';
+                    closeConfirmModal.style.zIndex = '10000';
+                    closeConfirmModal.classList.add('show');
+                }
+            }
+        });
+    }
+
+    // Add cancel close button event listener
+    if (cancelCloseBtn) {
+        cancelCloseBtn.addEventListener('click', () => {
+            if (closeConfirmModal) {
+                closeConfirmModal.style.display = 'none';
+                closeConfirmModal.classList.remove('show');
+            }
+        });
+    }
+
+    // Add confirm close button event listener
+    if (confirmCloseBtn) {
+        confirmCloseBtn.addEventListener('click', () => {
+            ipcRenderer.send('close-strategy-questions');
+        });
+    }
+
+    // Close modal when clicking outside
+    if (closeConfirmModal) {
+        closeConfirmModal.addEventListener('click', (event) => {
+            if (event.target === closeConfirmModal) {
+                closeConfirmModal.style.display = 'none';
+                closeConfirmModal.classList.remove('show');
             }
         });
     }
