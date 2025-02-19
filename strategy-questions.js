@@ -55,16 +55,16 @@ let distributionThreshold = 80; // Default threshold, if not found in JSON
 let tiebreakThreshold = 3; // Default threshold for considering scores as ties
 
 // Listen for application name when opening strategy questions window
-ipcRenderer.on('set-application-name', (event, appName) => {
-    console.log("Received application name:", appName);
+ipcRenderer.on('set-application-name', async (event, appName) => {
+    logger.debug("Received application name:", appName);
     // Update the application name in the header
     const appNameElement = document.getElementById('applicationName');
     if (appNameElement) {
         appNameElement.textContent = appName;
-        // Trigger loading process after setting the name
-        loadStrategyQuestions();
+        // Now that we have the app name, initialize the UI
+        await initializeUI();
     } else {
-        console.error("Could not find applicationName element");
+        logger.error("Could not find applicationName element");
     }
 });
 
@@ -75,20 +75,27 @@ async function loadStrategyQuestions() {
         const applicationName = appNameElement ? appNameElement.textContent : null;
 
         if (!applicationName || applicationName === "Application Name") {
-            console.error("Application name not set properly");
+            logger.error("Application name not set properly");
             return;
         }
 
-        console.log("Loading questions for application:", applicationName);
+        logger.info("Loading questions for application:", applicationName);
 
         // Load template questions
         const response = await fetch('questions.json');
+        if (!response.ok) {
+            throw new Error(`Failed to load questions.json: ${response.status} ${response.statusText}`);
+        }
+        
         const templateData = await response.json();
+        logger.debug(`Loaded ${templateData.length} questions from template`);
         
         // Get thresholds from the first question's config
         if (templateData[0] && templateData[0].config) {
             distributionThreshold = templateData[0].config.distributionThreshold || 80;
             tiebreakThreshold = templateData[0].config.tiebreakThreshold || 3;
+            
+            logger.debug(`Set thresholds - Distribution: ${distributionThreshold}%, Tiebreak: ${tiebreakThreshold}%`);
             
             // Update threshold displays immediately after loading
             const thresholdElement = document.getElementById('distribution-threshold');
@@ -103,9 +110,9 @@ async function loadStrategyQuestions() {
 
         // If we have an application name, try to load saved data
         if (applicationName && applicationName !== "Application Name") {
-            console.log("Attempting to load saved data for application:", applicationName);
+            logger.debug("Attempting to load saved data for application:", applicationName);
             const savedData = await ipcRenderer.invoke('get-app-data', applicationName);
-            console.log("Saved data loaded:", savedData);
+            logger.debug("Saved data loaded:", savedData);
 
             if (savedData) {
                 // Load restart and treatment histories into localStorage
@@ -234,13 +241,19 @@ async function loadStrategyQuestions() {
 
         strategyQuestions = templateData;
         totalQuestions = strategyQuestions.length;
+        
+        logger.debug(`Populated strategy questions table with ${totalQuestions} questions`);
         populateStrategyQuestionsTable();
         updateAnsweredQuestionsCounter();
         await updateClientScores();
         updateCompletionStatus();
+        
+        logger.info("Successfully loaded and initialized strategy questions");
+        return true;
     } catch (error) {
-        console.error('Error loading strategy questions:', error);
+        logger.error('Error loading strategy questions:', error);
         alert('Error loading strategy questions: ' + error.message);
+        return false;
     }
 }
 
@@ -353,49 +366,74 @@ function createExtendedAnswerInput(row) {
 
 // Function to dynamically generate category buttons
 function generateCategoryButtons() {
+    logger.debug('Starting to generate category buttons');
+    
     // Extract unique categories from strategyQuestions
     const categories = [...new Set(strategyQuestions.map(q => q.category))];
+    logger.debug('Found categories:', categories);
+    
     const container = document.getElementById('categoryButtonsContainer');
     if (!container) {
-        console.error('Category buttons container not found!');
+        logger.error('Category buttons container not found!');
         return;
     }
-    container.innerHTML = ''; // Clear any existing buttons
-
+    
+    // Clear any existing buttons
+    container.innerHTML = '';
+    
+    // Create a button for each category
     categories.forEach(category => {
-        // Create a button for each category
+        if (!category) {
+            logger.warn('Found empty category, skipping button creation');
+            return;
+        }
+        
+        const parts = category.split('/');
+        const displayCategory = parts[parts.length - 1].trim();
+        
+        logger.debug('Creating button for category:', displayCategory);
         const button = document.createElement('button');
         button.className = 'category-button';
-        button.textContent = category;
-
+        button.textContent = displayCategory;
+        button.style.display = 'inline-block'; // Ensure button is visible
+        
         // Event listener to filter table based on clicked category
         button.addEventListener('click', () => {
+            logger.debug('Category button clicked:', category);
             // Remove active state from all buttons
-            document.querySelectorAll('.category-button').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.category-button').forEach(btn => 
+                btn.classList.remove('active')
+            );
             document.querySelector('.reset-button')?.classList.remove('active');
-
+            
             // Add active state to the clicked button
             button.classList.add('active');
-
+            
             // Filter the questions table by the selected category
             filterByCategory(category);
         });
-
+        
         container.appendChild(button);
     });
-
+    
     // Add reset button to clear filters
     const resetButton = document.createElement('button');
     resetButton.className = 'category-button reset-button';
     resetButton.textContent = 'Reset Filters';
+    resetButton.style.display = 'inline-block'; // Ensure button is visible
     resetButton.addEventListener('click', () => {
+        logger.debug('Reset button clicked');
         resetTable();
         // Remove active state from all category buttons
-        document.querySelectorAll('.category-button').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.category-button').forEach(btn => 
+            btn.classList.remove('active')
+        );
         // Add active state to reset button
         resetButton.classList.add('active');
     });
     container.appendChild(resetButton);
+    
+    logger.debug('Finished generating category buttons');
 }
 
 // Function to filter the questions table by category
@@ -1076,361 +1114,32 @@ function initializeCalculationTabs() {
     });
 }
 
-// Update the DOMContentLoaded event listener to properly handle the restart button
+// Load strategy questions and initialize UI
+async function initializeUI() {
+    logger.debug('Initializing UI');
+    try {
+        const success = await loadStrategyQuestions();
+        if (success) {
+            generateCategoryButtons();
+            logger.debug('Category buttons generated');
+            
+            // Initialize other UI elements
+            initializeCalculationTabs();
+            
+            logger.debug('UI initialization complete');
+        } else {
+            logger.error('Failed to load strategy questions');
+        }
+    } catch (error) {
+        logger.error('Error initializing UI:', error);
+    }
+}
+
+// Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOMContentLoaded event fired');
-
-    // Generate category buttons immediately
-    generateCategoryButtons();
-
-    // Add calculations button event listener
-    const explanationBtn = document.getElementById('explanationBtn');
-    const calculationsModal = document.getElementById('calculationsModal');
-    const closeCalculationsBtn = document.getElementById('closeCalculationsBtn');
-    const restartBtn = document.getElementById('restartBtn');
-    const confirmationModal = document.getElementById('confirmationModal');
-    const cancelRestartBtn = document.getElementById('cancelRestartBtn');
-    const confirmRestartBtn = document.getElementById('confirmRestartBtn');
-    const saveButton = document.getElementById('saveButton');
-    const completionModal = document.getElementById('completionModal');
-    const completionOkBtn = document.getElementById('completionOkBtn');
-
-    // Initialize calculation tabs
-    initializeCalculationTabs();
-
-    // Add Calculations Explained button event listener
-    if (explanationBtn && calculationsModal) {
-        explanationBtn.addEventListener('click', () => {
-            calculationsModal.style.display = 'block';
-            calculationsModal.style.visibility = 'visible';
-            calculationsModal.style.opacity = '1';
-            calculationsModal.style.zIndex = '10000';
-            calculationsModal.classList.add('show');
-        });
-    }
-
-    // Add close calculations modal button event listener
-    if (closeCalculationsBtn && calculationsModal) {
-        closeCalculationsBtn.addEventListener('click', () => {
-            calculationsModal.style.display = 'none';
-                calculationsModal.classList.remove('show');
-        });
-
-        // Close modal when clicking outside
-        calculationsModal.addEventListener('click', (event) => {
-            if (event.target === calculationsModal) {
-                calculationsModal.style.display = 'none';
-                calculationsModal.classList.remove('show');
-            }
-        });
-    }
-
-    // Add restart button event listener
-    if (restartBtn) {
-        restartBtn.addEventListener('click', () => {
-            console.log('Restart button clicked');
-            if (confirmationModal) {
-                // Reset the restart reason field
-                document.getElementById('restartReason').value = '';
-                
-                // Show the modal with proper styling
-                confirmationModal.style.display = 'block';
-                confirmationModal.style.visibility = 'visible';
-                confirmationModal.style.opacity = '1';
-                confirmationModal.style.zIndex = '10000';
-                confirmationModal.classList.add('show');
-                
-                // Focus the reason input
-                document.getElementById('restartReason').focus();
-            }
-        });
-    }
-
-    if (cancelRestartBtn) {
-        cancelRestartBtn.addEventListener('click', () => {
-            if (confirmationModal) {
-                confirmationModal.style.display = 'none';
-                confirmationModal.classList.remove('show');
-            }
-        });
-    }
-
-    if (confirmRestartBtn) {
-        confirmRestartBtn.addEventListener('click', async () => {
-            const restartReason = document.getElementById('restartReason').value.trim();
-            if (!restartReason) {
-                alert('Please provide a reason for restarting the assessment.');
-                return;
-            }
-
-            try {
-                const restartTimestamp = new Date().toISOString();
-                const appName = document.getElementById('applicationName').textContent;
-                const currentTreatment = document.getElementById('confirmedTimePlacement').textContent;
-
-                // Get existing restart history or initialize new one
-                const restartHistory = JSON.parse(localStorage.getItem('restartHistory') || '{}');
-                if (!restartHistory[appName]) {
-                    restartHistory[appName] = [];
-                }
-
-                // Get existing treatment history or initialize new one
-                const treatmentHistory = JSON.parse(localStorage.getItem('treatmentHistory') || '{}');
-                if (!treatmentHistory[appName]) {
-                    treatmentHistory[appName] = [];
-                }
-
-                // Add new restart entry
-                restartHistory[appName].push({
-                    date: restartTimestamp,
-                    reason: restartReason,
-                    treatmentAtRestart: currentTreatment
-                });
-
-                // Add new treatment change entry
-                treatmentHistory[appName].push({
-                    date: restartTimestamp,
-                    previousTreatment: currentTreatment,
-                    newTreatment: "Not Set", // Will be updated when new treatment is confirmed
-                    reason: "Assessment Restarted",
-                    restartId: restartHistory[appName].length // Link to the restart entry
-                });
-
-                // Save histories to localStorage
-                localStorage.setItem('restartHistory', JSON.stringify(restartHistory));
-                localStorage.setItem('treatmentHistory', JSON.stringify(treatmentHistory));
-
-                // Store the current state in localStorage
-                const currentState = {
-                    applicationName: appName,
-                    assessmentHistory: {
-                        lastRestartDate: restartTimestamp,
-                        lastRestartReason: restartReason,
-                        hasBeenRestarted: true,
-                        treatmentAtRestart: currentTreatment
-                    },
-                    outputData: {
-                        applicationName: appName,
-                        initialTimePlacement: document.getElementById('initialTimePlacement').value,
-                        confirmedTimePlacement: document.getElementById('confirmedTimePlacement').textContent,
-                        answers: strategyQuestions.map(q => ({
-                            time: q.time,
-                            question: q.question,
-                            category: q.category,
-                            clientAnswer: q.clientAnswer || '-',
-                            clientScore: q.clientScore || 0,
-                            extendedAnswer: q.extendedAnswer || ''
-                        }))
-                    }
-                };
-
-                localStorage.setItem(`appState_${appName}`, JSON.stringify(currentState));
-
-                // Clear the restart reason input and close modal
-                document.getElementById('restartReason').value = '';
-                confirmationModal.style.display = 'none';
-                confirmationModal.classList.remove('show');
-
-                // Enable editing mode
-                const mainContent = document.querySelector('.main-content');
-                if (mainContent) {
-                    mainContent.classList.remove('assessment-completed');
-                    mainContent.classList.add('assessment-restarted');
-                }
-
-                // Hide restart button and show save button
-                const restartButton = document.getElementById('restartBtn');
-                const saveButton = document.getElementById('saveButton');
-                if (restartButton) {
-                    restartButton.style.display = 'none';
-                }
-                if (saveButton) {
-                    saveButton.style.display = 'inline-block';
-                    saveButton.disabled = false;
-                }
-
-                // Enable all inputs without resetting their values
-                document.querySelectorAll('#strategyQuestionsTable select, #strategyQuestionsTable input').forEach(element => {
-                    element.disabled = false;
-                });
-                
-                // Enable initial TIRE placement
-                const initialTimePlacement = document.getElementById('initialTimePlacement');
-                if (initialTimePlacement) {
-                    initialTimePlacement.disabled = false;
-                }
-
-                // Update UI state
-                updateCompletionStatus();
-
-            } catch (error) {
-                console.error('Error during restart process:', error);
-                alert('Failed to restart the assessment. Please try again.');
-            }
-        });
-    }
-
-    // Add save button event listener
-    if (saveButton) {
-        saveButton.addEventListener('click', async () => {
-            logger.info('Save button clicked - starting save process');
-            const confirmedPlacement = document.getElementById('confirmedTimePlacement').textContent;
-            const isRestarted = document.querySelector('.main-content')?.classList.contains('assessment-restarted');
-            
-            // Calculate scores and find categories above threshold
-            const scores = calculateTIREScores();
-            logger.debug('Calculated TIRE scores', scores);
-            
-            const categoriesAboveThreshold = Object.entries(scores)
-                .filter(([_, data]) => data.percentageScore >= distributionThreshold)
-                .map(([category, data]) => ({
-                    category: category,
-                    distribution: Math.round(data.percentageScore)
-                }))
-                .sort((a, b) => b.distribution - a.distribution);
-
-            logger.info(`Found ${categoriesAboveThreshold.length} categories above threshold (${distributionThreshold}%)`, categoriesAboveThreshold);
-
-            // Tiebreaker logic
-            if (categoriesAboveThreshold.length > 1) {
-                logger.info('Multiple categories detected - initiating tiebreaker process');
-                try {
-                    logger.debug('Showing tiebreaker modal with categories', 
-                        categoriesAboveThreshold.map(c => `${c.category}: ${c.distribution}%`).join(', '));
-                    
-                    const selectedCategory = await showTiebreakerModalWithPromise(categoriesAboveThreshold);
-                    logger.info('User selected category from tiebreaker:', selectedCategory);
-                    
-                    if (selectedCategory === 'go-back') {
-                        logger.info('User chose to go back - canceling save process');
-                        return;
-                    }
-                    
-                    if (selectedCategory) {
-                        logger.info('Updating confirmed placement with selected category:', selectedCategory);
-                        updateConfirmedPlacement(selectedCategory);
-                        
-                        logger.debug('Waiting for UI update');
-                        await new Promise(resolve => setTimeout(resolve, 100));
-                        
-                        const updatedPlacement = document.getElementById('confirmedTimePlacement').textContent;
-                        logger.debug('Confirmed placement after update:', updatedPlacement);
-                        
-                        if (updatedPlacement === 'Multiple Placements' || !updatedPlacement) {
-                            const error = 'Failed to update placement after tiebreaker selection';
-                            logger.error(error);
-                            throw new Error(error);
-                        }
-                    } else {
-                        logger.info('No category selected - canceling save process');
-                        return;
-                    }
-                } catch (error) {
-                    logger.error('Error during tiebreaker handling:', error);
-                    return;
-                }
-            } else if (categoriesAboveThreshold.length === 1) {
-                logger.info('Single category above threshold - auto-selecting:', categoriesAboveThreshold[0].category);
-                updateConfirmedPlacement(categoriesAboveThreshold[0].category);
-            } else {
-                logger.info('No categories above threshold - finding highest scoring category');
-                const maxCategory = Object.entries(scores)
-                    .reduce((max, [category, data]) => 
-                        (!max || data.percentageScore > max.score) 
-                            ? {category, score: data.percentageScore} 
-                            : max
-                    , null);
-                
-                if (maxCategory) {
-                    logger.info(`Setting below threshold status with highest category: ${maxCategory.category} (${Math.round(maxCategory.score)}%)`);
-                    document.getElementById('confirmedTimePlacement').textContent = 
-                        `Below Threshold (${Math.round(maxCategory.score)}%)`;
-                    document.getElementById('confirmedTimePlacement').className = 'below-threshold';
-                }
-            }
-
-            // Proceed with saving...
-            const appName = document.getElementById('applicationName').textContent;
-            const restartHistory = JSON.parse(localStorage.getItem('restartHistory') || '{}')[appName] || [];
-            const treatmentHistory = JSON.parse(localStorage.getItem('treatmentHistory') || '{}')[appName] || [];
-            
-            const outputData = {
-                applicationName: appName,
-                initialTimePlacement: document.getElementById('initialTimePlacement').value,
-                confirmedTimePlacement: document.getElementById('confirmedTimePlacement').textContent,
-                answers: strategyQuestions.map(q => ({
-                    time: q.time,
-                    question: q.question,
-                    category: q.category,
-                    clientAnswer: q.clientAnswer || '-',
-                    clientScore: q.clientScore || 0,
-                    extendedAnswer: q.extendedAnswer || ''
-                })),
-                summary: {
-                    totalQuestions: totalQuestions,
-                    answeredQuestions: answeredQuestions,
-                    tireScores: calculateTIREScores()
-                },
-                assessmentHistory: {
-                    hasBeenRestarted: false, // Reset restart state when saving
-                    restarts: restartHistory.map(r => ({
-                        date: r.date,
-                        reason: r.reason,
-                        treatmentAtRestart: r.treatmentAtRestart
-                    })),
-                    totalRestarts: restartHistory.length,
-                    lastRestartDate: restartHistory.length > 0 ? restartHistory[restartHistory.length - 1].date : null,
-                    lastRestartReason: restartHistory.length > 0 ? restartHistory[restartHistory.length - 1].reason : null
-                },
-                treatmentHistory: treatmentHistory.map(t => ({
-                    date: t.date,
-                    previousTreatment: t.previousTreatment,
-                    newTreatment: t.newTreatment,
-                    reason: t.reason,
-                    restartId: t.restartId
-                }))
-            };
-
-            // Save the assessment data
-            ipcRenderer.send('save-answers-to-file', outputData);
-
-            // Update UI state before showing completion modal
-            const mainContent = document.querySelector('.main-content');
-            if (mainContent) {
-                mainContent.classList.remove('assessment-restarted');
-                mainContent.classList.add('assessment-completed');
-            }
-            
-            // Disable all inputs
-            document.querySelectorAll('#strategyQuestionsTable select, #strategyQuestionsTable input').forEach(element => {
-                element.disabled = true;
-            });
-            
-            // Disable initial TIRE placement
-            const initialTimePlacement = document.getElementById('initialTimePlacement');
-            if (initialTimePlacement) {
-                initialTimePlacement.disabled = true;
-            }
-            
-            // Update completion status to show restart button
-            updateCompletionStatus();
-
-            // Show completion modal
-            showCompletionModal(appName);
-        });
-    }
-
-    // Add completion modal OK button event listener
-    if (completionOkBtn) {
-        completionOkBtn.addEventListener('click', () => {
-            if (completionModal) {
-                completionModal.style.display = 'none';
-                completionModal.classList.remove('show');
-            }
-        });
-    }
-
-    // ... rest of the existing event listeners ...
+    logger.debug('DOMContentLoaded event fired');
+    // Only set up event listeners here, wait for app name before initializing UI
+    setupEventListeners();
 });
 
 // Function to update the confirmed TIRE placement
@@ -1462,5 +1171,102 @@ function updateConfirmedPlacement(category) {
         default:
             confirmedPlacementElement.classList.add('status-pending');
     }
+}
+
+// Setup all event listeners
+function setupEventListeners() {
+    logger.debug('Setting up event listeners');
+    
+    // Add calculations button event listener
+    const explanationBtn = document.getElementById('explanationBtn');
+    const calculationsModal = document.getElementById('calculationsModal');
+    const closeCalculationsBtn = document.getElementById('closeCalculationsBtn');
+    const restartBtn = document.getElementById('restartBtn');
+    const confirmationModal = document.getElementById('confirmationModal');
+    const cancelRestartBtn = document.getElementById('cancelRestartBtn');
+    const confirmRestartBtn = document.getElementById('confirmRestartBtn');
+    const saveButton = document.getElementById('saveButton');
+    const completionModal = document.getElementById('completionModal');
+    const completionOkBtn = document.getElementById('completionOkBtn');
+
+    // Add Calculations Explained button event listener
+    if (explanationBtn && calculationsModal) {
+        explanationBtn.addEventListener('click', () => {
+            calculationsModal.style.display = 'block';
+            calculationsModal.style.visibility = 'visible';
+            calculationsModal.style.opacity = '1';
+            calculationsModal.style.zIndex = '10000';
+            calculationsModal.classList.add('show');
+        });
+    }
+
+    // Add close calculations modal button event listener
+    if (closeCalculationsBtn && calculationsModal) {
+        closeCalculationsBtn.addEventListener('click', () => {
+            calculationsModal.style.display = 'none';
+            calculationsModal.classList.remove('show');
+        });
+
+        // Close modal when clicking outside
+        calculationsModal.addEventListener('click', (event) => {
+            if (event.target === calculationsModal) {
+                calculationsModal.style.display = 'none';
+                calculationsModal.classList.remove('show');
+            }
+        });
+    }
+
+    // Add restart button event listener
+    if (restartBtn) {
+        restartBtn.addEventListener('click', () => {
+            logger.debug('Restart button clicked');
+            if (confirmationModal) {
+                // Reset the restart reason field
+                document.getElementById('restartReason').value = '';
+                
+                // Show the modal with proper styling
+                confirmationModal.style.display = 'block';
+                confirmationModal.style.visibility = 'visible';
+                confirmationModal.style.opacity = '1';
+                confirmationModal.style.zIndex = '10000';
+                confirmationModal.classList.add('show');
+                
+                // Focus the reason input
+                document.getElementById('restartReason').focus();
+            }
+        });
+    }
+
+    // Add cancel restart button event listener
+    if (cancelRestartBtn) {
+        cancelRestartBtn.addEventListener('click', () => {
+            if (confirmationModal) {
+                confirmationModal.style.display = 'none';
+                confirmationModal.classList.remove('show');
+            }
+        });
+    }
+
+    // Add confirm restart button event listener
+    if (confirmRestartBtn) {
+        confirmRestartBtn.addEventListener('click', handleRestartConfirmation);
+    }
+
+    // Add save button event listener
+    if (saveButton) {
+        saveButton.addEventListener('click', handleSaveButtonClick);
+    }
+
+    // Add completion modal OK button event listener
+    if (completionOkBtn) {
+        completionOkBtn.addEventListener('click', () => {
+            if (completionModal) {
+                completionModal.style.display = 'none';
+                completionModal.classList.remove('show');
+            }
+        });
+    }
+    
+    logger.debug('Event listeners setup complete');
 }
 
