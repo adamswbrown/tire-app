@@ -205,20 +205,34 @@
                         
                         <div class="formula">
                             <strong>Tiebreaker Rules:</strong><br>
-                            1. Categories within tiebreaker threshold (default: 3%) are considered ties<br>
-                            2. Initial TIRE placement is considered for tiebreaking<br>
-                            3. User can manually select final placement when tied
+                            1. Any time multiple categories exceed the distribution threshold, a tiebreaker is required<br>
+                            2. User must manually select the final placement from qualifying categories<br>
+                            3. Initial TIRE placement can be used as guidance for selection
                         </div>
 
                         <div class="example">
-                            <strong>Example Tiebreaker:</strong><br>
+                            <strong>Example Tiebreaker Scenario:</strong><br>
                             Distribution Threshold: 80%<br>
-                            Tiebreaker Threshold: 3%<br>
                             Results:<br>
-                            • Tolerate: 82%<br>
-                            • Invest: 83%<br>
-                            → Difference is 1% (within 3% threshold)<br>
-                            → Requires manual tiebreaker selection
+                            • Tolerate: 93%<br>
+                            • Invest: 89%<br>
+                            • Replace: 75%<br>
+                            • Eliminate: 45%<br>
+                            → Both Tolerate and Invest exceed threshold (80%)<br>
+                            → Tiebreaker modal appears with Tolerate and Invest as options<br>
+                            → User must select final placement
+                        </div>
+
+                        <div class="example">
+                            <strong>No Tiebreaker Needed:</strong><br>
+                            Distribution Threshold: 80%<br>
+                            Results:<br>
+                            • Tolerate: 85%<br>
+                            • Invest: 75%<br>
+                            • Replace: 60%<br>
+                            • Eliminate: 45%<br>
+                            → Only Tolerate exceeds threshold<br>
+                            → Automatic placement as Tolerate
                         </div>
                     </div>
 

@@ -1017,3 +1017,55 @@ ipcMain.handle('reset-application', async () => {
 ipcMain.on('quit-app', () => {
     app.quit();
 });
+
+// Initialize logging
+function initializeLogging() {
+    const baseDir = store.get('completedAppsDirectory');
+    if (!baseDir) {
+        console.error('No save directory configured');
+        return null;
+    }
+    
+    const logsDir = path.join(baseDir, 'logs');
+    
+    // Create logs directory if it doesn't exist
+    if (!fs.existsSync(logsDir)) {
+        fs.mkdirSync(logsDir, { recursive: true });
+    }
+    
+    return logsDir;
+}
+
+// Get log file path for the current day
+function getLogFilePath(logsDir) {
+    if (!logsDir) return null;
+    const date = new Date().toISOString().split('T')[0];
+    return path.join(logsDir, `tire-app-${date}.log`);
+}
+
+// Add write-to-log handler
+ipcMain.handle('write-to-log', async (event, logEntry) => {
+    try {
+        const logsDir = initializeLogging();
+        if (!logsDir) {
+            console.error('Could not initialize logging directory');
+            return false;
+        }
+        
+        const logFile = getLogFilePath(logsDir);
+        if (!logFile) {
+            console.error('Could not generate log file path');
+            return false;
+        }
+        
+        // Format the log entry
+        const formattedLog = `${logEntry.timestamp} [${logEntry.level}] ${logEntry.message}${logEntry.data ? '\nData: ' + logEntry.data : ''}\n`;
+        
+        // Append to log file
+        fs.appendFileSync(logFile, formattedLog);
+        return true;
+    } catch (error) {
+        console.error('Error writing to log file:', error);
+        return false;
+    }
+});

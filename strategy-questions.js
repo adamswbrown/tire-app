@@ -1,5 +1,49 @@
 const { ipcRenderer } = require('electron');
 
+// Logging utility
+const logger = {
+    logToFile: async function(level, message, data = null) {
+        const timestamp = new Date().toISOString();
+        const logEntry = {
+            timestamp,
+            level,
+            message,
+            data: data ? JSON.stringify(data) : null
+        };
+        
+        await ipcRenderer.invoke('write-to-log', logEntry);
+        
+        // Also log to console
+        const consoleMsg = `${timestamp} [${level}] ${message}${data ? '\n' + JSON.stringify(data, null, 2) : ''}`;
+        switch(level.toLowerCase()) {
+            case 'error':
+                console.error(consoleMsg);
+                break;
+            case 'warn':
+                console.warn(consoleMsg);
+                break;
+            default:
+                console.log(consoleMsg);
+        }
+    },
+    
+    info: function(message, data = null) {
+        this.logToFile('INFO', message, data);
+    },
+    
+    warn: function(message, data = null) {
+        this.logToFile('WARN', message, data);
+    },
+    
+    error: function(message, data = null) {
+        this.logToFile('ERROR', message, data);
+    },
+    
+    debug: function(message, data = null) {
+        this.logToFile('DEBUG', message, data);
+    }
+};
+
 // Global variable to store strategy questions
 let strategyQuestions = [];
 
@@ -654,13 +698,23 @@ async function updateClientScores() {
             // No categories above threshold
             confirmedPlacementElement.textContent = `Below Threshold (${maxDistribution}%)`;
             confirmedPlacementElement.className = 'below-threshold';
-        } else if (categoriesAboveThreshold.length === 1) {
-            // Single category above threshold
-            updateConfirmedPlacement(categoriesAboveThreshold[0].category);
         } else {
-            // Multiple categories above threshold - show Multiple Placements
-            confirmedPlacementElement.textContent = 'Multiple Placements';
-            confirmedPlacementElement.className = 'status-pending';
+            // Sort categories by distribution
+            categoriesAboveThreshold.sort((a, b) => b.distribution - a.distribution);
+            
+            // Find categories within tiebreaker threshold of the highest scoring category
+            const tiebreakerCategories = categoriesAboveThreshold.filter(cat => 
+                Math.abs(cat.distribution - categoriesAboveThreshold[0].distribution) <= tiebreakThreshold
+            );
+
+            if (tiebreakerCategories.length === 1) {
+                // Single category above threshold or no ties within tiebreaker threshold
+                updateConfirmedPlacement(tiebreakerCategories[0].category);
+            } else {
+                // Multiple categories within tiebreaker threshold
+                confirmedPlacementElement.textContent = 'Multiple Placements';
+                confirmedPlacementElement.className = 'status-pending';
+            }
         }
     }
 
@@ -675,10 +729,10 @@ async function updateSaveButtonState() {
     const confirmedTimePlacement = document.getElementById('confirmedTimePlacement');
     const initialTimePlacement = document.getElementById('initialTimePlacement');
     
-    if (!saveButton || !confirmedTimePlacement || !initialTimePlacement) return;
-
-    const initialPlacement = initialTimePlacement.value;
-    const isValidInitialPlacement = initialPlacement && initialPlacement !== '';
+    if (!saveButton || !confirmedTimePlacement || !initialTimePlacement) {
+        logger.error('Missing required elements for save button state update');
+        return;
+    }
 
     // For completed assessments, keep the button disabled
     if (mainContent.classList.contains('assessment-completed')) {
@@ -687,13 +741,70 @@ async function updateSaveButtonState() {
         return;
     }
 
-    // For restarted assessments or new assessments
-    if (mainContent.classList.contains('assessment-restarted') || !mainContent.classList.contains('assessment-completed')) {
-        saveButton.disabled = !isValidInitialPlacement;
-        saveButton.title = isValidInitialPlacement ? 
-            'Click to complete the assessment' : 
-            'Initial TIRE placement must be set before completing';
+    // Get placement values
+    const initialPlacement = initialTimePlacement.value;
+    const confirmedPlacement = confirmedTimePlacement.textContent;
+    
+    // Check if initial placement is valid
+    const isValidInitialPlacement = initialPlacement && 
+                                  initialPlacement !== '' && 
+                                  initialPlacement !== 'Not Set';
+
+    // Check if confirmed placement is valid
+    const isValidConfirmedPlacement = confirmedPlacement && 
+                                    confirmedPlacement !== '' && 
+                                    confirmedPlacement !== 'Not Set' && 
+                                    confirmedPlacement !== '-' &&
+                                    confirmedPlacement !== 'Multiple Placements' &&
+                                    !confirmedPlacement.includes('Below Threshold');
+    
+    // Remove any existing classes that might affect the button state
+    saveButton.classList.remove('disabled');
+    
+    // The save button should be disabled by default
+    saveButton.disabled = true;
+
+    // Set appropriate title message based on state
+    if (!isValidInitialPlacement) {
+        saveButton.title = 'Initial TIRE placement must be set before completing';
+        return;
     }
+
+    if (!isValidConfirmedPlacement) {
+        // Check if we're in a tiebreaker scenario
+        const scores = calculateTIREScores();
+        const categoriesAboveThreshold = Object.entries(scores)
+            .filter(([_, data]) => data.percentageScore >= distributionThreshold)
+            .length;
+
+        if (categoriesAboveThreshold > 1) {
+            // In tiebreaker scenario
+            saveButton.title = 'Please select a final placement from the tiebreaker options';
+            return;
+        }
+
+        if (categoriesAboveThreshold === 0) {
+            // No categories above threshold
+            saveButton.title = 'No categories meet the threshold requirements';
+            return;
+        }
+
+        saveButton.title = 'A valid confirmed TIRE placement is required before completing';
+        return;
+    }
+
+    // If we get here, both placements are valid
+    saveButton.disabled = false;
+    saveButton.title = 'Click to complete the assessment';
+    
+    logger.debug('Save button state updated', {
+        disabled: saveButton.disabled,
+        title: saveButton.title,
+        initialPlacement,
+        confirmedPlacement,
+        isValidInitial: isValidInitialPlacement,
+        isValidConfirmed: isValidConfirmedPlacement
+    });
 }
 
 function showCompletionModal(appName) {
@@ -726,97 +837,104 @@ function showCompletionModal(appName) {
 
 // Updated tiebreaker modal function that returns a Promise
 function showTiebreakerModalWithPromise(categories) {
+    logger.info('Creating tiebreaker modal for categories:', categories);
     return new Promise((resolve, reject) => {
-        // Create modal container
-        const modal = document.createElement('div');
-        modal.className = 'modal';
-        modal.id = 'tiebreakerModal';
-        modal.style.display = 'block';
-        modal.style.visibility = 'visible';
-        modal.style.opacity = '1';
-        modal.style.zIndex = '10000';
-        
-        const modalContent = `
-            <div class="modal-content" style="width: 80%; max-width: 600px; margin: 50px auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-                <h2 style="color: #333; margin-bottom: 20px;">Multiple Categories Above Threshold</h2>
-                <p style="margin-bottom: 15px;">Multiple categories have met or exceeded the distribution threshold (${distributionThreshold}%) 
-                   and are within the tiebreaker threshold of ${tiebreakThreshold}% of each other.</p>
-                
-                <div class="category-scores" style="margin: 20px 0; padding: 15px; background: #f5f5f5; border-radius: 4px;">
-                    ${categories.map(c => `
-                        <div class="category-score" style="margin: 10px 0;">
-                            <strong>${c.category.charAt(0).toUpperCase() + c.category.slice(1)}:</strong> ${c.distribution}%
-                        </div>
-                    `).join('')}
-                </div>
+        try {
+            logger.debug('Building tiebreaker modal UI');
+            // Create modal container
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.id = 'tiebreakerModal';
+            modal.style.display = 'block';
+            modal.style.visibility = 'visible';
+            modal.style.opacity = '1';
+            modal.style.zIndex = '10000';
+            
+            logger.debug('Setting up modal content with categories:', 
+                categories.map(c => `${c.category}: ${c.distribution}%`).join(', '));
+            
+            const modalContent = `
+                <div class="modal-content" style="width: 80%; max-width: 600px; margin: 50px auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                    <h2 style="color: #333; margin-bottom: 20px;">Multiple Categories Above Threshold</h2>
+                    <p style="margin-bottom: 15px;">Multiple categories have met or exceeded the distribution threshold (${distributionThreshold}%) 
+                       and are within the tiebreaker threshold of ${tiebreakThreshold}% of each other.</p>
+                    
+                    <div class="category-scores" style="margin: 20px 0; padding: 15px; background: #f5f5f5; border-radius: 4px;">
+                        ${categories.map(c => `
+                            <div class="category-score" style="margin: 10px 0;">
+                                <strong>${c.category}:</strong> ${c.distribution}%
+                            </div>
+                        `).join('')}
+                    </div>
 
-                <p style="margin: 15px 0;">Please select the final TIRE placement:</p>
-                
-                <div class="category-buttons" style="display: flex; gap: 10px; flex-wrap: wrap; margin: 20px 0;">
-                    ${categories.map(c => `
-                        <button class="category-select-btn" data-category="${c.category}"
-                                style="padding: 10px 20px; border: none; border-radius: 4px; background: #007bff; color: white; cursor: pointer; transition: background 0.3s;">
-                            ${c.category.toUpperCase()}
+                    <p style="margin: 15px 0;">Please select the final TIRE placement:</p>
+                    
+                    <div class="category-buttons" style="display: flex; gap: 10px; flex-wrap: wrap; margin: 20px 0;">
+                        ${categories.map(c => `
+                            <button class="category-select-btn" data-category="${c.category}"
+                                    style="padding: 10px 20px; border: none; border-radius: 4px; background: #007bff; color: white; cursor: pointer; transition: background 0.3s;">
+                                ${c.category}
+                            </button>
+                        `).join('')}
+                    </div>
+                    
+                    <div class="tiebreaker-info" style="margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 4px;">
+                        <p><strong>Tiebreaker Rules:</strong></p>
+                        <ul style="margin: 10px 0 0 20px;">
+                            <li>Categories within ${tiebreakThreshold}% are considered ties</li>
+                            <li>Initial TIRE placement is considered as a tiebreaker</li>
+                        </ul>
+                    </div>
+
+                    <div class="modal-buttons" style="margin-top: 20px; text-align: right;">
+                        <button class="go-back-btn" 
+                                style="padding: 10px 20px; border: 1px solid #6c757d; border-radius: 4px; background: #6c757d; color: white; cursor: pointer;">
+                            Go Back and Edit Answers
                         </button>
-                    `).join('')}
+                    </div>
                 </div>
+            `;
+            
+            modal.innerHTML = modalContent;
+            document.body.appendChild(modal);
+            logger.info('Tiebreaker modal successfully created and added to document');
+
+            // Add event listeners for category selection
+            const buttons = modal.querySelectorAll('.category-select-btn');
+            logger.debug(`Created ${buttons.length} category selection buttons`);
+            
+            buttons.forEach(button => {
+                const category = button.dataset.category;
+                logger.debug(`Adding event listeners for ${category} button`);
                 
-                <div class="tiebreaker-info" style="margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 4px;">
-                    <p><strong>Tiebreaker Rules:</strong></p>
-                    <ul style="margin: 10px 0 0 20px;">
-                        <li>Categories within ${tiebreakThreshold}% are considered ties</li>
-                        <li>Initial TIRE placement is considered as a tiebreaker</li>
-                    </ul>
-                </div>
-
-                <div class="modal-buttons" style="margin-top: 20px; text-align: right;">
-                    <button class="go-back-btn" 
-                            style="padding: 10px 20px; border: 1px solid #6c757d; border-radius: 4px; background: #6c757d; color: white; cursor: pointer;">
-                        Go Back and Edit Answers
-                    </button>
-                </div>
-            </div>
-        `;
-        
-        modal.innerHTML = modalContent;
-        document.body.appendChild(modal);
-
-        // Add event listeners for category selection
-        const buttons = modal.querySelectorAll('.category-select-btn');
-        buttons.forEach(button => {
-            button.addEventListener('mouseover', () => {
-                button.style.background = '#0056b3';
+                button.addEventListener('click', () => {
+                    const selectedCategory = button.dataset.category;
+                    logger.info('User selected category:', selectedCategory);
+                    modal.remove();
+                    resolve(selectedCategory);
+                });
             });
-            button.addEventListener('mouseout', () => {
-                button.style.background = '#007bff';
-            });
-            button.addEventListener('click', () => {
-                const selectedCategory = button.dataset.category;
-                modal.remove();
-                resolve(selectedCategory);
-            });
-        });
 
-        // Add event listener for go back button
-        const goBackBtn = modal.querySelector('.go-back-btn');
-        goBackBtn.addEventListener('mouseover', () => {
-            goBackBtn.style.background = '#5a6268';
-        });
-        goBackBtn.addEventListener('mouseout', () => {
-            goBackBtn.style.background = '#6c757d';
-        });
-        goBackBtn.addEventListener('click', () => {
-            modal.remove();
-            resolve('go-back');
-        });
-
-        // Close modal when clicking outside
-        modal.addEventListener('click', (event) => {
-            if (event.target === modal) {
+            // Add event listener for go back button
+            const goBackBtn = modal.querySelector('.go-back-btn');
+            goBackBtn.addEventListener('click', () => {
+                logger.info('User clicked go back button');
                 modal.remove();
                 resolve('go-back');
-            }
-        });
+            });
+
+            // Close modal when clicking outside
+            modal.addEventListener('click', (event) => {
+                if (event.target === modal) {
+                    logger.info('User clicked outside modal - treating as go back');
+                    modal.remove();
+                    resolve('go-back');
+                }
+            });
+        } catch (error) {
+            logger.error('Error creating tiebreaker modal:', error);
+            reject(error);
+        }
     });
 }
 
@@ -897,8 +1015,7 @@ function updateCompletionStatus() {
     const initialPlacement = initialTimePlacement.value;
     const isValidConfirmedPlacement = confirmedPlacement && 
                                     confirmedPlacement !== 'Not Set' && 
-                                    confirmedPlacement !== '-' && 
-                                    confirmedPlacement !== 'Multiple Placements' &&
+                                    confirmedPlacement !== '-' &&
                                     !confirmedPlacement.includes('Below Threshold');
     const isValidInitialPlacement = initialPlacement && initialPlacement !== '';
 
@@ -922,7 +1039,7 @@ function updateCompletionStatus() {
         if (restartButton) restartButton.style.display = 'none';
         if (saveButton) {
             saveButton.style.display = 'inline-block';
-            saveButton.disabled = !isValidInitialPlacement || !isValidConfirmedPlacement;
+            saveButton.disabled = !isValidInitialPlacement;
         }
     }
 
@@ -961,6 +1078,9 @@ function initializeCalculationTabs() {
 // Update the DOMContentLoaded event listener to properly handle the restart button
 document.addEventListener('DOMContentLoaded', () => {
     console.log('DOMContentLoaded event fired');
+
+    // Generate category buttons immediately
+    generateCategoryButtons();
 
     // Add calculations button event listener
     const explanationBtn = document.getElementById('explanationBtn');
@@ -1152,39 +1272,80 @@ document.addEventListener('DOMContentLoaded', () => {
     // Add save button event listener
     if (saveButton) {
         saveButton.addEventListener('click', async () => {
+            logger.info('Save button clicked - starting save process');
             const confirmedPlacement = document.getElementById('confirmedTimePlacement').textContent;
             const isRestarted = document.querySelector('.main-content')?.classList.contains('assessment-restarted');
             
             // Calculate scores and find categories above threshold
             const scores = calculateTIREScores();
+            logger.debug('Calculated TIRE scores', scores);
+            
             const categoriesAboveThreshold = Object.entries(scores)
                 .filter(([_, data]) => data.percentageScore >= distributionThreshold)
                 .map(([category, data]) => ({
-                    category: category.toLowerCase(),
+                    category: category,
                     distribution: Math.round(data.percentageScore)
-                }));
+                }))
+                .sort((a, b) => b.distribution - a.distribution);
 
-            // Check for tiebreaker scenarios in both new and restarted assessments
-            if (confirmedPlacement === 'Multiple Placements' || categoriesAboveThreshold.length > 1) {
-                // Show tiebreaker modal for all cases with multiple categories above threshold
-                const selectedCategory = await showTiebreakerModalWithPromise(categoriesAboveThreshold);
-                
-                if (selectedCategory === 'go-back') {
-                    return; // Don't proceed with save if user chooses to go back
-                }
-                
-                if (selectedCategory) {
-                    // Update the confirmed placement with the selected category
-                    updateConfirmedPlacement(selectedCategory);
-                } else {
-                    return; // Don't proceed if no category was selected
-                }
-            }
+            logger.info(`Found ${categoriesAboveThreshold.length} categories above threshold (${distributionThreshold}%)`, categoriesAboveThreshold);
 
-            // Get the final confirmed placement after potential tiebreaker
-            const finalConfirmedPlacement = document.getElementById('confirmedTimePlacement').textContent;
-            if (finalConfirmedPlacement === 'Multiple Placements') {
-                return; // Don't proceed if still showing Multiple Placements
+            // Tiebreaker logic
+            if (categoriesAboveThreshold.length > 1) {
+                logger.info('Multiple categories detected - initiating tiebreaker process');
+                try {
+                    logger.debug('Showing tiebreaker modal with categories', 
+                        categoriesAboveThreshold.map(c => `${c.category}: ${c.distribution}%`).join(', '));
+                    
+                    const selectedCategory = await showTiebreakerModalWithPromise(categoriesAboveThreshold);
+                    logger.info('User selected category from tiebreaker:', selectedCategory);
+                    
+                    if (selectedCategory === 'go-back') {
+                        logger.info('User chose to go back - canceling save process');
+                        return;
+                    }
+                    
+                    if (selectedCategory) {
+                        logger.info('Updating confirmed placement with selected category:', selectedCategory);
+                        updateConfirmedPlacement(selectedCategory);
+                        
+                        logger.debug('Waiting for UI update');
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                        
+                        const updatedPlacement = document.getElementById('confirmedTimePlacement').textContent;
+                        logger.debug('Confirmed placement after update:', updatedPlacement);
+                        
+                        if (updatedPlacement === 'Multiple Placements' || !updatedPlacement) {
+                            const error = 'Failed to update placement after tiebreaker selection';
+                            logger.error(error);
+                            throw new Error(error);
+                        }
+                    } else {
+                        logger.info('No category selected - canceling save process');
+                        return;
+                    }
+                } catch (error) {
+                    logger.error('Error during tiebreaker handling:', error);
+                    return;
+                }
+            } else if (categoriesAboveThreshold.length === 1) {
+                logger.info('Single category above threshold - auto-selecting:', categoriesAboveThreshold[0].category);
+                updateConfirmedPlacement(categoriesAboveThreshold[0].category);
+            } else {
+                logger.info('No categories above threshold - finding highest scoring category');
+                const maxCategory = Object.entries(scores)
+                    .reduce((max, [category, data]) => 
+                        (!max || data.percentageScore > max.score) 
+                            ? {category, score: data.percentageScore} 
+                            : max
+                    , null);
+                
+                if (maxCategory) {
+                    logger.info(`Setting below threshold status with highest category: ${maxCategory.category} (${Math.round(maxCategory.score)}%)`);
+                    document.getElementById('confirmedTimePlacement').textContent = 
+                        `Below Threshold (${Math.round(maxCategory.score)}%)`;
+                    document.getElementById('confirmedTimePlacement').className = 'below-threshold';
+                }
             }
 
             // Proceed with saving...

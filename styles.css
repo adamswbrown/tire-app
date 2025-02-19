@@ -365,22 +365,29 @@ tr.completed-row .action-cell button:hover {
 
 /* Save Button */
 #saveButton {
-    background: var(--success);
+    background-color: #4CAF50;
     color: white;
-    padding: var(--spacing-sm) var(--spacing-xl);
-    border-radius: var(--radius-md);
-    font-weight: 500;
-    transition: all 0.3s ease;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
 }
 
 #saveButton:hover:not(:disabled) {
-    background: #218838;
+    background-color: #45a049;
 }
 
 #saveButton:disabled {
+    background-color: #cccccc;
     cursor: not-allowed;
-    background: var(--success);
-    opacity: 0.5;
+    opacity: 0.7;
+}
+
+/* Remove any other potential interfering styles */
+.main-content #saveButton:not(:disabled) {
+    cursor: pointer;
+    opacity: 1;
 }
 
 /* Calculations Button */
@@ -402,59 +409,51 @@ tr.completed-row .action-cell button:hover {
 #categoryButtonsContainer {
     display: flex;
     flex-wrap: wrap;
-    gap: 5px;
-    padding: 5px 0;
-    margin-bottom: 10px;
+    gap: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+    background-color: white;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .category-button {
-    padding: 5px 10px;
-    font-size: 12px;
+    padding: 8px 16px;
+    margin: 4px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
     background-color: #f8f9fa;
-    border: 1px solid var(--border);
-    color: var(--dark);
+    color: #333;
+    cursor: pointer;
     transition: all 0.2s ease;
 }
 
 .category-button:hover {
-    background-color: var(--secondary);
-    color: white;
-    transform: translateY(-1px);
+    background-color: #e9ecef;
+    border-color: #adb5bd;
 }
 
 .category-button.active {
-    background-color: var(--secondary);
+    background-color: #007bff;
     color: white;
-    border-color: var(--secondary);
-    box-shadow: 0 2px 4px rgba(0, 123, 255, 0.3);
-    transform: translateY(-1px);
-    font-weight: 600;
+    border-color: #0056b3;
 }
 
 /* Reset button specific styles */
 .reset-button {
-    background-color: var(--light);
-    color: var(--dark);
-    border: 1px solid var(--border);
-    margin-left: var(--spacing-lg);
-    padding-left: var(--spacing-lg);
-    padding-right: var(--spacing-lg);
-    position: relative;
-}
-
-.reset-button.active {
-    background-color: var(--danger);
+    background-color: #6c757d;
     color: white;
-    border-color: var(--danger);
-    box-shadow: 0 2px 4px rgba(220, 53, 69, 0.3);
-    transform: translateY(-1px);
-    font-weight: 600;
+    border-color: #5a6268;
 }
 
 .reset-button:hover {
-    background-color: var(--danger);
-    color: white;
-    border-color: var(--danger);
+    background-color: #5a6268;
+    border-color: #545b62;
+}
+
+.reset-button.active {
+    background-color: #545b62;
+    border-color: #4e555b;
 }
 
 /* Questions Table */
@@ -871,13 +870,13 @@ tr.completed-row .action-cell button:hover {
     position: fixed;
     top: 0;
     left: 0;
-    width: 100%;
-    height: 100%;
+    width: 100vw;
+    height: 100vh;
     background-color: rgba(0, 0, 0, 0.5);
-    z-index: 1000;
+    z-index: 9999;
     opacity: 0;
     visibility: hidden;
-    transition: opacity 0.3s ease, visibility 0.3s ease;
+    transition: opacity 0.3s ease;
 }
 
 .modal-content {
@@ -888,23 +887,25 @@ tr.completed-row .action-cell button:hover {
     background-color: #fff;
     padding: 2rem;
     border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
     max-width: 90%;
     width: 500px;
     max-height: 90vh;
     overflow-y: auto;
+    z-index: 10000;
     opacity: 0;
-    transition: opacity 0.3s ease;
+    transition: all 0.3s ease;
 }
 
 .modal.show {
     opacity: 1;
     visibility: visible;
-    display: block;
+    display: block !important;
 }
 
 .modal.show .modal-content {
     opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
 }
 
 /* Ensure all modals use the same z-index */
@@ -1810,20 +1811,23 @@ tr.completed-row .action-cell button:hover {
 }
 
 #saveButton {
-    background-color: #28a745;
+    background-color: #4CAF50;
     color: white;
-    border-color: #1e7e34;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
 }
 
-#saveButton:hover {
-    background-color: #218838;
+#saveButton:hover:not(:disabled) {
+    background-color: #45a049;
 }
 
 #saveButton:disabled {
-    background-color: #6c757d;
-    border-color: #545b62;
+    background-color: #cccccc;
     cursor: not-allowed;
-    opacity: 0.65;
+    opacity: 0.7;
 }
 
 .restart-button {
