@@ -703,17 +703,23 @@ async function updateClientScores() {
             categoriesAboveThreshold.sort((a, b) => b.distribution - a.distribution);
             
             // Find categories within tiebreaker threshold of the highest scoring category
+            const highestDistribution = categoriesAboveThreshold[0].distribution;
             const tiebreakerCategories = categoriesAboveThreshold.filter(cat => 
-                Math.abs(cat.distribution - categoriesAboveThreshold[0].distribution) <= tiebreakThreshold
+                Math.abs(cat.distribution - highestDistribution) <= tiebreakThreshold
             );
 
-            if (tiebreakerCategories.length === 1) {
-                // Single category above threshold or no ties within tiebreaker threshold
-                updateConfirmedPlacement(tiebreakerCategories[0].category);
-            } else {
+            logger.debug('Categories above threshold:', categoriesAboveThreshold);
+            logger.debug('Categories within tiebreaker threshold:', tiebreakerCategories);
+
+            if (tiebreakerCategories.length > 1) {
                 // Multiple categories within tiebreaker threshold
                 confirmedPlacementElement.textContent = 'Multiple Placements';
                 confirmedPlacementElement.className = 'status-pending';
+                logger.info('Setting Multiple Placements due to tie:', tiebreakerCategories);
+            } else if (tiebreakerCategories.length === 1) {
+                // Single category above threshold or no ties within tiebreaker threshold
+                updateConfirmedPlacement(tiebreakerCategories[0].category);
+                logger.info('Setting single category placement:', tiebreakerCategories[0].category);
             }
         }
     }
@@ -745,66 +751,61 @@ async function updateSaveButtonState() {
     const initialPlacement = initialTimePlacement.value;
     const confirmedPlacement = confirmedTimePlacement.textContent;
     
-    // Check if initial placement is valid
-    const isValidInitialPlacement = initialPlacement && 
-                                  initialPlacement !== '' && 
-                                  initialPlacement !== 'Not Set';
+    // Always start with disabled button
+    saveButton.disabled = true;
 
-    // Check if confirmed placement is valid
+    // First check: Initial Placement
+    if (!initialPlacement || initialPlacement === '' || initialPlacement === 'Not Set') {
+        saveButton.title = 'Initial TIRE placement must be set before completing';
+        logger.debug('Save button disabled: No initial placement', { initialPlacement });
+        return;
+    }
+
+    // Second check: Confirmed Placement Status
+    const scores = calculateTIREScores();
+    const categoriesAboveThreshold = Object.entries(scores)
+        .filter(([_, data]) => data.percentageScore >= distributionThreshold)
+        .length;
+
+    // Handle different confirmed placement scenarios
+    if (confirmedPlacement.includes('Below Threshold')) {
+        // Enable save button for below threshold cases
+        saveButton.disabled = false;
+        saveButton.title = 'Click to complete the assessment';
+        logger.debug('Save button enabled: Below threshold case', { confirmedPlacement });
+        return;
+    }
+
+    if (confirmedPlacement === 'Multiple Placements' && categoriesAboveThreshold > 1) {
+        // Enable save button to trigger tiebreaker
+        saveButton.disabled = false;
+        saveButton.title = 'Click to select final placement from tiebreaker options';
+        logger.debug('Save button enabled: Multiple placements need resolution', { 
+            categoriesAboveThreshold,
+            confirmedPlacement 
+        });
+        return;
+    }
+
+    // Valid confirmed placement check
     const isValidConfirmedPlacement = confirmedPlacement && 
                                     confirmedPlacement !== '' && 
                                     confirmedPlacement !== 'Not Set' && 
                                     confirmedPlacement !== '-' &&
-                                    confirmedPlacement !== 'Multiple Placements' &&
                                     !confirmedPlacement.includes('Below Threshold');
-    
-    // Remove any existing classes that might affect the button state
-    saveButton.classList.remove('disabled');
-    
-    // The save button should be disabled by default
-    saveButton.disabled = true;
 
-    // Set appropriate title message based on state
-    if (!isValidInitialPlacement) {
-        saveButton.title = 'Initial TIRE placement must be set before completing';
-        return;
-    }
-
-    if (!isValidConfirmedPlacement) {
-        // Check if we're in a tiebreaker scenario
-        const scores = calculateTIREScores();
-        const categoriesAboveThreshold = Object.entries(scores)
-            .filter(([_, data]) => data.percentageScore >= distributionThreshold)
-            .length;
-
-        if (categoriesAboveThreshold > 1) {
-            // In tiebreaker scenario
-            saveButton.title = 'Please select a final placement from the tiebreaker options';
-            return;
-        }
-
-        if (categoriesAboveThreshold === 0) {
-            // No categories above threshold
-            saveButton.title = 'No categories meet the threshold requirements';
-            return;
-        }
-
+    // Enable save button when we have both valid initial and confirmed placements
+    if (isValidConfirmedPlacement) {
+        saveButton.disabled = false;
+        saveButton.title = 'Click to complete the assessment';
+        logger.debug('Save button enabled: Valid placements', { 
+            initialPlacement, 
+            confirmedPlacement 
+        });
+    } else {
         saveButton.title = 'A valid confirmed TIRE placement is required before completing';
-        return;
+        logger.debug('Save button disabled: No valid confirmed placement', { confirmedPlacement });
     }
-
-    // If we get here, both placements are valid
-    saveButton.disabled = false;
-    saveButton.title = 'Click to complete the assessment';
-    
-    logger.debug('Save button state updated', {
-        disabled: saveButton.disabled,
-        title: saveButton.title,
-        initialPlacement,
-        confirmedPlacement,
-        isValidInitial: isValidInitialPlacement,
-        isValidConfirmed: isValidConfirmedPlacement
-    });
 }
 
 function showCompletionModal(appName) {
