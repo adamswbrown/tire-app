@@ -228,6 +228,14 @@ ipcMain.on('open-strategy-questions-window', (event, appName) => {
     });
 });
 
+// Handle closing strategy questions window
+ipcMain.on('close-strategy-questions', () => {
+    if (strategyQuestionsWindow) {
+        strategyQuestionsWindow.close();
+        strategyQuestionsWindow = null;
+    }
+});
+
 // Modify the markAppCompleted function to store full application data
 function markAppCompleted(appName, initialPlacement, confirmedPlacement, confirmedPlacementSet, fullData) {
     const existingAppIndex = completedApps.findIndex(app => app.name === appName);
@@ -1067,13 +1075,5 @@ ipcMain.handle('write-to-log', async (event, logEntry) => {
     } catch (error) {
         console.error('Error writing to log file:', error);
         return false;
-    }
-});
-
-// Add this near other IPC handlers
-ipcMain.on('close-strategy-questions', () => {
-    if (strategyQuestionsWindow) {
-        strategyQuestionsWindow.close();
-        strategyQuestionsWindow = null;
     }
 });

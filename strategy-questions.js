@@ -1193,6 +1193,14 @@ function setupEventListeners() {
     const cancelCloseBtn = document.getElementById('cancelCloseBtn');
     const confirmCloseBtn = document.getElementById('confirmCloseBtn');
 
+    // Log all elements to verify they're found
+    logger.debug('Found UI elements:', {
+        closeAppBtn: !!closeAppBtn,
+        closeConfirmModal: !!closeConfirmModal,
+        cancelCloseBtn: !!cancelCloseBtn,
+        confirmCloseBtn: !!confirmCloseBtn
+    });
+
     // Add Calculations Explained button event listener
     if (explanationBtn && calculationsModal) {
         explanationBtn.addEventListener('click', () => {
@@ -1274,50 +1282,259 @@ function setupEventListeners() {
     // Add close button event listener
     if (closeAppBtn) {
         closeAppBtn.addEventListener('click', () => {
+            logger.debug('Close button clicked');
             const mainContent = document.querySelector('.main-content');
+            logger.debug('Main content state:', {
+                found: !!mainContent,
+                isCompleted: mainContent?.classList.contains('assessment-completed')
+            });
+
             // If assessment is completed, close directly
             if (mainContent?.classList.contains('assessment-completed')) {
+                logger.debug('Assessment is completed, closing directly');
                 ipcRenderer.send('close-strategy-questions');
             } else {
                 // Show confirmation modal
+                logger.debug('Assessment not completed, showing confirmation modal');
                 if (closeConfirmModal) {
                     closeConfirmModal.style.display = 'block';
                     closeConfirmModal.style.visibility = 'visible';
                     closeConfirmModal.style.opacity = '1';
                     closeConfirmModal.style.zIndex = '10000';
-                    closeConfirmModal.classList.add('show');
+                    logger.debug('Confirmation modal displayed');
+                } else {
+                    logger.error('Close confirmation modal not found');
                 }
             }
         });
+    } else {
+        logger.error('Close button not found in DOM');
     }
 
     // Add cancel close button event listener
     if (cancelCloseBtn) {
         cancelCloseBtn.addEventListener('click', () => {
+            logger.debug('Cancel close button clicked');
             if (closeConfirmModal) {
                 closeConfirmModal.style.display = 'none';
-                closeConfirmModal.classList.remove('show');
+                logger.debug('Close confirmation modal hidden');
+            } else {
+                logger.error('Close confirmation modal not found when trying to cancel');
             }
         });
+    } else {
+        logger.error('Cancel close button not found in DOM');
     }
 
     // Add confirm close button event listener
     if (confirmCloseBtn) {
         confirmCloseBtn.addEventListener('click', () => {
+            logger.debug('Confirm close button clicked, sending close event');
             ipcRenderer.send('close-strategy-questions');
         });
+    } else {
+        logger.error('Confirm close button not found in DOM');
     }
 
     // Close modal when clicking outside
     if (closeConfirmModal) {
         closeConfirmModal.addEventListener('click', (event) => {
+            logger.debug('Click event on close confirmation modal');
             if (event.target === closeConfirmModal) {
+                logger.debug('Click was outside modal content, hiding modal');
                 closeConfirmModal.style.display = 'none';
-                closeConfirmModal.classList.remove('show');
             }
         });
     }
     
     logger.debug('Event listeners setup complete');
+}
+
+// Function to handle restart confirmation
+async function handleRestartConfirmation() {
+    logger.debug('Handling restart confirmation');
+    const restartReason = document.getElementById('restartReason').value.trim();
+    
+    if (!restartReason) {
+        logger.warn('No restart reason provided');
+        alert('Please provide a reason for restarting the assessment.');
+        return;
+    }
+
+    try {
+        // Get the application name
+        const appNameElement = document.getElementById('applicationName');
+        const applicationName = appNameElement ? appNameElement.textContent : null;
+
+        if (!applicationName) {
+            logger.error('Cannot restart: Application name not found');
+            return;
+        }
+
+        // Get current TIRE placement before restart
+        const confirmedPlacement = document.getElementById('confirmedTimePlacement').textContent;
+        const initialPlacement = document.getElementById('initialTimePlacement').value;
+        const currentTreatment = confirmedPlacement !== "Not Set" ? confirmedPlacement : initialPlacement;
+
+        // Update restart history in localStorage
+        const restartHistory = JSON.parse(localStorage.getItem('restartHistory') || '{}');
+        if (!restartHistory[applicationName]) {
+            restartHistory[applicationName] = [];
+        }
+
+        // Add new restart entry
+        restartHistory[applicationName].push({
+            date: new Date().toISOString(),
+            reason: restartReason,
+            treatmentAtRestart: currentTreatment
+        });
+        localStorage.setItem('restartHistory', JSON.stringify(restartHistory));
+
+        // Update UI state
+        const mainContent = document.querySelector('.main-content');
+        if (mainContent) {
+            mainContent.classList.remove('assessment-completed');
+            mainContent.classList.add('assessment-restarted');
+        }
+
+        // Enable all inputs
+        document.querySelectorAll('#strategyQuestionsTable select, #strategyQuestionsTable input').forEach(element => {
+            element.disabled = false;
+        });
+
+        // Enable initial TIRE placement
+        const initialTimePlacementSelect = document.getElementById('initialTimePlacement');
+        if (initialTimePlacementSelect) {
+            initialTimePlacementSelect.disabled = false;
+        }
+
+        // Update button visibility
+        const restartButton = document.getElementById('restartBtn');
+        const saveButton = document.getElementById('saveButton');
+        if (restartButton) restartButton.style.display = 'none';
+        if (saveButton) {
+            saveButton.style.display = 'inline-block';
+            saveButton.disabled = false;
+        }
+
+        // Hide the confirmation modal
+        const confirmationModal = document.getElementById('confirmationModal');
+        if (confirmationModal) {
+            confirmationModal.style.display = 'none';
+            confirmationModal.classList.remove('show');
+        }
+
+        // Clear the restart reason field
+        document.getElementById('restartReason').value = '';
+
+        logger.info('Assessment restarted successfully', {
+            applicationName,
+            restartReason,
+            previousTreatment: currentTreatment
+        });
+
+        // Update completion status
+        updateCompletionStatus();
+    } catch (error) {
+        logger.error('Error during restart confirmation:', error);
+        alert('An error occurred while restarting the assessment. Please try again.');
+    }
+}
+
+// Function to handle save button click
+async function handleSaveButtonClick() {
+    logger.debug('Save button clicked');
+    
+    const appNameElement = document.getElementById('applicationName');
+    const applicationName = appNameElement ? appNameElement.textContent : null;
+    
+    if (!applicationName) {
+        logger.error('Cannot save: Application name not found');
+        return;
+    }
+
+    // Get current placements
+    const confirmedPlacement = document.getElementById('confirmedTimePlacement').textContent;
+    const initialPlacement = document.getElementById('initialTimePlacement').value;
+
+    // Check if we need to show tiebreaker modal
+    if (confirmedPlacement === 'Multiple Placements') {
+        const scores = calculateTIREScores();
+        const categoriesAboveThreshold = Object.entries(scores)
+            .filter(([_, data]) => data.percentageScore >= distributionThreshold)
+            .map(([category, data]) => ({
+                category,
+                distribution: data.percentageScore
+            }))
+            .sort((a, b) => b.distribution - a.distribution);
+
+        if (categoriesAboveThreshold.length > 1) {
+            logger.debug('Showing tiebreaker modal for categories:', categoriesAboveThreshold);
+            const selectedCategory = await showTiebreakerModalWithPromise(categoriesAboveThreshold);
+            
+            if (selectedCategory === 'go-back') {
+                logger.debug('User chose to go back and edit answers');
+                return;
+            }
+
+            updateConfirmedPlacement(selectedCategory);
+        }
+    }
+
+    try {
+        // Create the output data
+        const outputData = {
+            applicationName: applicationName,
+            initialTimePlacement: initialPlacement,
+            confirmedTimePlacement: document.getElementById('confirmedTimePlacement').textContent,
+            answers: strategyQuestions.map(q => ({
+                time: q.time,
+                question: q.question,
+                category: q.category,
+                clientAnswer: q.clientAnswer || '-',
+                clientScore: q.clientScore || 0,
+                extendedAnswer: q.extendedAnswer || ''
+            })),
+            summary: {
+                totalQuestions: totalQuestions,
+                answeredQuestions: answeredQuestions,
+                tireScores: calculateTIREScores()
+            },
+            assessmentHistory: {
+                restarts: JSON.parse(localStorage.getItem('restartHistory') || '{}')[applicationName] || [],
+                hasBeenRestarted: document.querySelector('.main-content')?.classList.contains('assessment-restarted') || false
+            }
+        };
+
+        // Send the data to the main process
+        logger.debug('Sending save-strategy-questions event with data');
+        ipcRenderer.send('save-strategy-questions', outputData);
+
+        // Show completion modal
+        showCompletionModal(applicationName);
+
+        // Update UI state
+        const mainContent = document.querySelector('.main-content');
+        if (mainContent) {
+            mainContent.classList.add('assessment-completed');
+            mainContent.classList.remove('assessment-restarted');
+        }
+
+        // Disable inputs
+        document.querySelectorAll('#strategyQuestionsTable select, #strategyQuestionsTable input').forEach(element => {
+            element.disabled = true;
+        });
+
+        // Update button visibility
+        const restartButton = document.getElementById('restartBtn');
+        const saveButton = document.getElementById('saveButton');
+        if (restartButton) restartButton.style.display = 'inline-block';
+        if (saveButton) saveButton.style.display = 'none';
+
+        logger.info('Assessment saved successfully:', applicationName);
+    } catch (error) {
+        logger.error('Error saving assessment:', error);
+        alert('An error occurred while saving the assessment. Please try again.');
+    }
 }
 
