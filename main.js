@@ -569,6 +569,12 @@ function exportCompletedAppsToExcel() {
             throw new Error('No completed applications to export');
         }
 
+        // Get the save directory
+        const saveDir = store.get('completedAppsDirectory');
+        if (!saveDir) {
+            throw new Error('No save directory configured. Please set a directory in the start screen.');
+        }
+
         // Create a new workbook and worksheet
         const workbook = xlsx.utils.book_new();
         const wsData = [];
@@ -603,7 +609,12 @@ function exportCompletedAppsToExcel() {
 
         // Create export filename with timestamp
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-        const exportPath = path.join(app.getPath('downloads'), `Completed-Applications-${timestamp}.xlsx`);
+        const exportPath = path.join(saveDir, `Completed-Applications-${timestamp}.xlsx`);
+
+        // Ensure the directory exists
+        if (!fs.existsSync(saveDir)) {
+            fs.mkdirSync(saveDir, { recursive: true });
+        }
 
         // Save the workbook
         xlsx.writeFile(workbook, exportPath);
@@ -656,6 +667,12 @@ ipcMain.handle('refresh-main-window', () => {
 // Function to create a clean export template
 function createCleanExportTemplate() {
     try {
+        // Get save directory
+        const saveDir = store.get('completedAppsDirectory');
+        if (!saveDir) {
+            throw new Error('No save directory configured. Please set a directory in the start screen.');
+        }
+
         // Get template path
         const templatePath = path.join(__dirname, 'templates', 'Application Strategy Export Template.xlsx');
         
@@ -666,8 +683,13 @@ function createCleanExportTemplate() {
 
         // Create export filename with timestamp
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-        const exportPath = path.join(app.getPath('downloads'), `Application-Strategy-Export-${timestamp}.xlsx`);
+        const exportPath = path.join(saveDir, `Application-Strategy-Export-${timestamp}.xlsx`);
         
+        // Ensure the directory exists
+        if (!fs.existsSync(saveDir)) {
+            fs.mkdirSync(saveDir, { recursive: true });
+        }
+
         // Copy template to destination
         fs.copyFileSync(templatePath, exportPath);
         
