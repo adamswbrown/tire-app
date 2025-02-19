@@ -658,20 +658,9 @@ async function updateClientScores() {
             // Single category above threshold
             updateConfirmedPlacement(categoriesAboveThreshold[0].category);
         } else {
-            // Check for ties within tiebreaker threshold
-            const maxAboveThreshold = Math.max(...categoriesAboveThreshold.map(c => c.distribution));
-            const tiedCategories = categoriesAboveThreshold.filter(c => 
-                Math.abs(c.distribution - maxAboveThreshold) <= tiebreakThreshold
-            );
-
-            if (tiedCategories.length > 1) {
-                // Show "Multiple Placements" during assessment
-                confirmedPlacementElement.textContent = 'Multiple Placements';
-                confirmedPlacementElement.className = 'status-pending';
-    } else {
-                // Use highest scoring category
-                updateConfirmedPlacement(categoriesAboveThreshold[0].category);
-            }
+            // Multiple categories above threshold - show Multiple Placements
+            confirmedPlacementElement.textContent = 'Multiple Placements';
+            confirmedPlacementElement.className = 'status-pending';
         }
     }
 
@@ -917,7 +906,7 @@ function updateCompletionStatus() {
     if (isRestarted) {
         // For restarted assessments, show save button
         if (restartButton) restartButton.style.display = 'none';
-    if (saveButton) {
+        if (saveButton) {
             saveButton.style.display = 'inline-block';
             saveButton.disabled = !isValidInitialPlacement;
         }
@@ -1164,6 +1153,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (saveButton) {
         saveButton.addEventListener('click', async () => {
             const confirmedPlacement = document.getElementById('confirmedTimePlacement').textContent;
+            const isRestarted = document.querySelector('.main-content')?.classList.contains('assessment-restarted');
             
             // Calculate scores and find categories above threshold
             const scores = calculateTIREScores();
@@ -1174,27 +1164,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     distribution: Math.round(data.percentageScore)
                 }));
 
-            // Handle Multiple Placements or tied categories
+            // Check for tiebreaker scenarios in both new and restarted assessments
             if (confirmedPlacement === 'Multiple Placements' || categoriesAboveThreshold.length > 1) {
-                const maxDistribution = Math.max(...categoriesAboveThreshold.map(c => c.distribution));
-                const tiedCategories = categoriesAboveThreshold.filter(c => 
-                    Math.abs(c.distribution - maxDistribution) <= tiebreakThreshold
-                );
-
-                if (tiedCategories.length > 1) {
-                    // Show tiebreaker modal and wait for selection
-                    const selectedCategory = await showTiebreakerModalWithPromise(tiedCategories);
-                    
-                    if (selectedCategory === 'go-back') {
-                        return; // Don't proceed with save if user chooses to go back
-                    }
-                    
-                    if (selectedCategory) {
-                        // Update the confirmed placement with the selected category
-                        updateConfirmedPlacement(selectedCategory);
-        } else {
-                        return; // Don't proceed if no category was selected
-                    }
+                // Show tiebreaker modal for all cases with multiple categories above threshold
+                const selectedCategory = await showTiebreakerModalWithPromise(categoriesAboveThreshold);
+                
+                if (selectedCategory === 'go-back') {
+                    return; // Don't proceed with save if user chooses to go back
+                }
+                
+                if (selectedCategory) {
+                    // Update the confirmed placement with the selected category
+                    updateConfirmedPlacement(selectedCategory);
+                } else {
+                    return; // Don't proceed if no category was selected
                 }
             }
 
