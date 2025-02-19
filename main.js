@@ -566,7 +566,7 @@ function exportCompletedAppsToExcel() {
         const wsData = [];
 
         // Add headers
-        wsData.push(['Application Name', 'Current TIRE Status', 'Previous TIRE Status', 'Status Change History']);
+        wsData.push(['Application Name', 'Current TIRE Status']);
 
         // Add data rows
         completedApps.forEach(app => {
@@ -574,19 +574,9 @@ function exportCompletedAppsToExcel() {
                 ? app.confirmedTIREPlacement 
                 : app.initialTIREPlacement;
             
-            // Create status change history string
-            const statusHistory = app.assessmentHistory?.previousPlacements
-                ?.map(change => {
-                    const date = new Date(change.date).toLocaleDateString();
-                    return `${date}: ${change.previousStatus || 'Initial'} → ${change.newStatus}`;
-                })
-                .join('\n') || '';
-
             wsData.push([
                 app.name, 
-                currentPlacement,
-                app.previousTIREPlacement || 'N/A',
-                statusHistory
+                currentPlacement
             ]);
         });
 
@@ -596,9 +586,7 @@ function exportCompletedAppsToExcel() {
         // Set column widths
         const colWidths = [
             { wch: 30 }, // Application Name
-            { wch: 20 }, // Current TIRE Status
-            { wch: 20 }, // Previous TIRE Status
-            { wch: 50 }  // Status Change History
+            { wch: 20 }  // Current TIRE Status
         ];
         worksheet['!cols'] = colWidths;
 
