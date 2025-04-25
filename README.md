@@ -4,8 +4,8 @@ A desktop application for assessing and categorizing applications based on their
 
 ## Features
 
-- **Application Questions**: Comprehensive questionnaire to gather detailed information about applications
-- **Strategy Questions**: Assessment tool to determine application placement strategy - NEW (under Testing)
+- **Application Questions**: Comprehensive questionnaire to gather detailed information about applications -- NEW  (under Testing)
+- **Strategy Questions**: Assessment tool to determine application placement strategy
 - **Data Management**: Save and export application assessments
 - **Admin Settings**: Configure application settings and thresholds
 - **Excel Integration**: Import and export data in Excel format
