@@ -105,9 +105,10 @@ function displayData(data) {
 
     data.forEach(item => {
         const row = document.createElement("tr");
-        const isCompleted = completedAppsList.includes(item['Application Name']);
+        const isAppQuestionsCompleted = completedAppsList.includes(item['Application Name'] + '_app_questions');
+        const isStrategyQuestionsCompleted = completedAppsList.includes(item['Application Name']);
         
-        if (isCompleted) {
+        if (isStrategyQuestionsCompleted) {
             row.classList.add('completed-row');
         }
 
@@ -126,16 +127,35 @@ function displayData(data) {
         // Action cell
         const actionCell = document.createElement("td");
         actionCell.className = 'action-cell';
-        const actionButton = document.createElement("button");
         
-        if (isCompleted) {
-            actionButton.textContent = "View Results";
-            actionButton.onclick = () => viewResults(item['Application Name']);
+        // Create container for buttons
+        const buttonContainer = document.createElement("div");
+        buttonContainer.className = 'action-buttons-container';
+        buttonContainer.style.gap = '10px';
+        buttonContainer.style.display = 'flex';
+        
+        // Create App Questions button
+        const appQuestionsButton = document.createElement("button");
+        appQuestionsButton.textContent = isAppQuestionsCompleted ? "View App Questions" : "Start App Questions";
+        appQuestionsButton.className = 'app-questions-button';
+        appQuestionsButton.onclick = () => startAppQuestions(item['Application Name']);
+        
+        // Create Strategy Questions button
+        const strategyButton = document.createElement("button");
+        if (isStrategyQuestionsCompleted) {
+            strategyButton.textContent = "View Strategy Results";
+            strategyButton.onclick = () => viewResults(item['Application Name']);
         } else {
-            actionButton.textContent = "Start Strategy Questions";
-            actionButton.onclick = () => startStrategyQuestions(item['Application Name']);
+            strategyButton.textContent = "Start Strategy Questions";
+            strategyButton.onclick = () => startStrategyQuestions(item['Application Name']);
         }
-        actionCell.appendChild(actionButton);
+        
+        // Add buttons to container
+        buttonContainer.appendChild(appQuestionsButton);
+        buttonContainer.appendChild(strategyButton);
+        
+        // Add container to action cell
+        actionCell.appendChild(buttonContainer);
 
         row.appendChild(appNameCell);
         row.appendChild(scopeCell);
@@ -361,3 +381,8 @@ ipcRenderer.on('thresholds-updated', (event, thresholds) => {
         document.getElementById('tiebreaker-threshold').textContent = thresholds.tiebreakThreshold;
     }
 });
+
+// Add new function to handle app questions
+function startAppQuestions(appName) {
+    ipcRenderer.send('open-app-questions-window', appName);
+}

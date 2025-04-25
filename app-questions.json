@@ -1,0 +1,192 @@
+[
+  {
+    "config": {
+      "distributionThreshold": 78,
+      "tiebreakThreshold": 6
+    }
+  },
+  {
+    "section": "Basic Application Information",
+    "questions": [
+      {
+        "id": "app_name",
+        "question": "What is the name of the application?",
+        "type": "text",
+        "required": false,
+        "category": "identification",
+        "helpText": "The official name of the application as it appears in your systems inventory"
+      },
+      {
+        "id": "app_description",
+        "question": "Please provide a brief description of the application and its primary functions",
+        "type": "textarea",
+        "required": false,
+        "category": "overview",
+        "helpText": "Include the main purpose of the application and key business functions it supports"
+      },
+      {
+        "id": "user_base",
+        "question": "What is the size of the user base for this application?",
+        "type": "select",
+        "options": [
+          "Small (1-50 users)",
+          "Medium (51-200 users)",
+          "Large (201-1000 users)",
+          "Enterprise (1000+ users)"
+        ],
+        "required": false,
+        "category": "scale",
+        "helpText": "Select the option that best represents your active user base"
+      }
+    ]
+  },
+  {
+    "section": "Technical Assessment",
+    "questions": [
+      {
+        "id": "app_type",
+        "question": "What type of application is this?",
+        "type": "select",
+        "options": [
+          "Web Application",
+          "Desktop Application",
+          "Mobile Application",
+          "Client-Server Application",
+          "Microservice",
+          "Legacy System",
+          "Other"
+        ],
+        "required": false,
+        "category": "architecture",
+        "helpText": "Select the primary application type that best describes this system"
+      },
+      {
+        "id": "tech_stack",
+        "question": "What is the primary technology stack of the application?",
+        "type": "select-multiple",
+        "options": [
+          ".NET",
+          "Java",
+          "Python",
+          "Node.js",
+          "PHP",
+          "Ruby",
+          "Angular",
+          "React",
+          "Vue.js",
+          "Other"
+        ],
+        "required": false,
+        "category": "technology",
+        "helpText": "Select all technologies that are significant parts of the application"
+      },
+      {
+        "id": "database_type",
+        "question": "What type of database(s) does the application use?",
+        "type": "select-multiple",
+        "options": [
+          "SQL Server",
+          "Oracle",
+          "MySQL",
+          "PostgreSQL",
+          "MongoDB",
+          "Redis",
+          "None",
+          "Other"
+        ],
+        "required": false,
+        "category": "data",
+        "helpText": "Select all database types used by the application"
+      }
+    ]
+  },
+  {
+    "section": "Cloud Readiness",
+    "questions": [
+      {
+        "id": "app_owner_azure_knowledge",
+        "question": "What is the application owner's level of knowledge with Azure/cloud?",
+        "type": "select",
+        "options": [
+          "None",
+          "Basic Understanding",
+          "Intermediate",
+          "Advanced",
+          "Expert"
+        ],
+        "required": false,
+        "category": "expertise",
+        "helpText": "Assess the team's cloud expertise level"
+      },
+      {
+        "id": "current_hosting",
+        "question": "Where is the application currently hosted?",
+        "type": "select",
+        "options": [
+          "On-premises Data Center",
+          "Private Cloud",
+          "Public Cloud",
+          "Hybrid",
+          "Other"
+        ],
+        "required": false,
+        "category": "infrastructure",
+        "helpText": "Select the current hosting environment"
+      },
+      {
+        "id": "cloud_blockers",
+        "question": "Are there any known blockers for cloud migration?",
+        "type": "select-multiple",
+        "options": [
+          "None",
+          "Data Sovereignty",
+          "Security Requirements",
+          "Compliance Issues",
+          "Technical Dependencies",
+          "Cost Concerns",
+          "Other"
+        ],
+        "required": false,
+        "category": "constraints",
+        "helpText": "Select all factors that might impede cloud migration"
+      }
+    ]
+  },
+  {
+    "section": "Contact Information",
+    "questions": [
+      {
+        "id": "app_owner",
+        "question": "Who is the application owner?",
+        "type": "text",
+        "required": false,
+        "category": "ownership",
+        "helpText": "The person responsible for business decisions about the application"
+      },
+      {
+        "id": "app_owner_email",
+        "question": "What is the application owner's email?",
+        "type": "email",
+        "required": false,
+        "category": "contact",
+        "helpText": "Business owner's email address for communications"
+      },
+      {
+        "id": "app_sme",
+        "question": "Who is the technical SME for this application?",
+        "type": "text",
+        "required": false,
+        "category": "technical_contact",
+        "helpText": "The person with the most technical knowledge about the application"
+      },
+      {
+        "id": "app_sme_email",
+        "question": "What is the technical SME's email?",
+        "type": "email",
+        "required": false,
+        "category": "contact",
+        "helpText": "Technical SME's email address for communications"
+      }
+    ]
+  }
+] 

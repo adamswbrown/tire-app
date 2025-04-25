@@ -12,6 +12,7 @@ let distributionThreshold = 80;
 let completedApps = [];
 let uploadedData = null; // Store uploaded data
 let adminWindow = null;
+let appQuestionsWindow = null;
 const store = new Store();
 
 // Load the questions.json to extract the distributionThreshold
@@ -639,21 +640,28 @@ ipcMain.handle('export-completed-apps', async () => {
 
 // Add handler to get application data
 ipcMain.handle('get-app-data', async (event, appName) => {
-    const dir = getCompletedAppsDirectory();
-    if (!dir) return null;
-
-    const sanitizedAppName = appName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-    const filePath = path.join(dir, `${sanitizedAppName}.json`);
-
     try {
+        const dir = getCompletedAppsDirectory();
+        if (!dir) {
+            console.error('No directory set for loading application data');
+            return null;
+        }
+
+        const sanitizedAppName = appName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+        const filePath = path.join(dir, `${sanitizedAppName}.json`);
+
         if (fs.existsSync(filePath)) {
+            console.log('Loading app data from:', filePath);
             const data = fs.readFileSync(filePath, 'utf-8');
             return JSON.parse(data);
+        } else {
+            console.log('No existing data found for:', appName);
+            return null;
         }
     } catch (error) {
         console.error('Error reading application data:', error);
+        return null;
     }
-    return null;
 });
 
 // Add a new IPC handler to refresh the main window
@@ -946,7 +954,7 @@ ipcMain.on('save-strategy-questions', (event, outputData) => {
         }
 
         const sanitizedAppName = outputData.applicationName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-        const filePath = path.join(dir, `${sanitizedAppName}.json`);
+        const filePath = path.join(dir, `${sanitizedAppName}_strategy_questions.json`);
 
         // Save the file
         fs.writeFileSync(filePath, JSON.stringify(outputData, null, 2), 'utf-8');
@@ -1097,5 +1105,104 @@ ipcMain.handle('write-to-log', async (event, logEntry) => {
     } catch (error) {
         console.error('Error writing to log file:', error);
         return false;
+    }
+});
+
+// Add function to load app questions
+function loadAppQuestions() {
+    try {
+        const appQuestionsPath = path.join(__dirname, 'app-questions.json');
+        const appQuestionsData = JSON.parse(fs.readFileSync(appQuestionsPath, 'utf8'));
+        return appQuestionsData;
+    } catch (error) {
+        console.error('Error loading app-questions.json:', error);
+        return null;
+    }
+}
+
+// Open application questions window
+ipcMain.on('open-app-questions-window', (event, appName) => {
+    if (appQuestionsWindow) {
+        appQuestionsWindow.focus();
+        // If window exists, update it with the new app name
+        appQuestionsWindow.webContents.send('app-name', appName);
+        return;
+    }
+
+    appQuestionsWindow = new BrowserWindow({
+        width: 1200,
+        height: 800,
+        webPreferences: {
+            nodeIntegration: true,
+            contextIsolation: false,
+        },
+        show: false  // Don't show until we maximize
+    });
+
+    appQuestionsWindow.maximize();  // Maximize the window
+    appQuestionsWindow.show();      // Show after maximizing
+
+    appQuestionsWindow.loadFile('app-questions.html').then(() => {
+        // Load app questions and send them along with the app name
+        const appQuestions = loadAppQuestions();
+        if (appQuestions) {
+            appQuestionsWindow.webContents.send('app-questions-data', appQuestions);
+        }
+        appQuestionsWindow.webContents.send('app-name', appName);
+    });
+
+    appQuestionsWindow.on('closed', () => {
+        appQuestionsWindow = null;
+    });
+});
+
+// Add handler to get app questions data
+ipcMain.handle('get-app-questions', async () => {
+    return loadAppQuestions();
+});
+
+// Handle saving application questions
+ipcMain.handle('save-app-questions', async (event, outputData) => {
+    try {
+        // Get the directory for saving completed applications
+        const dir = getCompletedAppsDirectory();
+        if (!dir) {
+            return {
+                success: false,
+                message: 'No directory set for saving completed applications. Please set a directory in the admin settings.'
+            };
+        }
+
+        // Sanitize the application name for use in filename
+        const sanitizedAppName = outputData.applicationName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+        const filePath = path.join(dir, `${sanitizedAppName}_app_questions.json`);
+
+        // Save the file
+        fs.writeFileSync(filePath, JSON.stringify(outputData, null, 2), 'utf-8');
+        
+        // Update the main window if needed
+        if (mainWindow) {
+            mainWindow.webContents.send('app-questions-completed', outputData.applicationName);
+        }
+
+        return {
+            success: true,
+            filePath: filePath,
+            message: 'File saved successfully'
+        };
+    } catch (error) {
+        console.error('Error saving app questions:', error);
+        return {
+            success: false,
+            message: `Failed to save application questions: ${error.message}`
+        };
+    }
+});
+
+// Handle closing application questions window
+ipcMain.on('close-app-questions', () => {
+    if (appQuestionsWindow) {
+        appQuestionsWindow.close();
+        appQuestionsWindow = null;
     }
 });
