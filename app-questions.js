@@ -1,4 +1,7 @@
 const { ipcRenderer } = require('electron');
+const path = require('path');
+const fs = require('fs');
+const { app } = require('electron');
 
 // Logging utility
 const logger = {
@@ -52,267 +55,38 @@ let applicationName = '';
 let answeredQuestions = 0;
 let totalQuestions = 0;
 let appQuestions = null;
-
-// Question data structure
-const sections = {
-    'basicInfoSection': {
-        title: 'Basic Application Information',
-        next: 'contactInfoSection',
-        prev: null,
-        questions: [
-            {
-                id: 'migrationDrivers',
-                title: 'Migration Drivers',
-                required: true
-            },
-            {
-                id: 'userBase',
-                title: 'User Base',
-                required: true
-            },
-            {
-                id: 'appDescription',
-                title: 'Application Description',
-                required: true
-            },
-            {
-                id: 'appFunction',
-                title: 'Application Function',
-                required: true
-            },
-            {
-                id: 'appType',
-                title: 'Application Type',
-                required: true
-            }
-        ]
-    },
-    'contactInfoSection': {
-        title: 'Contact Information',
-        next: 'appDetailsSection',
-        prev: 'basicInfoSection',
-        questions: [
-            {
-                id: 'appOwner',
-                title: 'App Owner',
-                required: true
-            },
-            {
-                id: 'appOwnerEmail',
-                title: 'App Owner Email',
-                required: true
-            },
-            {
-                id: 'appOwnerAzureKnowledge',
-                title: 'App Owner Azure Knowledge',
-                required: true
-            },
-            {
-                id: 'appSme',
-                title: 'App SME',
-                required: true
-            },
-            {
-                id: 'appSmeEmail',
-                title: 'App SME Email',
-                required: true
-            },
-            {
-                id: 'appSmeAzureKnowledge',
-                title: 'App SME Azure Knowledge',
-                required: true
-            }
-        ]
-    },
-    'appDetailsSection': {
-        title: 'Application Details',
-        next: 'cotsSection',
-        prev: 'contactInfoSection',
-        questions: [
-            {
-                id: 'businessCritical',
-                title: 'Business Critical',
-                required: true
-            },
-            {
-                id: 'appCriticality',
-                title: 'App Criticality',
-                required: true
-            },
-            {
-                id: 'disasterRecovery',
-                title: 'Disaster Recovery',
-                required: true
-            },
-            {
-                id: 'highAvailability',
-                title: 'High Availability',
-                required: true
-            },
-            {
-                id: 'piiData',
-                title: 'PII Data',
-                required: true
-            }
-        ]
-    },
-    'cotsSection': {
-        title: 'COTS Details',
-        next: 'supportSection',
-        prev: 'appDetailsSection',
-        questions: [
-            {
-                id: 'appTypeCotsName',
-                title: 'COTS Software Name',
-                required: false
-            },
-            {
-                id: 'appTypeCotsVendorName',
-                title: 'COTS Vendor Name',
-                required: false
-            },
-            {
-                id: 'appTypeCotsVersionInstalled',
-                title: 'COTS Version',
-                required: false
-            },
-            {
-                id: 'appTypeCotsUrl',
-                title: 'COTS URL',
-                required: false
-            },
-            {
-                id: 'appTypeCotsCanRunInAzure',
-                title: 'Can Run in Azure',
-                required: false
-            },
-            {
-                id: 'appTypeCotsCanModernisedPaas',
-                title: 'PaaS Modernization',
-                required: false
-            },
-            {
-                id: 'appTypeCotsNotes',
-                title: 'COTS Notes',
-                required: false
-            }
-        ]
-    },
-    'supportSection': {
-        title: 'Support Information',
-        next: 'healthSection',
-        prev: 'cotsSection',
-        questions: [
-            {
-                id: 'businessUnit',
-                title: 'Business Unit',
-                required: true
-            },
-            {
-                id: 'deployment',
-                title: 'Deployment',
-                required: true
-            },
-            {
-                id: 'backupRestorePolicies',
-                title: 'Backup/Restore Policies',
-                required: true
-            },
-            {
-                id: 'supportedBy',
-                title: 'Supported By',
-                required: true
-            },
-            {
-                id: 'supportTeamSize',
-                title: 'Support Team Size',
-                required: true
-            },
-            {
-                id: 'supportTeamAzureKnowledge',
-                title: 'Support Team Azure Knowledge',
-                required: true
-            }
-        ]
-    },
-    'healthSection': {
-        title: 'Health & Risk',
-        next: null,
-        prev: 'supportSection',
-        questions: [
-            {
-                id: 'resilienceDataRetention',
-                title: 'Resilience Data Retention',
-                required: true
-            },
-            {
-                id: 'healthStability',
-                title: 'Health Stability',
-                required: true
-            },
-            {
-                id: 'healthDocumentation',
-                title: 'Health Documentation',
-                required: true
-            },
-            {
-                id: 'backups',
-                title: 'Backups',
-                required: true
-            },
-            {
-                id: 'inherentRisk',
-                title: 'Inherent Risk',
-                required: true
-            },
-            {
-                id: 'materiality',
-                title: 'Materiality',
-                required: true
-            }
-        ]
-    }
-};
-
-// State management
-let formData = {};
-let answers = new Map();
+let questionContainer = null;
 
 // DOM Elements
-const form = document.getElementById('appQuestionsForm');
-const saveButton = document.getElementById('saveButton');
-const closeButton = document.getElementById('closeAppBtn');
-const closeConfirmModal = document.getElementById('closeConfirmModal');
-const cancelCloseBtn = document.getElementById('cancelCloseBtn');
-const confirmCloseBtn = document.getElementById('confirmCloseBtn');
-const completionModal = document.getElementById('completionModal');
-const completionOkBtn = document.getElementById('completionOkBtn');
-const completionMessage = document.getElementById('completionMessage');
-const appNameDisplay = document.getElementById('appNameDisplay');
-const completionStatus = document.getElementById('completionStatus');
-const completionText = document.getElementById('completionText');
-const completionDate = document.getElementById('completionDate');
-const currentQuestionNum = document.getElementById('currentQuestionNum');
-const totalQuestionsDisplay = document.getElementById('totalQuestions');
-const currentSectionDisplay = document.getElementById('currentSection');
-const sectionProgress = document.getElementById('sectionProgress');
+let form = null;
+let closeButton = null;
+let saveButton = null;
+let exportButton = null;
+let closeConfirmationModal = null;
+let completionModal = null;
+let completionOkBtn = null;
+let completionMessage = null;
+let appNameDisplay = null;
+let completionStatus = null;
+let completionText = null;
+let completionDate = null;
+let currentQuestionNum = null;
+let totalQuestionsDisplay = null;
+let currentSectionDisplay = null;
+let sectionProgress = null;
 
 // Navigation buttons
-const prevSectionBtn = document.getElementById('prevSection');
-const nextSectionBtn = document.getElementById('nextSection');
-const prevQuestionBtn = document.getElementById('prevQuestion');
-const nextQuestionBtn = document.getElementById('nextQuestion');
-const skipQuestionBtn = document.getElementById('skipQuestion');
-
-// Form sections
-const formSections = document.querySelectorAll('.form-section');
-const sectionsArray = Array.from(formSections);
+let prevSectionBtn = null;
+let nextSectionBtn = null;
+let prevQuestionBtn = null;
+let nextQuestionBtn = null;
+let skipQuestionBtn = null;
 
 // Initialize the UI when the DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     logger.debug('DOM Content Loaded - Initializing app-questions.js');
-    setupEventListeners();
-    initializeUI();
+    initializeElements();
+    loadQuestions();
 });
 
 // Listen for application name when opening app questions window
@@ -325,10 +99,54 @@ ipcRenderer.on('app-name', (event, appName) => {
 
 // Listen for app questions data
 ipcRenderer.on('app-questions-data', (event, questions) => {
-    logger.debug('Received app questions data');
+    logger.debug('Received app questions data:', questions);
+    if (!questions || !Array.isArray(questions) || questions.length === 0) {
+        logger.error('Invalid questions data received:', questions);
+        return;
+    }
     appQuestions = questions;
     initializeQuestions();
 });
+
+function initializeElements() {
+    logger.debug('Initializing DOM elements');
+    try {
+        // Get all DOM elements
+        questionContainer = document.getElementById('questionContainer');
+        
+        // Navigation buttons
+        prevSectionBtn = document.getElementById('prevSection');
+        nextSectionBtn = document.getElementById('nextSection');
+        prevQuestionBtn = document.getElementById('prevQuestion');
+        nextQuestionBtn = document.getElementById('nextQuestion');
+        skipQuestionBtn = document.getElementById('skipQuestion');
+        
+        // Form elements
+        form = document.getElementById('appQuestionsForm');
+        closeButton = document.getElementById('closeButton');
+        saveButton = document.getElementById('saveButton');
+        exportButton = document.getElementById('exportButton');
+        closeConfirmationModal = document.getElementById('closeConfirmModal');
+        completionModal = document.getElementById('completionModal');
+        completionOkBtn = document.getElementById('completionOkBtn');
+        completionMessage = document.getElementById('completionMessage');
+        appNameDisplay = document.getElementById('appNameDisplay');
+        completionStatus = document.getElementById('completionStatus');
+        completionText = document.getElementById('completionText');
+        completionDate = document.getElementById('completionDate');
+        currentQuestionNum = document.getElementById('currentQuestionNum');
+        totalQuestionsDisplay = document.getElementById('totalQuestions');
+        currentSectionDisplay = document.getElementById('currentSection');
+        sectionProgress = document.getElementById('sectionProgress');
+
+        // Set up initial event listeners
+        setupEventListeners();
+        
+        logger.debug('DOM elements initialized successfully');
+    } catch (error) {
+        logger.error('Error initializing DOM elements:', error);
+    }
+}
 
 function initializeApplicationName(appName) {
     logger.debug('Initializing application name:', appName);
@@ -347,9 +165,14 @@ function initializeApplicationName(appName) {
 
 function initializeUI() {
     logger.debug('Initializing UI');
+    if (!appQuestions) {
+        logger.debug('No questions data available yet');
+        return;
+    }
     
     // Start with first section
     currentSection = 0;
+    currentQuestionIndex = 0;
     
     // Initialize display
     updateDisplay();
@@ -362,26 +185,203 @@ function initializeQuestions() {
         return;
     }
     
+    logger.debug('Initializing questions with data:', appQuestions);
+    
+    // Start with the first section (index 0)
+    currentSection = 0;
+    currentQuestionIndex = 0;
     displayCurrentSection();
-    setupNavigation();
     updateCompletionStatus();
 }
 
 function displayCurrentSection() {
-    if (!questionContainer || !appQuestions) return;
-    
-    const section = appQuestions[currentSection + 1]; // Skip config section
-    if (!section) return;
+    if (!questionContainer || !appQuestions || !Array.isArray(appQuestions)) {
+        logger.error('Missing required elements for displaying section');
+        return;
+    }
 
-    questionContainer.innerHTML = `
-        <h2>${section.section}</h2>
-        <div class="questions">
-            ${section.questions.map(q => createQuestionHTML(q)).join('')}
-        </div>
+    // Get the current section
+    const section = appQuestions[currentSection];
+    if (!section || !section.section || !section.questions || !Array.isArray(section.questions)) {
+        logger.error('Invalid section format:', section);
+        return;
+    }
+
+    logger.debug('Displaying section:', {
+        sectionIndex: currentSection,
+        sectionName: section.section,
+        questionCount: section.questions.length,
+        currentQuestionIndex: currentQuestionIndex
+    });
+
+    // Clear existing content
+    questionContainer.innerHTML = '';
+
+    // Create main content wrapper
+    const contentWrapper = document.createElement('div');
+    contentWrapper.className = 'app-questions-content';
+    contentWrapper.style.padding = '20px';
+    contentWrapper.style.maxWidth = '800px';
+    contentWrapper.style.margin = '0 auto';
+
+    // Create section header
+    const sectionHeader = document.createElement('h2');
+    sectionHeader.textContent = section.section;
+    sectionHeader.style.marginBottom = '20px';
+    contentWrapper.appendChild(sectionHeader);
+
+    // Get current question
+    const currentQuestion = section.questions[currentQuestionIndex];
+    if (!currentQuestion) {
+        logger.error('Invalid question index:', currentQuestionIndex);
+        return;
+    }
+
+    // Create question card
+    const questionCard = document.createElement('div');
+    questionCard.className = 'question-card';
+    questionCard.dataset.question = currentQuestion.id;
+    questionCard.style.cssText = `
+        padding: 20px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        background-color: #fff;
+        margin-bottom: 15px;
+        width: 100%;
+        box-sizing: border-box;
+        display: block;
+        position: relative;
     `;
 
-    // Reattach event listeners
-    setupEventListeners();
+    // Create question title
+    const questionTitle = document.createElement('h3');
+    questionTitle.textContent = currentQuestion.question;
+    questionTitle.style.cssText = `
+        margin: 0 0 10px 0;
+        font-size: 16px;
+        font-weight: 500;
+        color: #333;
+    `;
+    questionCard.appendChild(questionTitle);
+
+    // Add help text if present
+    if (currentQuestion.helpText) {
+        const helpText = document.createElement('div');
+        helpText.className = 'help-text';
+        helpText.textContent = currentQuestion.helpText;
+        helpText.style.cssText = `
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 10px;
+            font-style: italic;
+        `;
+        questionCard.appendChild(helpText);
+    }
+
+    // Create input element based on question type
+    let input;
+    switch (currentQuestion.type) {
+        case 'text':
+        case 'email':
+            input = document.createElement('input');
+            input.type = currentQuestion.type;
+            input.id = currentQuestion.id;
+            input.name = currentQuestion.id;
+            input.className = 'form-control';
+            input.style.cssText = `
+                width: 100%;
+                padding: 8px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                font-size: 14px;
+                box-sizing: border-box;
+            `;
+            if (currentQuestion.required) input.required = true;
+            break;
+
+        case 'textarea':
+            input = document.createElement('textarea');
+            input.id = currentQuestion.id;
+            input.name = currentQuestion.id;
+            input.rows = 4;
+            input.className = 'form-control';
+            input.style.cssText = `
+                width: 100%;
+                padding: 8px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                font-size: 14px;
+                resize: vertical;
+                box-sizing: border-box;
+            `;
+            if (currentQuestion.required) input.required = true;
+            break;
+
+        case 'select':
+        case 'select-multiple':
+        case 'multiselect':
+            input = document.createElement('select');
+            input.id = currentQuestion.id;
+            input.name = currentQuestion.id;
+            input.className = 'form-control';
+            input.style.cssText = `
+                width: 100%;
+                padding: 8px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                font-size: 14px;
+                box-sizing: border-box;
+            `;
+            
+            if (currentQuestion.type === 'select-multiple' || currentQuestion.type === 'multiselect') {
+                input.multiple = true;
+                input.size = Math.min(5, currentQuestion.options?.length || 4);
+            } else {
+                const defaultOption = document.createElement('option');
+                defaultOption.value = '';
+                defaultOption.textContent = 'Select an option';
+                input.appendChild(defaultOption);
+            }
+            
+            if (currentQuestion.required) input.required = true;
+
+            // Add options
+            if (currentQuestion.options) {
+                currentQuestion.options.forEach(optionText => {
+                    const option = document.createElement('option');
+                    option.value = optionText;
+                    option.textContent = optionText;
+                    input.appendChild(option);
+                });
+            }
+            break;
+
+        default:
+            logger.warn('Unknown question type:', currentQuestion.type);
+            break;
+    }
+
+    if (input) {
+        const inputWrapper = document.createElement('div');
+        inputWrapper.style.marginTop = '10px';
+        inputWrapper.appendChild(input);
+        questionCard.appendChild(inputWrapper);
+    }
+
+    contentWrapper.appendChild(questionCard);
+    questionContainer.appendChild(contentWrapper);
+
+    // Update navigation
+    setupNavigation();
+    
+    // Load existing answers
+    loadExistingAnswers();
+    
+    // Update question counter and progress
+    updateQuestionCounter();
+    updateProgress();
+    
+    logger.debug('Question displayed successfully');
 }
 
 function createQuestionHTML(question) {
@@ -401,270 +401,107 @@ function createQuestionHTML(question) {
             inputHTML = `
                 <select id="${question.id}" name="${question.id}" ${required}>
                     <option value="">Select an option</option>
-                    ${question.options.map(opt => `<option value="${opt}">${opt}</option>`).join('')}
+                    ${question.options ? question.options.map(opt => `<option value="${opt}">${opt}</option>`).join('') : ''}
                 </select>`;
             break;
         case 'select-multiple':
             inputHTML = `
                 <select id="${question.id}" name="${question.id}" multiple ${required}>
-                    ${question.options.map(opt => `<option value="${opt}">${opt}</option>`).join('')}
+                    ${question.options ? question.options.map(opt => `<option value="${opt}">${opt}</option>`).join('') : ''}
                 </select>`;
             break;
     }
 
     return `
-        <div class="question" data-id="${question.id}">
-            <label for="${question.id}">${question.question}</label>
-            ${inputHTML}
+        <div class="question-card" data-question="${question.id}">
+            <h3>${question.question}</h3>
             ${helpText}
+            ${inputHTML}
         </div>
     `;
 }
 
 function setupNavigation() {
-    if (!navigationButtons || !appQuestions) return;
+    const section = appQuestions[currentSection];
+    if (!section) return;
 
-    const totalSections = appQuestions.length - 1; // Subtract 1 for config section
-    navigationButtons.innerHTML = `
-        <button id="prevButton" ${currentSection === 0 ? 'disabled' : ''}>Previous</button>
-        <span>Section ${currentSection + 1} of ${totalSections}</span>
-        <button id="nextButton" ${currentSection === totalSections - 1 ? 'disabled' : ''}>Next</button>
-    `;
-
-    document.getElementById('prevButton')?.addEventListener('click', () => {
-        if (currentSection > 0) {
-            currentSection--;
-            displayCurrentSection();
-            setupNavigation();
-        }
-    });
-
-    document.getElementById('nextButton')?.addEventListener('click', () => {
-        if (currentSection < totalSections - 1) {
-            currentSection++;
-            displayCurrentSection();
-            setupNavigation();
-        }
-    });
-}
-
-function setupEventListeners() {
-    logger.debug('Setting up event listeners');
-    
-    // Form change events
-    if (form) {
-        form.addEventListener('change', (e) => {
-            logger.debug('Form change event:', e.target.id);
-            hasUnsavedChanges = true;
-            
-            if (e.target.type === 'select-multiple') {
-                const selectedValues = Array.from(e.target.selectedOptions).map(opt => opt.value);
-                logger.debug('Multiple select values:', selectedValues);
-            }
-            
-            updateCompletionStatus();
-        });
-
-        form.addEventListener('input', (e) => {
-            logger.debug('Form input event:', e.target.id);
-            if (e.target.tagName.toLowerCase() === 'textarea' || e.target.tagName.toLowerCase() === 'input') {
-                hasUnsavedChanges = true;
-                updateCompletionStatus();
-            }
-        });
-    }
-
-    // Section navigation buttons
+    // Update section navigation buttons
     if (prevSectionBtn) {
-        prevSectionBtn.addEventListener('click', () => {
-            const sectionKeys = Object.keys(sections);
-            const currentSectionKey = sectionKeys[currentSection];
-            const prevSectionKey = sections[currentSectionKey].prev;
-            
-            if (prevSectionKey) {
-                currentSection = sectionKeys.indexOf(prevSectionKey);
-                currentQuestionIndex = 0;
-                updateDisplay();
-            }
-        });
+        prevSectionBtn.disabled = currentSection <= 0;
     }
-    
     if (nextSectionBtn) {
-        nextSectionBtn.addEventListener('click', () => {
-            const sectionKeys = Object.keys(sections);
-            const currentSectionKey = sectionKeys[currentSection];
-            const nextSectionKey = sections[currentSectionKey].next;
-            
-            if (nextSectionKey) {
-                currentSection = sectionKeys.indexOf(nextSectionKey);
-                currentQuestionIndex = 0;
-                updateDisplay();
-            }
-        });
+        nextSectionBtn.disabled = currentSection >= appQuestions.length - 1;
     }
-    
-    // Question navigation buttons
-    if (prevQuestionBtn) {
-        prevQuestionBtn.addEventListener('click', () => {
-            if (currentQuestionIndex > 0) {
-                currentQuestionIndex--;
-                updateDisplay();
-            }
-        });
-    }
-    
-    if (nextQuestionBtn) {
-        nextQuestionBtn.addEventListener('click', () => {
-            const sectionKeys = Object.keys(sections);
-            const currentSectionKey = sectionKeys[currentSection];
-            const sectionData = sections[currentSectionKey];
-            
-            const isLastSection = !sectionData.next;
-            const isLastQuestion = currentQuestionIndex === sectionData.questions.length - 1;
-            const isVeryLastQuestion = isLastSection && isLastQuestion;
 
-            if (isVeryLastQuestion) {
-                // If this is the last question, trigger save
-                handleSaveButtonClick();
-            } else if (currentQuestionIndex < sectionData.questions.length - 1) {
-                // Move to next question in current section
-                currentQuestionIndex++;
-                updateDisplay();
-            } else if (sectionData.next) {
-                // Move to next section
-                currentSection = sectionKeys.indexOf(sectionData.next);
-                currentQuestionIndex = 0;
-                updateDisplay();
-            }
-        });
+    // Update question navigation buttons
+    if (prevQuestionBtn) {
+        prevQuestionBtn.disabled = currentSection === 0 && currentQuestionIndex === 0;
     }
-    
-    // Skip question button
-    if (skipQuestionBtn) {
-        skipQuestionBtn.addEventListener('click', () => {
-            // Same behavior as next question but without save on last question
-            const sectionKeys = Object.keys(sections);
-            const currentSectionKey = sectionKeys[currentSection];
-            const sectionData = sections[currentSectionKey];
-            
-            if (currentQuestionIndex < sectionData.questions.length - 1) {
-                currentQuestionIndex++;
-                updateDisplay();
-            } else if (sectionData.next) {
-                currentSection = sectionKeys.indexOf(sectionData.next);
-                currentQuestionIndex = 0;
-                updateDisplay();
-            }
-        });
+    if (nextQuestionBtn) {
+        const isLastQuestion = currentQuestionIndex === section.questions.length - 1;
+        const isLastSection = currentSection === appQuestions.length - 1;
+        nextQuestionBtn.disabled = isLastQuestion && isLastSection;
     }
-    
-    // Save and close buttons
-    if (saveButton) saveButton.addEventListener('click', handleSaveButtonClick);
-    if (closeButton) closeButton.addEventListener('click', handleCloseButtonClick);
-    if (confirmCloseBtn) confirmCloseBtn.addEventListener('click', () => {
-        hideCloseConfirmationModal();
-        closeWindow();
-    });
-    if (cancelCloseBtn) cancelCloseBtn.addEventListener('click', hideCloseConfirmationModal);
-    if (completionOkBtn) completionOkBtn.addEventListener('click', () => completionModal.style.display = 'none');
+
+    // Update progress indicators
+    if (currentQuestionNum && totalQuestionsDisplay) {
+        currentQuestionNum.textContent = (currentQuestionIndex + 1).toString();
+        totalQuestionsDisplay.textContent = section.questions.length.toString();
+    }
+
+    // Update section progress bar
+    if (sectionProgress) {
+        const progress = ((currentQuestionIndex + 1) / section.questions.length) * 100;
+        sectionProgress.style.width = `${progress}%`;
+    }
+
+    // Update section title
+    if (currentSectionDisplay) {
+        currentSectionDisplay.textContent = section.section;
+    }
 }
 
 function updateDisplay() {
     logger.debug('Updating display', { currentSection, currentQuestionIndex });
     
-    // Hide all sections and questions first
-    document.querySelectorAll('.form-section').forEach(section => {
-        section.style.display = 'none';
-        section.querySelectorAll('.question-card').forEach(card => {
-            card.style.display = 'none';
-        });
-    });
-    
-    // Get current section
-    const sectionKeys = Object.keys(sections);
-    const currentSectionKey = sectionKeys[currentSection];
-    const sectionData = sections[currentSectionKey];
-    
-    if (!sectionData) {
-        logger.error('Invalid section:', currentSectionKey);
+    if (!appQuestions) {
+        logger.debug('No questions data available');
         return;
     }
     
-    // Show current section
-    const sectionElement = document.getElementById(currentSectionKey);
-    if (sectionElement) {
-        sectionElement.style.display = 'block';
-        
-        // Show only current question
-        const currentQuestion = sectionData.questions[currentQuestionIndex];
-        if (currentQuestion) {
-            const questionCard = sectionElement.querySelector(`[data-question="${currentQuestion.id}"]`);
-            if (questionCard) {
-                questionCard.style.display = 'block';
-            }
-        }
-        
-        // Update section title and progress
-        if (currentSectionDisplay) {
-            currentSectionDisplay.textContent = sectionData.title;
+    // Skip the config section (index 0)
+    const section = appQuestions[currentSection + 1];
+    if (!section) {
+        logger.error('Invalid section:', currentSection);
+        return;
+    }
+    
+    // Show current question
+    const currentQuestion = section.questions[currentQuestionIndex];
+    if (currentQuestion) {
+        const questionCard = document.querySelector(`[data-question="${currentQuestion.id}"]`);
+        if (questionCard) {
+            questionCard.style.display = 'block';
         }
     }
     
-    // Update navigation buttons
-    updateNavigationButtons();
+    // Update section title
+    if (currentSectionDisplay) {
+        currentSectionDisplay.textContent = section.section;
+    }
     
-    // Update progress
+    // Update navigation and progress
+    setupNavigation();
     updateProgress();
-    
-    // Update question counter
     updateQuestionCounter();
 }
 
-function updateNavigationButtons() {
-    const sectionKeys = Object.keys(sections);
-    const currentSectionKey = sectionKeys[currentSection];
-    const sectionData = sections[currentSectionKey];
-    
-    // Previous section button
-    if (prevSectionBtn) {
-        prevSectionBtn.disabled = !sectionData.prev;
-    }
-    
-    // Next section button
-    if (nextSectionBtn) {
-        nextSectionBtn.disabled = !sectionData.next;
-    }
-    
-    // Previous question button
-    if (prevQuestionBtn) {
-        prevQuestionBtn.disabled = currentQuestionIndex === 0;
-    }
-    
-    // Next/Finish question button
-    if (nextQuestionBtn) {
-        const isLastSection = !sectionData.next;
-        const isLastQuestion = currentQuestionIndex === sectionData.questions.length - 1;
-        const isVeryLastQuestion = isLastSection && isLastQuestion;
-
-        if (isVeryLastQuestion) {
-            nextQuestionBtn.textContent = 'Finish';
-            nextQuestionBtn.classList.add('finish-button');
-        } else {
-            nextQuestionBtn.textContent = 'Next >';
-            nextQuestionBtn.classList.remove('finish-button');
-        }
-        
-        nextQuestionBtn.disabled = isLastQuestion && !sectionData.next;
-    }
-}
-
 function updateProgress() {
-    const sectionKeys = Object.keys(sections);
-    const currentSectionKey = sectionKeys[currentSection];
-    const sectionData = sections[currentSectionKey];
+    const section = appQuestions[currentSection + 1];
+    if (!section) return;
     
     // Calculate progress for current section
-    const totalQuestions = sectionData.questions.length;
+    const totalQuestions = section.questions.length;
     const progressPercent = ((currentQuestionIndex + 1) / totalQuestions) * 100;
     
     if (sectionProgress) {
@@ -673,13 +510,12 @@ function updateProgress() {
 }
 
 function updateQuestionCounter() {
-    const sectionKeys = Object.keys(sections);
-    const currentSectionKey = sectionKeys[currentSection];
-    const sectionData = sections[currentSectionKey];
+    const section = appQuestions[currentSection + 1];
+    if (!section) return;
     
     if (currentQuestionNum && totalQuestionsDisplay) {
         currentQuestionNum.textContent = (currentQuestionIndex + 1).toString();
-        totalQuestionsDisplay.textContent = sectionData.questions.length.toString();
+        totalQuestionsDisplay.textContent = section.questions.length.toString();
     }
 }
 
@@ -719,88 +555,165 @@ function updateCompletionStatus() {
     }
 }
 
-async function handleSaveButtonClick() {
-    logger.debug('Save button clicked - starting save process');
-    const form = document.getElementById('appQuestionsForm');
-    if (!form) {
-        logger.error('Form element not found with ID: appQuestionsForm');
-        return;
+function shouldSkipSection(sectionIndex) {
+    const section = appQuestions[sectionIndex];
+    if (!section) return false;
+
+    // If it's the COTS Details section
+    if (section.section === "COTS Details") {
+        // Get the app type answer from the form data
+        const appTypeInput = document.getElementById('app_type');
+        if (appTypeInput && appTypeInput.value === 'In-House Custom Built') {
+            logger.debug('Skipping COTS Details section due to In-House Custom Built selection');
+            return true;
+        }
     }
+    return false;
+}
 
+function handleNextQuestion() {
+    const section = appQuestions[currentSection];
+    if (!section) return;
+
+    // If there are more questions in the current section
+    if (currentQuestionIndex < section.questions.length - 1) {
+        currentQuestionIndex++;
+        displayCurrentSection();
+    } 
+    // If we're at the last question of the current section and there are more sections
+    else if (currentSection < appQuestions.length - 1) {
+        let nextSection = currentSection + 1;
+        // Skip COTS section if needed
+        while (shouldSkipSection(nextSection) && nextSection < appQuestions.length - 1) {
+            logger.debug('Skipping section:', appQuestions[nextSection].section);
+            nextSection++;
+        }
+        currentSection = nextSection;
+        currentQuestionIndex = 0;
+        displayCurrentSection();
+    }
+}
+
+function handlePrevQuestion() {
+    // If we can go to the previous question in current section
+    if (currentQuestionIndex > 0) {
+        currentQuestionIndex--;
+        displayCurrentSection();
+    } 
+    // If we're at the first question of the section and there are previous sections
+    else if (currentSection > 0) {
+        let prevSection = currentSection - 1;
+        // Skip COTS section if needed
+        while (shouldSkipSection(prevSection) && prevSection > 0) {
+            logger.debug('Skipping section (backwards):', appQuestions[prevSection].section);
+            prevSection--;
+        }
+        currentSection = prevSection;
+        const prevSectionData = appQuestions[prevSection];
+        currentQuestionIndex = prevSectionData.questions.length - 1;
+        displayCurrentSection();
+    }
+}
+
+function handleNextSection() {
+    if (currentSection < appQuestions.length - 1) {
+        currentSection++;
+        // Skip COTS section if needed
+        while (shouldSkipSection(currentSection) && currentSection < appQuestions.length - 1) {
+            currentSection++;
+        }
+        currentQuestionIndex = 0;
+        displayCurrentSection();
+    }
+}
+
+function handlePrevSection() {
+    if (currentSection > 0) {
+        currentSection--;
+        // Skip COTS section if needed
+        while (shouldSkipSection(currentSection) && currentSection > 0) {
+            currentSection--;
+        }
+        currentQuestionIndex = 0;
+        displayCurrentSection();
+    }
+}
+
+// Update the form change handler to handle app type changes
+function handleFormChange(e) {
+    logger.debug('Form change event:', e.target.id);
+    hasUnsavedChanges = true;
+    
+    // If app type changed, we might need to update navigation
+    if (e.target.id === 'appType') {
+        // If we're currently in the COTS section and switched to In-House
+        if (e.target.value === 'In-House Custom Built') {
+            const currentSectionObj = appQuestions[currentSection];
+            if (currentSectionObj && currentSectionObj.section === "COTS Details") {
+                // Move to the next non-COTS section
+                handleNextSection();
+            }
+        }
+    }
+    
+    updateCompletionStatus();
+}
+
+// Update the save function to handle skipped sections
+async function handleSaveButtonClick() {
     try {
-        // Collect form data
-        logger.debug('Collecting form data');
-        const data = {};
+        logger.debug('Save button clicked');
         
-        // Get all form elements
-        const formElements = form.elements;
-        for (let i = 0; i < formElements.length; i++) {
-            const element = formElements[i];
-            
-            // Skip elements without a name/id
-            if (!element.name && !element.id) continue;
-            
-            const fieldName = element.name || element.id;
-            
-            // Handle different input types
-            if (element.type === 'select-multiple') {
-                // Handle multiple select
-                data[fieldName] = Array.from(element.selectedOptions).map(opt => opt.value);
-                logger.debug(`Collected multiple select field - ${fieldName}:`, data[fieldName]);
-            } else if (element.type === 'select-one') {
-                // Handle single select
-                if (element.value) {
-                    data[fieldName] = element.value;
-                    logger.debug(`Collected select field - ${fieldName}: ${element.value}`);
-                }
-            } else if (element.type === 'checkbox') {
-                // Handle checkbox
-                data[fieldName] = element.checked;
-                logger.debug(`Collected checkbox field - ${fieldName}: ${element.checked}`);
-            } else if (element.value && element.value.trim() !== '') {
-                // Handle text, email, textarea, etc.
-                data[fieldName] = element.value.trim();
-                logger.debug(`Collected input field - ${fieldName}: ${element.value}`);
+        // Get the current application name
+        const applicationInput = document.getElementById('application');
+        const appName = applicationInput ? applicationInput.value : applicationName;
+        
+        if (!appName) {
+            logger.error('No application name available');
+            showNotification('Error: No application name available', 'error');
+            return;
+        }
+        
+        // Get the directory path from the main process
+        const customerDir = await ipcRenderer.invoke('get-customer-directory');
+        if (!customerDir) {
+            logger.error('No customer directory available');
+            showNotification('Error: No customer directory available', 'error');
+            return;
+        }
+        
+        // Create the application directory if it doesn't exist
+        const appDir = path.join(customerDir, appName);
+        if (!fs.existsSync(appDir)) {
+            fs.mkdirSync(appDir, { recursive: true });
+        }
+        
+        // Save the form data
+        const formData = new FormData(form);
+        const answers = {};
+        
+        // Process form data
+        for (const [key, value] of formData.entries()) {
+            if (key.startsWith('question_')) {
+                const questionId = key.replace('question_', '');
+                answers[questionId] = value;
             }
         }
-
-        // Log collected data
-        logger.debug('All form data collected:', data);
-
-        // Create the output data
-        logger.debug(`Creating output data object for app: ${applicationName}`);
-        const outputData = {
-            applicationName: applicationName,
-            appQuestions: data,
-            timestamp: new Date().toISOString(),
-            summary: {
-                totalQuestions: document.querySelectorAll('.question-card').length - 1, // Exclude application name
-                answeredQuestions: Object.keys(data).length - 1, // Exclude application name
-                isCompleted: true
-            }
-        };
-        logger.debug('Output data created:', outputData);
-
-        // Send the data to the main process
-        logger.debug('Sending save-app-questions event to main process');
-        const response = await ipcRenderer.invoke('save-app-questions', outputData);
-        logger.debug('Received response from main process:', response);
         
-        if (response.success) {
-            logger.info(`Save successful. File saved at: ${response.filePath}`);
-            // Show completion modal
-            logger.debug('Showing completion modal');
-            showCompletionModal(applicationName);
-            // Update UI state
-            hasUnsavedChanges = false;
-            logger.info('Application questions saved successfully:', applicationName);
-        } else {
-            logger.error('Save failed with error:', response.message);
-            throw new Error(response.message);
-        }
+        // Save to file
+        const answersPath = path.join(appDir, 'answers.json');
+        fs.writeFileSync(answersPath, JSON.stringify(answers, null, 2));
+        
+        // Update completion status
+        hasUnsavedChanges = false;
+        updateCompletionStatus();
+        
+        showNotification('Answers saved successfully');
+        logger.info('Answers saved successfully', { appName, answersPath });
+        
     } catch (error) {
-        logger.error('Error in save process:', error);
-        alert('An error occurred while saving the application questions: ' + error.message);
+        logger.error('Error saving answers:', error);
+        showNotification('Error saving answers: ' + error.message, 'error');
     }
 }
 
@@ -885,6 +798,14 @@ async function loadAppData() {
             // Populate each form field
             const questions = appData.appQuestions;
             
+            // Handle App Type first to set up COTS fields correctly
+            const appTypeField = document.getElementById('appType');
+            if (appTypeField && questions.appType) {
+                appTypeField.value = questions.appType;
+                // Trigger the change event to handle COTS fields
+                appTypeField.dispatchEvent(new Event('change'));
+            }
+
             // Handle migration drivers (multiple select)
             const migrationDrivers = document.getElementById('migrationDrivers');
             if (migrationDrivers && questions.migrationDrivers) {
@@ -896,43 +817,21 @@ async function loadAppData() {
             }
 
             // Handle all other fields
-            const fields = [
-                'userBase', 'appDescription', 'appFunction', 'appType',
-                'businessCritical', 'appCriticality', 'appOwner', 'appOwnerEmail',
-                'appSme', 'appSmeEmail', 'appOwnerAzureKnowledge', 'appSmeAzureKnowledge',
-                'disasterRecovery', 'highAvailability', 'piiData',
-                'backupRestorePolicies', 'resilienceDataRetention', 'backups',
-                'businessUnit', 'deployment', 'supportedBy', 'supportTeamSize',
-                'supportTeamAzureKnowledge', 'healthStability', 'healthDocumentation',
-                'inherentRisk', 'materiality'
-            ];
-
-            fields.forEach(fieldId => {
+            Object.entries(questions).forEach(([fieldId, value]) => {
+                if (fieldId === 'application' || fieldId === 'migrationDrivers') return;
+                
                 const element = document.getElementById(fieldId);
-                if (element && questions[fieldId] !== undefined) {
-                    element.value = questions[fieldId];
+                if (element) {
+                    // Don't set COTS values if app type is In-House Custom Built
+                    if (questions.appType === 'In-House Custom Built' && fieldId.startsWith('appTypeCots')) {
+                        element.value = '';
+                        element.disabled = true;
+                    } else {
+                        element.value = value;
+                        element.disabled = false;
+                    }
                 }
             });
-
-            // Handle COTS specific fields
-            if (questions.appType === 'COTS/ISV') {
-                const cotsFields = [
-                    'appTypeCotsSoftwareName', 'appTypeCotsVendorName',
-                    'appTypeCotsVersionInstalled', 'appTypeCotsUrl',
-                    'appTypeCotsCanRunInAzure', 'appTypeCotsCanModernisedPaas',
-                    'appTypeCotsNotes'
-                ];
-
-                cotsFields.forEach(fieldId => {
-                    const element = document.getElementById(fieldId);
-                    if (element && questions[fieldId] !== undefined) {
-                        element.value = questions[fieldId];
-                    }
-                });
-            }
-
-            // Update COTS section visibility
-            updateCOTSSectionVisibility();
             
             logger.info('Successfully loaded previous app questions data');
         } else {
@@ -954,4 +853,441 @@ function updateCOTSSectionVisibility() {
 function closeWindow() {
     logger.debug('Closing app questions window');
     ipcRenderer.send('close-app-questions');
+}
+
+async function exportToExcel() {
+    try {
+        console.log('Starting export to Excel...');
+        const filePath = path.join(app.getPath('desktop'), 'Customer X', `${applicationName}_app_questions.json`);
+        
+        // Read the JSON file
+        const fileContent = await fs.readFile(filePath, 'utf8');
+        const fileData = JSON.parse(fileContent);
+        
+        console.log('File data loaded:', fileData);
+        
+        if (!fileData.appQuestions) {
+            throw new Error('Invalid file structure: missing appQuestions data');
+        }
+
+        // Prepare data for Excel
+        const rows = [];
+        const questions = fileData.appQuestions;
+        
+        // Skip 'application' since it's redundant with applicationName
+        for (const [key, value] of Object.entries(questions)) {
+            if (key === 'application') continue;
+            
+            // Special handling for migrationDrivers array
+            if (key === 'migrationDrivers') {
+                rows.push(['Migration Drivers', Array.isArray(value) ? value.join(', ') : value]);
+                continue;
+            }
+            
+            // Format the question key for better readability
+            const formattedQuestion = key
+                .replace(/_/g, ' ')
+                .replace(/([A-Z])/g, ' $1')
+                .toLowerCase()
+                .split(' ')
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(' ');
+            
+            rows.push([formattedQuestion, value]);
+        }
+        
+        // Add summary information
+        if (fileData.summary) {
+            rows.push(['', '']); // Empty row for spacing
+            rows.push(['Total Questions', fileData.summary.totalQuestions]);
+            rows.push(['Answered Questions', fileData.summary.answeredQuestions]);
+            rows.push(['Completed', fileData.summary.isCompleted ? 'Yes' : 'No']);
+            rows.push(['Timestamp', new Date(fileData.timestamp).toLocaleString()]);
+        }
+
+        // Create workbook and worksheet
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('App Questions');
+
+        // Add header row
+        worksheet.addRow(['Question', 'Answer']);
+        
+        // Add data rows
+        rows.forEach(row => worksheet.addRow(row));
+
+        // Style the worksheet
+        worksheet.getColumn(1).width = 40;
+        worksheet.getColumn(2).width = 60;
+        
+        // Style header row
+        worksheet.getRow(1).font = { bold: true };
+        worksheet.getRow(1).fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFE0E0E0' }
+        };
+
+        // Save the workbook
+        const excelFilePath = path.join(app.getPath('desktop'), `${applicationName}_app_questions.xlsx`);
+        await workbook.xlsx.writeFile(excelFilePath);
+        
+        console.log('Excel file created successfully at:', excelFilePath);
+        
+        // Show success message
+        const notification = document.createElement('div');
+        notification.className = 'notification success';
+        notification.textContent = `Excel file exported successfully to: ${excelFilePath}`;
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.remove();
+        }, 5000);
+        
+    } catch (error) {
+        console.error('Error exporting to Excel:', error);
+        
+        // Show error message
+        const notification = document.createElement('div');
+        notification.className = 'notification error';
+        notification.textContent = `Error exporting to Excel: ${error.message}`;
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.remove();
+        }, 5000);
+    }
+}
+
+// Add event listener for export button
+document.getElementById('exportButton').addEventListener('click', exportToExcel);
+
+// Add this function to show notifications
+function showNotification(message, type = 'success') {
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.remove();
+    }, 5000);
+}
+
+async function handleExportButtonClick() {
+    try {
+        const appNameElement = document.getElementById('applicationName');
+        if (!appNameElement) {
+            console.error('Application name element not found');
+            return;
+        }
+
+        const appName = appNameElement.value;
+        if (!appName) {
+            console.error('Application name is required for export');
+            return;
+        }
+
+        const exportButton = document.getElementById('exportButton');
+        exportButton.disabled = true;
+        exportButton.textContent = 'Exporting...';
+
+        const result = await window.electronAPI.exportAppQuestions(appName);
+        
+        if (result.success) {
+            showNotification('Export successful! File saved to: ' + result.filePath, 'success');
+        } else {
+            showNotification('Export failed: ' + result.error, 'error');
+        }
+    } catch (error) {
+        console.error('Error during export:', error);
+        showNotification('Export failed: ' + error.message, 'error');
+    } finally {
+        const exportButton = document.getElementById('exportButton');
+        exportButton.disabled = false;
+        exportButton.textContent = 'Export';
+    }
+}
+
+// Add this function with other handlers
+async function handleExport() {
+    try {
+        const appName = document.getElementById('applicationName').value;
+        if (!appName) {
+            showNotification('Please enter an application name first.', 'error');
+            return;
+        }
+
+        exportButton.disabled = true;
+        showNotification('Exporting data...', 'info');
+
+        const response = await window.electronAPI.exportAppQuestions({ appName });
+        
+        if (response.success) {
+            showNotification(`Successfully exported to ${response.filePath}`, 'success');
+        } else {
+            showNotification(response.error || 'Export failed', 'error');
+        }
+    } catch (error) {
+        console.error('Export error:', error);
+        showNotification('Failed to export data', 'error');
+    } finally {
+        exportButton.disabled = false;
+    }
+}
+
+function handleAppTypeChange(event) {
+    const appType = event.target.value;
+    const cotsFields = [
+        'appTypeCotsName',
+        'appTypeCotsVendorName',
+        'appTypeCotsVersionInstalled',
+        'appTypeCotsUrl',
+        'appTypeCotsCanRunInAzure',
+        'appTypeCotsCanModernisedPaas',
+        'appTypeCotsNotes'
+    ];
+
+    if (appType === 'In-House Custom Built') {
+        // Clear and disable COTS fields
+        cotsFields.forEach(fieldId => {
+            const field = document.getElementById(fieldId);
+            if (field) {
+                field.value = '';
+                field.disabled = true;
+            }
+        });
+    } else {
+        // Enable COTS fields
+        cotsFields.forEach(fieldId => {
+            const field = document.getElementById(fieldId);
+            if (field) {
+                field.disabled = false;
+            }
+        });
+    }
+}
+
+function setupEventListeners() {
+    logger.debug('Setting up event listeners');
+    try {
+        // Form change events
+        if (form) {
+            form.addEventListener('change', handleFormChange);
+            form.addEventListener('input', handleFormInput);
+        }
+
+        // Section navigation
+        if (prevSectionBtn) {
+            prevSectionBtn.addEventListener('click', handlePrevSection);
+        }
+        if (nextSectionBtn) {
+            nextSectionBtn.addEventListener('click', handleNextSection);
+        }
+
+        // Question navigation
+        if (prevQuestionBtn) {
+            prevQuestionBtn.addEventListener('click', handlePrevQuestion);
+        }
+        if (nextQuestionBtn) {
+            nextQuestionBtn.addEventListener('click', handleNextQuestion);
+        }
+        if (skipQuestionBtn) {
+            skipQuestionBtn.addEventListener('click', handleSkipQuestion);
+        }
+
+        // Action buttons
+        if (saveButton) {
+            saveButton.addEventListener('click', handleSaveButtonClick);
+        }
+        if (closeButton) {
+            closeButton.addEventListener('click', handleCloseButtonClick);
+        }
+        if (exportButton) {
+            exportButton.addEventListener('click', handleExportButtonClick);
+        }
+        if (completionOkBtn) {
+            completionOkBtn.addEventListener('click', () => {
+                if (completionModal) {
+                    completionModal.style.display = 'none';
+                }
+            });
+        }
+
+        // Add event listener for App Type changes
+        const appTypeSelect = document.getElementById('appType');
+        if (appTypeSelect) {
+            appTypeSelect.addEventListener('change', handleAppTypeChange);
+        }
+
+        logger.debug('Event listeners set up successfully');
+    } catch (error) {
+        logger.error('Error setting up event listeners:', error);
+    }
+}
+
+// Event handler functions
+function handleFormChange(e) {
+    logger.debug('Form change event:', e.target.id);
+    hasUnsavedChanges = true;
+    
+    // If app type changed, we might need to update navigation
+    if (e.target.id === 'appType') {
+        // If we're currently in the COTS section and switched to In-House
+        if (e.target.value === 'In-House Custom Built') {
+            const currentSectionObj = appQuestions[currentSection];
+            if (currentSectionObj && currentSectionObj.section === "COTS Details") {
+                // Move to the next non-COTS section
+                handleNextSection();
+            }
+        }
+    }
+    
+    updateCompletionStatus();
+}
+
+function handleFormInput(e) {
+    if (e.target.tagName.toLowerCase() === 'textarea' || e.target.tagName.toLowerCase() === 'input') {
+        logger.debug('Form input event:', e.target.id);
+        hasUnsavedChanges = true;
+        updateCompletionStatus();
+    }
+}
+
+function handlePrevSection() {
+    if (currentSection > 0) {
+        currentSection--;
+        // Skip COTS section if needed
+        while (shouldSkipSection(currentSection) && currentSection > 0) {
+            currentSection--;
+        }
+        currentQuestionIndex = 0;
+        displayCurrentSection();
+    }
+}
+
+function handleNextSection() {
+    if (currentSection < appQuestions.length - 1) {
+        currentSection++;
+        // Skip COTS section if needed
+        while (shouldSkipSection(currentSection) && currentSection < appQuestions.length - 1) {
+            currentSection++;
+        }
+        currentQuestionIndex = 0;
+        displayCurrentSection();
+    }
+}
+
+function handlePrevQuestion() {
+    // If we can go to the previous question in current section
+    if (currentQuestionIndex > 0) {
+        currentQuestionIndex--;
+        displayCurrentSection();
+    } 
+    // If we're at the first question of the section and there are previous sections
+    else if (currentSection > 0) {
+        let prevSection = currentSection - 1;
+        // Skip COTS section if needed
+        while (shouldSkipSection(prevSection) && prevSection > 0) {
+            logger.debug('Skipping section (backwards):', appQuestions[prevSection].section);
+            prevSection--;
+        }
+        currentSection = prevSection;
+        const prevSectionData = appQuestions[prevSection];
+        currentQuestionIndex = prevSectionData.questions.length - 1;
+        displayCurrentSection();
+    }
+}
+
+function handleNextQuestion() {
+    const section = appQuestions[currentSection];
+    if (!section) return;
+
+    // If there are more questions in the current section
+    if (currentQuestionIndex < section.questions.length - 1) {
+        currentQuestionIndex++;
+        displayCurrentSection();
+    } 
+    // If we're at the last question of the current section and there are more sections
+    else if (currentSection < appQuestions.length - 1) {
+        let nextSection = currentSection + 1;
+        // Skip COTS section if needed
+        while (shouldSkipSection(nextSection) && nextSection < appQuestions.length - 1) {
+            logger.debug('Skipping section:', appQuestions[nextSection].section);
+            nextSection++;
+        }
+        currentSection = nextSection;
+        currentQuestionIndex = 0;
+        displayCurrentSection();
+    }
+}
+
+function handleSkipQuestion() {
+    handleNextQuestion();
+}
+
+async function loadExistingAnswers() {
+    if (!applicationName) {
+        logger.debug('No application name set, skipping loading existing answers');
+        return;
+    }
+    
+    try {
+        const appData = await ipcRenderer.invoke('get-app-data', applicationName);
+        if (appData && appData.appQuestions) {
+            logger.debug('Found existing app data, populating form');
+            
+            Object.entries(appData.appQuestions).forEach(([fieldId, value]) => {
+                const element = document.getElementById(fieldId);
+                if (element) {
+                    if (element.type === 'select-multiple' && Array.isArray(value)) {
+                        Array.from(element.options).forEach(option => {
+                            option.selected = value.includes(option.value);
+                        });
+                    } else {
+                        element.value = value;
+                    }
+                }
+            });
+            
+            updateCompletionStatus();
+            logger.info('Successfully loaded previous app questions data');
+        } else {
+            logger.debug('No existing app data found');
+        }
+    } catch (error) {
+        logger.error('Error loading app data:', error);
+    }
+}
+
+// Load questions from JSON file
+async function loadQuestions() {
+    try {
+        logger.debug('Loading questions from JSON file');
+        const response = await ipcRenderer.invoke('load-app-questions');
+        logger.debug('Received response from load-app-questions:', response);
+        
+        if (!response || !response.success) {
+            throw new Error(response?.error || 'Failed to load questions');
+        }
+        
+        if (!response.data || !Array.isArray(response.data) || response.data.length === 0) {
+            throw new Error('Invalid questions data format');
+        }
+        
+        appQuestions = response.data;
+        logger.debug('Questions loaded successfully:', appQuestions);
+        initializeQuestions();
+    } catch (error) {
+        logger.error('Error loading questions:', error);
+        // Show error in UI
+        if (questionContainer) {
+            questionContainer.innerHTML = `
+                <div class="error-message">
+                    <h3>Error Loading Questions</h3>
+                    <p>There was a problem loading the application questions. Please try refreshing the page or contact support.</p>
+                    <p>Error: ${error.message}</p>
+                </div>
+            `;
+        }
+    }
 } 

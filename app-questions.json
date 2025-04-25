@@ -1,154 +1,67 @@
 [
   {
-    "config": {
-      "distributionThreshold": 78,
-      "tiebreakThreshold": 6
-    }
-  },
-  {
     "section": "Basic Application Information",
     "questions": [
       {
-        "id": "app_name",
-        "question": "What is the name of the application?",
+        "id": "app_description",
+        "question": "Can you briefly describe what this application does?",
         "type": "text",
-        "required": false,
-        "category": "identification",
-        "helpText": "The official name of the application as it appears in your systems inventory"
+        "validation": "none",
+        "required": true,
+        "sqlType": "varchar(max)"
       },
       {
-        "id": "app_description",
-        "question": "Please provide a brief description of the application and its primary functions",
-        "type": "textarea",
-        "required": false,
-        "category": "overview",
-        "helpText": "Include the main purpose of the application and key business functions it supports"
+        "id": "app_function",
+        "question": "What is the primary business function or purpose of this application?",
+        "type": "select",
+        "options": [
+          "Business Application",
+          "IT Tool"
+        ],
+        "required": true,
+        "sqlType": "varchar(max)"
+      },
+      {
+        "id": "migration_drivers",
+        "question": "What are the key drivers for migrating this application?",
+        "type": "multiselect",
+        "options": [
+          "Planned for Decom",
+          "No funding",
+          "Want to use PaaS",
+          "Need to rearchitect",
+          "Not used",
+          "Business critical app",
+          "Higher Availability",
+          "Faster Deployments",
+          "DC Exit"
+        ],
+        "required": true
       },
       {
         "id": "user_base",
         "question": "What is the size of the user base for this application?",
         "type": "select",
         "options": [
-          "Small (1-50 users)",
-          "Medium (51-200 users)",
-          "Large (201-1000 users)",
-          "Enterprise (1000+ users)"
+          ">10",
+          ">100",
+          ">250",
+          ">500",
+          ">1000",
+          "1000"
         ],
-        "required": false,
-        "category": "scale",
-        "helpText": "Select the option that best represents your active user base"
-      }
-    ]
-  },
-  {
-    "section": "Technical Assessment",
-    "questions": [
+        "required": true
+      },
       {
         "id": "app_type",
-        "question": "What type of application is this?",
+        "question": "Is this application COTS (Commercial Off-the-Shelf), SaaS, or custom-built?",
         "type": "select",
         "options": [
-          "Web Application",
-          "Desktop Application",
-          "Mobile Application",
-          "Client-Server Application",
-          "Microservice",
-          "Legacy System",
-          "Other"
+          "COTS/ISV",
+          "In-House Custom Built"
         ],
-        "required": false,
-        "category": "architecture",
-        "helpText": "Select the primary application type that best describes this system"
-      },
-      {
-        "id": "tech_stack",
-        "question": "What is the primary technology stack of the application?",
-        "type": "select-multiple",
-        "options": [
-          ".NET",
-          "Java",
-          "Python",
-          "Node.js",
-          "PHP",
-          "Ruby",
-          "Angular",
-          "React",
-          "Vue.js",
-          "Other"
-        ],
-        "required": false,
-        "category": "technology",
-        "helpText": "Select all technologies that are significant parts of the application"
-      },
-      {
-        "id": "database_type",
-        "question": "What type of database(s) does the application use?",
-        "type": "select-multiple",
-        "options": [
-          "SQL Server",
-          "Oracle",
-          "MySQL",
-          "PostgreSQL",
-          "MongoDB",
-          "Redis",
-          "None",
-          "Other"
-        ],
-        "required": false,
-        "category": "data",
-        "helpText": "Select all database types used by the application"
-      }
-    ]
-  },
-  {
-    "section": "Cloud Readiness",
-    "questions": [
-      {
-        "id": "app_owner_azure_knowledge",
-        "question": "What is the application owner's level of knowledge with Azure/cloud?",
-        "type": "select",
-        "options": [
-          "None",
-          "Basic Understanding",
-          "Intermediate",
-          "Advanced",
-          "Expert"
-        ],
-        "required": false,
-        "category": "expertise",
-        "helpText": "Assess the team's cloud expertise level"
-      },
-      {
-        "id": "current_hosting",
-        "question": "Where is the application currently hosted?",
-        "type": "select",
-        "options": [
-          "On-premises Data Center",
-          "Private Cloud",
-          "Public Cloud",
-          "Hybrid",
-          "Other"
-        ],
-        "required": false,
-        "category": "infrastructure",
-        "helpText": "Select the current hosting environment"
-      },
-      {
-        "id": "cloud_blockers",
-        "question": "Are there any known blockers for cloud migration?",
-        "type": "select-multiple",
-        "options": [
-          "None",
-          "Data Sovereignty",
-          "Security Requirements",
-          "Compliance Issues",
-          "Technical Dependencies",
-          "Cost Concerns",
-          "Other"
-        ],
-        "required": false,
-        "category": "constraints",
-        "helpText": "Select all factors that might impede cloud migration"
+        "required": true,
+        "sqlType": "varchar(50)"
       }
     ]
   },
@@ -157,35 +70,336 @@
     "questions": [
       {
         "id": "app_owner",
-        "question": "Who is the application owner?",
+        "question": "Who is the primary business owner of this application?",
         "type": "text",
-        "required": false,
-        "category": "ownership",
-        "helpText": "The person responsible for business decisions about the application"
+        "validation": "none",
+        "required": true,
+        "sqlType": "varchar(50)"
       },
       {
         "id": "app_owner_email",
-        "question": "What is the application owner's email?",
-        "type": "email",
-        "required": false,
-        "category": "contact",
-        "helpText": "Business owner's email address for communications"
+        "question": "What is the email address of the application owner?",
+        "type": "text",
+        "validation": "none",
+        "required": true,
+        "sqlType": "varchar(100)"
       },
       {
         "id": "app_sme",
-        "question": "Who is the technical SME for this application?",
+        "question": "Who is the technical SME (subject matter expert) for this application?",
         "type": "text",
-        "required": false,
-        "category": "technical_contact",
-        "helpText": "The person with the most technical knowledge about the application"
+        "validation": "none",
+        "required": true,
+        "sqlType": "varchar(100)"
       },
       {
         "id": "app_sme_email",
-        "question": "What is the technical SME's email?",
-        "type": "email",
+        "question": "What is the email address of the SME?",
+        "type": "text",
+        "validation": "none",
+        "required": true,
+        "sqlType": "varchar(100)"
+      },
+      {
+        "id": "app_owner_azure_knowledge",
+        "question": "How would you rate the application owner's knowledge of Azure/cloud?",
+        "type": "select",
+        "options": [
+          "None",
+          "Limited",
+          "Moderate",
+          "High"
+        ],
+        "required": true,
+        "sqlType": "varchar(100)"
+      },
+      {
+        "id": "app_sme_azure_knowledge",
+        "question": "How would you rate the SME's knowledge of Azure/cloud?",
+        "type": "select",
+        "options": [
+          "None",
+          "Limited",
+          "Moderate",
+          "High"
+        ],
+        "required": true,
+        "sqlType": "varchar(200)"
+      }
+    ]
+  },
+  {
+    "section": "Application Details",
+    "questions": [
+      {
+        "id": "business_critical",
+        "question": "Would you consider this application business-critical (i.e., a failure causes major impact)?",
+        "type": "select",
+        "options": [
+          "Yes",
+          "No"
+        ],
+        "required": true,
+        "sqlType": "bit"
+      },
+      {
+        "id": "app_criticality",
+        "question": "What is the criticality rating of the application (Low / Medium / High / Critical)?",
+        "type": "text",
+        "validation": "none",
+        "required": true,
+        "sqlType": "varchar(100)"
+      },
+      {
+        "id": "disaster_recovery",
+        "question": "Is a disaster recovery solution in place for this app?",
+        "type": "select",
+        "options": [
+          "Yes",
+          "No"
+        ],
+        "required": true,
+        "sqlType": "varchar(100)"
+      },
+      {
+        "id": "high_availiability",
+        "question": "Is high availability configured for this application?",
+        "type": "select",
+        "options": [
+          "Yes",
+          "No"
+        ],
+        "required": true,
+        "sqlType": "varchar(100)"
+      },
+      {
+        "id": "pii_data",
+        "question": "Does this application process or store personally identifiable information (PII)?",
+        "type": "select",
+        "options": [
+          "Critical",
+          "High",
+          "Medium",
+          "Low"
+        ],
+        "required": true,
+        "sqlType": "bit"
+      }
+    ]
+  },
+  {
+    "section": "COTS Details",
+    "questions": [
+      {
+        "id": "app_type_cots_software_name",
+        "question": "What is the name of the software?",
+        "type": "text",
+        "validation": "none",
         "required": false,
-        "category": "contact",
-        "helpText": "Technical SME's email address for communications"
+        "sqlType": "nvarchar(300)",
+        "showIf": "app_type === 'COTS/ISV'"
+      },
+      {
+        "id": "app_type_cots_vendor_name",
+        "question": "Who is the vendor for this software?",
+        "type": "text",
+        "validation": "none",
+        "required": false,
+        "sqlType": "nvarchar(300)",
+        "showIf": "app_type === 'COTS/ISV'"
+      },
+      {
+        "id": "app_type_cots_version_installed",
+        "question": "What version is currently in use?",
+        "type": "text",
+        "validation": "none",
+        "required": false,
+        "sqlType": "nvarchar(300)",
+        "showIf": "app_type === 'COTS/ISV'"
+      },
+      {
+        "id": "app_type_cots_url",
+        "question": "Is there a vendor/product website or URL?",
+        "type": "text",
+        "validation": "none",
+        "required": false,
+        "sqlType": "nvarchar(300)",
+        "showIf": "app_type === 'COTS/ISV'"
+      },
+      {
+        "id": "app_type_cots_can_run_in_azure",
+        "question": "Can this application or its components run in Azure as-is?",
+        "type": "select",
+        "options": [
+          "Yes",
+          "No",
+          "Not Known"
+        ],
+        "required": false,
+        "sqlType": "nvarchar(300)",
+        "showIf": "app_type === 'COTS/ISV'"
+      },
+      {
+        "id": "app_type_cots_can_modernised_paas",
+        "question": "Can the application be modernized using Azure PaaS services?",
+        "type": "text",
+        "validation": "none",
+        "required": false,
+        "sqlType": "nvarchar(500)",
+        "showIf": "app_type === 'COTS/ISV'"
+      },
+      {
+        "id": "app_type_cots_notes",
+        "question": "Are there any constraints or special notes regarding this application's architecture?",
+        "type": "text",
+        "validation": "none",
+        "required": false,
+        "sqlType": "nvarchar(max)",
+        "showIf": "app_type === 'COTS/ISV'"
+      }
+    ]
+  },
+  {
+    "section": "Support Information",
+    "questions": [
+      {
+        "id": "business_unit",
+        "question": "Which business unit or team is responsible for this application?",
+        "type": "text",
+        "validation": "none",
+        "required": true,
+        "sqlType": "varchar(50)"
+      },
+      {
+        "id": "deployment",
+        "question": "How is the application deployed (manual, semi-automated, CI/CD)?",
+        "type": "select",
+        "options": [
+          "Manual",
+          "Semi-Automated",
+          "CI/CD"
+        ],
+        "required": true,
+        "sqlType": "varchar(50)"
+      },
+      {
+        "id": "backup_restore_policies",
+        "question": "What is your current backup and restore policy or retention period?",
+        "type": "select",
+        "options": [
+          "6 Months",
+          "1 Year",
+          "2 Years",
+          "3 Years",
+          "4 Years",
+          "5 Years",
+          ">5 Years"
+        ],
+        "required": true,
+        "sqlType": "varchar(400)"
+      },
+      {
+        "id": "supported_by",
+        "question": "Is this application supported internally or by a third-party vendor?",
+        "type": "select",
+        "options": [
+          "Internally Supported",
+          "External Vendor"
+        ],
+        "required": true,
+        "sqlType": "varchar(100)"
+      },
+      {
+        "id": "support_team_size",
+        "question": "Approximately how many people support this application?",
+        "type": "select",
+        "options": [
+          ">5",
+          ">10",
+          "<10"
+        ],
+        "required": true,
+        "sqlType": "varchar(100)"
+      },
+      {
+        "id": "support_team_azure_knowledge",
+        "question": "How familiar is the support team with Azure/cloud services?",
+        "type": "select",
+        "options": [
+          "None",
+          "Limited",
+          "Moderate",
+          "High"
+        ],
+        "required": true,
+        "sqlType": "varchar(100)"
+      }
+    ]
+  },
+  {
+    "section": "Health & Risk",
+    "questions": [
+      {
+        "id": "resilience_data_retention",
+        "question": "What is your required data retention duration for disaster recovery or resilience?",
+        "type": "select",
+        "options": [
+          "6 Months",
+          "1 Year",
+          "2 Years",
+          "3 Years",
+          "4 Years",
+          "5 Years",
+          ">5 Years"
+        ],
+        "required": true,
+        "sqlType": "varchar(100)"
+      },
+      {
+        "id": "health_stability",
+        "question": "How stable is this application in its current form?",
+        "type": "select",
+        "options": [
+          "Stable",
+          "Intermittent Issues",
+          "Unstable"
+        ],
+        "required": true,
+        "sqlType": "varchar(100)"
+      },
+      {
+        "id": "health_documentation",
+        "question": "How well documented is this application and its support procedures?",
+        "type": "select",
+        "options": [
+          "Lacking",
+          "Detailed"
+        ],
+        "required": true,
+        "sqlType": "varchar(100)"
+      },
+      {
+        "id": "backups",
+        "question": "Are backups currently enabled for this application?",
+        "type": "select",
+        "options": [
+          "Yes",
+          "No"
+        ],
+        "required": true,
+        "sqlType": "bit"
+      },
+      {
+        "id": "inherent_risk",
+        "question": "What is the inherent risk level of this application?",
+        "type": "select",
+        "options": [
+          "None",
+          "Limited",
+          "Moderate",
+          "High"
+        ],
+        "required": true
       }
     ]
   }

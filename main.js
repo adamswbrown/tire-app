@@ -3,6 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const xlsx = require('xlsx');
 const Store = require('electron-store');
+const sanitize = require('sanitize-filename');
 
 let mainWindow;
 let startWindow;
@@ -111,7 +112,16 @@ ipcMain.on('show-main-window', () => {
 
 // Expose completed apps list to renderer process
 ipcMain.handle('get-completed-apps', () => {
-    return completedApps.map(app => app.name);
+    return completedApps.map(app => {
+        const result = [];
+        if (app.appQuestionsCompleted) {
+            result.push(app.name + '_app_questions');
+        }
+        if (app.strategyQuestions) {
+            result.push(app.name + '_strategy_questions');
+        }
+        return result;
+    }).flat();
 });
 
 // Handle Excel upload and send data back to renderer
@@ -237,7 +247,7 @@ ipcMain.on('open-strategy-questions-window', (event, appName) => {
         if (strategyQuestions) {
             strategyQuestionsWindow.webContents.send('strategy-questions-data', strategyQuestions);
         }
-        strategyQuestionsWindow.webContents.send('set-application-name', appName);
+        strategyQuestionsWindow.webContents.send('app-name', appName);
         strategyQuestionsWindow.webContents.send('set-distribution-threshold', distributionThreshold);
     });
 
@@ -458,26 +468,60 @@ async function loadCompletedAppsFromDirectory() {
         completedApps = [];
 
         for (const file of files) {
-            if (file.endsWith('.json')) {
-                const filePath = path.join(dir, file);
-                const data = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
-                
-                // Add the app data directly since it's already in the correct format
-                completedApps.push({
-                    name: data.applicationName,
-                    completedOn: data.assessmentHistory?.lastRestartDate || new Date().toISOString(),
-                    initialTIREPlacement: data.initialTimePlacement,
-                    confirmedTIREPlacement: data.confirmedTimePlacement,
-                    confirmedPlacementSet: true,
-                    previousTIREPlacement: data.assessmentHistory?.previousPlacements?.[0]?.previousStatus || null,
-                    answers: data.answers,
-                    summary: data.summary,
-                    assessmentHistory: data.assessmentHistory || {}
-                });
+            try {
+                if (file.endsWith('_app_questions.json') || file.endsWith('_strategy_questions.json')) {
+                    const filePath = path.join(dir, file);
+                    const data = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+                    
+                    // Skip if no application name
+                    if (!data.applicationName) continue;
+
+                    // Find existing app entry or create new one
+                    let appEntry = completedApps.find(app => app.name === data.applicationName);
+                    if (!appEntry) {
+                        appEntry = {
+                            name: data.applicationName,
+                            completedOn: new Date().toISOString(),
+                            initialTIREPlacement: "Not Set",
+                            confirmedTIREPlacement: "Not Set",
+                            confirmedPlacementSet: false,
+                            previousTIREPlacement: null,
+                            appQuestions: null,
+                            strategyQuestions: null,
+                            summary: null,
+                            assessmentHistory: {}
+                        };
+                        completedApps.push(appEntry);
+                    }
+
+                    // Update the appropriate section based on file type
+                    if (file.endsWith('_app_questions.json')) {
+                        appEntry.appQuestions = data.appQuestions;
+                        appEntry.appQuestionsCompleted = true;
+                    } else if (file.endsWith('_strategy_questions.json')) {
+                        appEntry.strategyQuestions = data.answers;
+                        appEntry.initialTIREPlacement = data.initialTimePlacement || "Not Set";
+                        appEntry.confirmedTIREPlacement = data.confirmedTimePlacement || "Not Set";
+                        appEntry.confirmedPlacementSet = true;
+                        appEntry.assessmentHistory = data.assessmentHistory || {};
+                    }
+
+                    // Update summary
+                    if (data.summary) {
+                        appEntry.summary = {
+                            ...appEntry.summary,
+                            ...data.summary
+                        };
+                    }
+                }
+            } catch (error) {
+                console.error('Error processing file:', file, error);
+                continue;
             }
         }
 
-        console.log(`Loaded ${completedApps.length} completed applications`);
+        console.log(`Loaded ${completedApps.length} applications`);
+        console.log('Completed apps:', completedApps);
     } catch (error) {
         console.error('Error loading completed apps:', error);
     }
@@ -1128,9 +1172,9 @@ ipcMain.handle('write-to-log', async (event, logEntry) => {
 // Add function to load app questions
 function loadAppQuestions() {
     try {
-        const appQuestionsPath = path.join(__dirname, 'app-questions.json');
-        const appQuestionsData = JSON.parse(fs.readFileSync(appQuestionsPath, 'utf8'));
-        return appQuestionsData;
+        const questionsPath = path.join(__dirname, 'app-questions.json');
+        const questionsData = JSON.parse(fs.readFileSync(questionsPath, 'utf8'));
+        return questionsData;
     } catch (error) {
         console.error('Error loading app-questions.json:', error);
         return null;
@@ -1192,23 +1236,50 @@ ipcMain.handle('save-app-questions', async (event, outputData) => {
 
         // Sanitize the application name for use in filename
         const sanitizedAppName = outputData.applicationName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+        // Append _app_questions to the filename
         const filePath = path.join(dir, `${sanitizedAppName}_app_questions.json`);
 
+        // Create the output data with the correct structure
+        const saveData = {
+            applicationName: outputData.applicationName,
+            appQuestions: outputData.appQuestions, // This should contain all the question answers
+            timestamp: new Date().toISOString(),
+            summary: {
+                totalQuestions: outputData.summary.totalQuestions,
+                answeredQuestions: outputData.summary.answeredQuestions,
+                isCompleted: outputData.summary.isCompleted
+            }
+        };
+
         // Save the file
-        fs.writeFileSync(filePath, JSON.stringify(outputData, null, 2), 'utf-8');
+        fs.writeFileSync(filePath, JSON.stringify(saveData, null, 2), 'utf-8');
         
-        // Update the main window if needed
+        // Update the completedApps array
+        const appIndex = completedApps.findIndex(app => app.name === outputData.applicationName);
+        if (appIndex >= 0) {
+            completedApps[appIndex].appQuestions = outputData.appQuestions;
+            completedApps[appIndex].appQuestionsCompleted = true;
+        } else {
+            completedApps.push({
+                name: outputData.applicationName,
+                appQuestions: outputData.appQuestions,
+                appQuestionsCompleted: true,
+                completedOn: new Date().toISOString()
+            });
+        }
+
+        // Notify the main window
         if (mainWindow) {
-            mainWindow.webContents.send('app-questions-completed', outputData.applicationName);
+            mainWindow.webContents.send('app-completed', outputData.applicationName);
         }
 
         return {
             success: true,
-            filePath: filePath,
-            message: 'File saved successfully'
+            message: 'Application questions saved successfully',
+            filePath: filePath
         };
     } catch (error) {
-        console.error('Error saving app questions:', error);
+        console.error('Error saving application questions:', error);
         return {
             success: false,
             message: `Failed to save application questions: ${error.message}`
@@ -1227,4 +1298,117 @@ ipcMain.on('close-app-questions', () => {
 // Add handler to get strategy questions data
 ipcMain.handle('get-strategy-questions', async () => {
     return loadStrategyQuestions();
+});
+
+// Function to export app questions to CSV
+function exportAppQuestionsToExcel() {
+    console.log('Starting app questions export...');
+    try {
+        // Get the save directory
+        const saveDir = store.get('completedAppsDirectory');
+        if (!saveDir) {
+            throw new Error('No save directory configured. Please set a directory in the start screen.');
+        }
+
+        // Get all JSON files in the directory
+        const files = fs.readdirSync(saveDir);
+        const appQuestionFiles = files.filter(file => file.endsWith('_app_questions.json'));
+
+        if (!appQuestionFiles || appQuestionFiles.length === 0) {
+            throw new Error('No completed application questions found to export');
+        }
+
+        // Create data structure to hold all questions and answers
+        const allQuestions = new Set();
+        const appData = new Map(); // Map of app name to its answers
+
+        // First pass: collect all possible questions and app data
+        for (const file of appQuestionFiles) {
+            try {
+                const filePath = path.join(saveDir, file);
+                const rawData = fs.readFileSync(filePath, 'utf-8');
+                const fileData = JSON.parse(rawData);
+
+                if (!fileData || !fileData.applicationName || !fileData.appQuestions) continue;
+
+                const appName = fileData.applicationName;
+                appData.set(appName, fileData.appQuestions);
+
+                // Collect all possible questions
+                Object.keys(fileData.appQuestions).forEach(question => {
+                    if (question !== 'application') {
+                        allQuestions.add(question);
+                    }
+                });
+            } catch (error) {
+                console.error('Error processing file:', file, error);
+                continue;
+            }
+        }
+
+        // Convert questions set to sorted array
+        const questionsList = Array.from(allQuestions).sort();
+
+        // Create CSV content array
+        const csvRows = [];
+        
+        // Add header row with application names
+        const headerRow = ['Question ID'];
+        appData.forEach((_, appName) => {
+            headerRow.push(appName);
+        });
+        csvRows.push(headerRow.join(','));
+
+        // Add data rows
+        questionsList.forEach(question => {
+            const row = [question];
+            appData.forEach((answers) => {
+                let value = answers[question];
+                if (Array.isArray(value)) {
+                    value = value.join('; ');
+                }
+                row.push(escapeCSV(value || ''));
+            });
+            csvRows.push(row.join(','));
+        });
+
+        // Create export filename with timestamp
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const exportPath = path.join(saveDir, `App-Questions-Export-${timestamp}.csv`);
+        
+        // Write CSV file
+        fs.writeFileSync(exportPath, csvRows.join('\n'), 'utf-8');
+        console.log('Export completed successfully');
+
+        return { success: true, path: exportPath };
+    } catch (error) {
+        console.error('Error in exportAppQuestionsToExcel:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+// Helper function to escape CSV values
+function escapeCSV(value) {
+    if (value === null || value === undefined) return '';
+    const stringValue = value.toString();
+    if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+        // Escape quotes by doubling them and wrap in quotes
+        return `"${stringValue.replace(/"/g, '""')}"`;
+    }
+    return stringValue;
+}
+
+// Add IPC handler for loading app questions
+ipcMain.handle('load-app-questions', async () => {
+    try {
+        const questions = loadAppQuestions();
+        if (questions) {
+            return { success: true, data: questions };
+        } else {
+            return { success: false, error: 'Failed to load questions' };
+        }
+    } catch (error) {
+        console.error('Error in load-app-questions handler:', error);
+        return { success: false, error: error.message };
+    }
 });

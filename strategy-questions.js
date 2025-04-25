@@ -46,234 +46,182 @@ const logger = {
 
 // Global variable to store strategy questions
 let strategyQuestions = null;
+let applicationName = '';
 
 // Initialize global variables for answered questions and total questions
 let totalQuestions = 0;
 let answeredQuestions = 0;
 
-let distributionThreshold = 80; // Default threshold, if not found in JSON
-let tiebreakThreshold = 3; // Default threshold for considering scores as ties
+let distributionThreshold = 80; // Default threshold
+let tiebreakThreshold = 3;
 
-// Listen for application name when opening strategy questions window
-ipcRenderer.on('set-application-name', async (event, appName) => {
-    logger.debug("Received application name:", appName);
-    // Update the application name in the header
-    const appNameElement = document.getElementById('applicationName');
-    if (appNameElement) {
-        appNameElement.textContent = appName;
-        // Now that we have the app name, initialize the UI
-        await initializeUI();
-    } else {
-        logger.error("Could not find applicationName element");
-    }
+// DOM Elements
+const closeButton = document.getElementById('closeAppBtn');
+const saveButton = document.getElementById('saveButton');
+const restartButton = document.getElementById('restartBtn');
+const explanationButton = document.getElementById('explanationBtn');
+const closeConfirmModal = document.getElementById('closeConfirmModal');
+const confirmCloseBtn = document.getElementById('confirmCloseBtn');
+const cancelCloseBtn = document.getElementById('cancelCloseBtn');
+
+// Initialize the UI when the DOM is loaded
+document.addEventListener('DOMContentLoaded', async () => {
+    logger.debug('DOMContentLoaded event fired');
+    setupEventListeners();
+    await initializeUI();
+});
+
+// Listen for application name
+ipcRenderer.on('app-name', (event, appName) => {
+    logger.debug('Received application name:', appName);
+    applicationName = appName;
+    document.getElementById('applicationName').textContent = appName;
+    document.title = `Strategy Questions - ${appName}`;
 });
 
 // Listen for strategy questions data
 ipcRenderer.on('strategy-questions-data', (event, questions) => {
-    console.log('Received strategy questions data');
-    strategyQuestions = questions;
-    initializeQuestions();
+    logger.debug('Received strategy questions data');
+    if (questions) {
+        strategyQuestions = questions;
+        initializeUI();
+    } else {
+        logger.error('Received empty questions data');
+    }
 });
 
-// Initialize by requesting questions data if not received
-if (!strategyQuestions) {
-    ipcRenderer.invoke('get-strategy-questions').then(questions => {
-        if (questions) {
-            strategyQuestions = questions;
-            initializeQuestions();
+// Function to generate category buttons
+function generateCategoryButtons() {
+    logger.debug('Starting to generate category buttons');
+    
+    if (!strategyQuestions) {
+        logger.error('Strategy questions not available');
+        return;
+    }
+
+    // Ensure strategyQuestions is an array and has items
+    if (!Array.isArray(strategyQuestions) || strategyQuestions.length === 0) {
+        logger.error('Strategy questions is not a valid array or is empty');
+        return;
+    }
+
+    try {
+        // Skip the first config object when getting categories
+        const questions = strategyQuestions.slice(1);
+        
+        // Extract unique categories, filter out null/undefined/empty values
+        const categories = [...new Set(questions.map(q => q.category))]
+            .filter(category => category && category.trim().length > 0);
+        
+        logger.debug('Found categories:', categories);
+        
+        const container = document.getElementById('categoryButtonsContainer');
+        if (!container) {
+            logger.error('Category buttons container not found!');
+            return;
+        }
+        
+        // Clear any existing buttons
+        container.innerHTML = '';
+        
+        // Create a button for each category
+        categories.forEach(category => {
+            const button = document.createElement('button');
+            button.className = 'category-button';
+            button.textContent = category;
+            button.addEventListener('click', () => {
+                // Remove active state from all buttons
+                document.querySelectorAll('.category-button').forEach(btn => 
+                    btn.classList.remove('active')
+                );
+                
+                // Add active state to clicked button
+                button.classList.add('active');
+                
+                // Filter the table
+                filterByCategory(category);
+            });
+            
+            container.appendChild(button);
+        });
+        
+        // Add reset button
+        const resetButton = document.createElement('button');
+        resetButton.className = 'category-button reset-button';
+        resetButton.textContent = 'Show All';
+        resetButton.addEventListener('click', () => {
+            document.querySelectorAll('.category-button').forEach(btn => 
+                btn.classList.remove('active')
+            );
+            resetButton.classList.add('active');
+            resetTable();
+        });
+        container.appendChild(resetButton);
+        
+        logger.debug('Category buttons generated successfully');
+    } catch (error) {
+        logger.error('Error generating category buttons:', error);
+    }
+}
+
+// Function to filter table by category
+function filterByCategory(category) {
+    const rows = document.querySelectorAll('#strategyQuestionsTable tbody tr');
+    rows.forEach(row => {
+        const categoryCell = row.querySelector('td:nth-child(7)'); // Category column
+        if (categoryCell) {
+            if (categoryCell.textContent.trim().toLowerCase() === category.toLowerCase()) {
+                row.style.display = ''; // Show matching rows
+            } else {
+                row.style.display = 'none'; // Hide non-matching rows
+            }
         }
     });
 }
 
-async function loadStrategyQuestions() {
-    try {
-        // Get the application name from the header
-        const appNameElement = document.getElementById('applicationName');
-        const applicationName = appNameElement ? appNameElement.textContent : null;
-
-        if (!applicationName || applicationName === "Application Name") {
-            logger.error("Application name not set properly");
-            return;
-        }
-
-        logger.info("Loading questions for application:", applicationName);
-
-        // Load template questions
-        const response = await fetch('questions.json');
-        if (!response.ok) {
-            throw new Error(`Failed to load questions.json: ${response.status} ${response.statusText}`);
-        }
-        
-        const templateData = await response.json();
-        logger.debug(`Loaded ${templateData.length} questions from template`);
-        
-        // Get thresholds from the first question's config
-        if (templateData[0] && templateData[0].config) {
-            distributionThreshold = templateData[0].config.distributionThreshold || 80;
-            tiebreakThreshold = templateData[0].config.tiebreakThreshold || 3;
-            
-            logger.debug(`Set thresholds - Distribution: ${distributionThreshold}%, Tiebreak: ${tiebreakThreshold}%`);
-            
-            // Update threshold displays immediately after loading
-            const thresholdElement = document.getElementById('distribution-threshold');
-            const tiebreakElement = document.getElementById('tiebreaker-threshold');
-            if (thresholdElement) {
-                thresholdElement.textContent = distributionThreshold;
-            }
-            if (tiebreakElement) {
-                tiebreakElement.textContent = tiebreakThreshold;
-            }
-        }
-
-        // If we have an application name, try to load saved data
-        if (applicationName && applicationName !== "Application Name") {
-            logger.debug("Attempting to load saved data for application:", applicationName);
-            const savedData = await ipcRenderer.invoke('get-app-data', applicationName);
-            logger.debug("Saved data loaded:", savedData);
-
-            if (savedData) {
-                // Load restart and treatment histories into localStorage
-                if (savedData.assessmentHistory?.restarts) {
-                    const restartHistory = JSON.parse(localStorage.getItem('restartHistory') || '{}');
-                    restartHistory[applicationName] = savedData.assessmentHistory.restarts;
-                    localStorage.setItem('restartHistory', JSON.stringify(restartHistory));
-                }
-
-                if (savedData.treatmentHistory) {
-                    const treatmentHistory = JSON.parse(localStorage.getItem('treatmentHistory') || '{}');
-                    treatmentHistory[applicationName] = savedData.treatmentHistory;
-                    localStorage.setItem('treatmentHistory', JSON.stringify(treatmentHistory));
-                }
-
-                // Set assessment state based on history
-                const mainContent = document.querySelector('.main-content');
-                if (mainContent) {
-                    // Check if it's a completed assessment (has valid confirmed placement)
-                    const isValidPlacement = savedData.confirmedTimePlacement && 
-                                          savedData.confirmedTimePlacement !== "Not Set" && 
-                                          savedData.confirmedTimePlacement !== "-" && 
-                                          !savedData.confirmedTimePlacement.includes('Below Threshold');
-
-                    if (isValidPlacement) {
-                        // Mark as completed if not currently being restarted
-                        if (!savedData.assessmentHistory?.hasBeenRestarted) {
-                            mainContent.classList.add('assessment-completed');
-                            console.log('Setting assessment-completed class for previously completed assessment');
-                            
-                            // Disable all inputs for completed assessments
-                            document.querySelectorAll('#strategyQuestionsTable select, #strategyQuestionsTable input').forEach(element => {
-                                element.disabled = true;
-                            });
-                            
-                            // Disable initial TIRE placement
-                            const initialTimePlacement = document.getElementById('initialTimePlacement');
-                            if (initialTimePlacement) {
-                                initialTimePlacement.disabled = true;
-                            }
-
-                            // Show restart button, hide save button
-                            const restartButton = document.getElementById('restartBtn');
-                            const saveButton = document.getElementById('saveButton');
-                            if (restartButton) restartButton.style.display = 'inline-block';
-                            if (saveButton) saveButton.style.display = 'none';
-                        }
-                    }
-                    
-                    // Handle restart state if applicable
-                    if (savedData.assessmentHistory?.hasBeenRestarted) {
-                        mainContent.classList.remove('assessment-completed');
-                        mainContent.classList.add('assessment-restarted');
-                        console.log('Setting assessment-restarted class');
-                        
-                        // Enable all inputs for restarted assessments
-                        document.querySelectorAll('#strategyQuestionsTable select, #strategyQuestionsTable input').forEach(element => {
-                            element.disabled = false;
-                        });
-                        
-                        // Enable initial TIRE placement
-                        const initialTimePlacement = document.getElementById('initialTimePlacement');
-                        if (initialTimePlacement) {
-                            initialTimePlacement.disabled = false;
-                        }
-
-                        // Show save button, hide restart button
-                        const restartButton = document.getElementById('restartBtn');
-                        const saveButton = document.getElementById('saveButton');
-                        if (restartButton) restartButton.style.display = 'none';
-                        if (saveButton) {
-                            saveButton.style.display = 'inline-block';
-                            saveButton.disabled = false;
-                        }
-                    }
-                }
-
-                // Load saved answers and other data
-                if (savedData.answers) {
-                    console.log("Found", savedData.answers.length, "saved answers");
-                    let matchedCount = 0;
-
-                    // Merge saved answers with template questions
-                    templateData.forEach(templateQuestion => {
-                        const savedAnswer = savedData.answers.find(answer => {
-                            const templateQuestionText = templateQuestion.question.trim().toLowerCase();
-                            const savedQuestionText = answer.question.trim().toLowerCase();
-                            const templateTime = templateQuestion.time.trim().toLowerCase();
-                            const savedTime = answer.time.trim().toLowerCase();
-                            
-                            const isMatch = templateQuestionText === savedQuestionText && templateTime === savedTime;
-                            return isMatch;
-                        });
-
-                        if (savedAnswer) {
-                            console.log("Matched answer for question:", templateQuestion.question);
-                            templateQuestion.clientAnswer = savedAnswer.clientAnswer;
-                            templateQuestion.clientScore = savedAnswer.clientScore;
-                            templateQuestion.extendedAnswer = savedAnswer.extendedAnswer;
-                            matchedCount++;
-                        }
-                    });
-
-                    console.log("Total matched answers:", matchedCount);
-
-                    // Set Initial TIRE Placement
-                    if (savedData.initialTimePlacement) {
-                        const initialPlacementSelect = document.getElementById('initialTimePlacement');
-                        if (initialPlacementSelect) {
-                            initialPlacementSelect.value = savedData.initialTimePlacement;
-                        }
-                    }
-
-                    // Update confirmed TIRE placement if it exists
-                    if (savedData.confirmedTimePlacement) {
-                        const confirmedPlacementDiv = document.getElementById('confirmedTimePlacement');
-                        if (confirmedPlacementDiv) {
-                            confirmedPlacementDiv.textContent = savedData.confirmedTimePlacement;
-                            // Add appropriate status class
-                            updateConfirmedPlacement(savedData.confirmedTimePlacement);
-                        }
-                    }
-                }
-            }
-        }
-
-        strategyQuestions = templateData;
-        totalQuestions = strategyQuestions.length;
-        
-        logger.debug(`Populated strategy questions table with ${totalQuestions} questions`);
-        populateStrategyQuestionsTable();
-        updateAnsweredQuestionsCounter();
-        await updateClientScores();
-        updateCompletionStatus();
-        
-        logger.info("Successfully loaded and initialized strategy questions");
-        return true;
-    } catch (error) {
-        logger.error('Error loading strategy questions:', error);
-        alert('Error loading strategy questions: ' + error.message);
-        return false;
-    }
+// Function to reset table filters
+function resetTable() {
+    const rows = document.querySelectorAll('#strategyQuestionsTable tbody tr');
+    rows.forEach(row => {
+        row.style.display = ''; // Show all rows
+    });
 }
 
+// Load strategy questions and initialize UI
+async function initializeUI() {
+    logger.debug('Initializing UI');
+    try {
+        if (!strategyQuestions) {
+            logger.debug('Requesting strategy questions from main process');
+            const questions = await ipcRenderer.invoke('get-strategy-questions');
+            if (questions && Array.isArray(questions)) {
+                logger.debug('Received strategy questions from main process');
+                strategyQuestions = questions;
+            } else {
+                throw new Error('Failed to load strategy questions or invalid format');
+            }
+        }
+
+        // Initialize the table and other UI elements
+        if (strategyQuestions && Array.isArray(strategyQuestions)) {
+            populateStrategyQuestionsTable();
+            generateCategoryButtons();
+            updateAnsweredQuestionsCounter();
+            await updateClientScores();
+            updateCompletionStatus();
+            logger.debug('UI initialization complete');
+        } else {
+            throw new Error('Strategy questions not available for UI initialization');
+        }
+    } catch (error) {
+        logger.error('Error initializing UI:', error);
+        // Show error message to user
+        const errorMessage = document.createElement('div');
+        errorMessage.className = 'error-message';
+        errorMessage.textContent = 'Failed to load strategy questions. Please try again or contact support.';
+        document.body.insertBefore(errorMessage, document.body.firstChild);
+    }
+}
 
 // Populate the Strategy Questions Table
 function populateStrategyQuestionsTable() {
@@ -380,104 +328,6 @@ function createExtendedAnswerInput(row) {
     });
     return input;
 }
-
-// Function to dynamically generate category buttons
-function generateCategoryButtons() {
-    logger.debug('Starting to generate category buttons');
-    
-    // Extract unique categories from strategyQuestions
-    const categories = [...new Set(strategyQuestions.map(q => q.category))];
-    logger.debug('Found categories:', categories);
-    
-    const container = document.getElementById('categoryButtonsContainer');
-    if (!container) {
-        logger.error('Category buttons container not found!');
-        return;
-    }
-    
-    // Clear any existing buttons
-    container.innerHTML = '';
-    
-    // Create a button for each category
-    categories.forEach(category => {
-        if (!category) {
-            logger.warn('Found empty category, skipping button creation');
-            return;
-        }
-        
-        const parts = category.split('/');
-        const displayCategory = parts[parts.length - 1].trim();
-        
-        logger.debug('Creating button for category:', displayCategory);
-        const button = document.createElement('button');
-        button.className = 'category-button';
-        button.textContent = displayCategory;
-        button.style.display = 'inline-block'; // Ensure button is visible
-        
-        // Event listener to filter table based on clicked category
-        button.addEventListener('click', () => {
-            logger.debug('Category button clicked:', category);
-            // Remove active state from all buttons
-            document.querySelectorAll('.category-button').forEach(btn => 
-                btn.classList.remove('active')
-            );
-            document.querySelector('.reset-button')?.classList.remove('active');
-            
-            // Add active state to the clicked button
-            button.classList.add('active');
-            
-            // Filter the questions table by the selected category
-            filterByCategory(category);
-        });
-        
-        container.appendChild(button);
-    });
-    
-    // Add reset button to clear filters
-    const resetButton = document.createElement('button');
-    resetButton.className = 'category-button reset-button';
-    resetButton.textContent = 'Reset Filters';
-    resetButton.style.display = 'inline-block'; // Ensure button is visible
-    resetButton.addEventListener('click', () => {
-        logger.debug('Reset button clicked');
-        resetTable();
-        // Remove active state from all category buttons
-        document.querySelectorAll('.category-button').forEach(btn => 
-            btn.classList.remove('active')
-        );
-        // Add active state to reset button
-        resetButton.classList.add('active');
-    });
-    container.appendChild(resetButton);
-    
-    logger.debug('Finished generating category buttons');
-}
-
-// Function to filter the questions table by category
-function filterByCategory(category) {
-    const rows = document.querySelectorAll('#strategyQuestionsTable tbody tr');
-    rows.forEach(row => {
-        const categoryCell = row.querySelector('td:nth-child(7)'); // Assuming category is the 7th column
-        if (categoryCell.textContent.trim().toLowerCase() === category.toLowerCase()) {
-            row.style.display = ''; // Show rows that match the category
-        } else {
-            row.style.display = 'none'; // Hide rows that don't match
-        }
-    });
-}
-
-// Function to reset the table to show all rows
-function resetTable() {
-    document.querySelectorAll('#strategyQuestionsTable tbody tr').forEach(row => {
-        row.style.display = ''; // Show all rows
-    });
-}
-
-// Call generateCategoryButtons after loading the questions data
-loadStrategyQuestions().then(() => {
-    generateCategoryButtons();
-});
-
 
 function updateAnsweredQuestionsCounter() {
     // Count total questions
@@ -1131,65 +981,6 @@ function initializeCalculationTabs() {
     });
 }
 
-// Load strategy questions and initialize UI
-async function initializeUI() {
-    logger.debug('Initializing UI');
-    try {
-        const success = await loadStrategyQuestions();
-        if (success) {
-            generateCategoryButtons();
-            logger.debug('Category buttons generated');
-            
-            // Initialize other UI elements
-            initializeCalculationTabs();
-            
-            logger.debug('UI initialization complete');
-        } else {
-            logger.error('Failed to load strategy questions');
-        }
-    } catch (error) {
-        logger.error('Error initializing UI:', error);
-    }
-}
-
-// Initialize when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    logger.debug('DOMContentLoaded event fired');
-    // Only set up event listeners here, wait for app name before initializing UI
-    setupEventListeners();
-});
-
-// Function to update the confirmed TIRE placement
-function updateConfirmedPlacement(category) {
-    const confirmedPlacementElement = document.getElementById('confirmedTimePlacement');
-    if (!confirmedPlacementElement) return;
-
-    // Capitalize the first letter of the category
-    const formattedCategory = category.charAt(0).toUpperCase() + category.slice(1);
-    
-    // Update the confirmed placement
-    confirmedPlacementElement.textContent = formattedCategory;
-    confirmedPlacementElement.className = ''; // Reset classes
-    
-    // Add styling based on the category
-    switch (formattedCategory.toLowerCase()) {
-        case 'tolerate':
-            confirmedPlacementElement.classList.add('status-tolerate');
-            break;
-        case 'invest':
-            confirmedPlacementElement.classList.add('status-invest');
-            break;
-        case 'replace':
-            confirmedPlacementElement.classList.add('status-replace');
-            break;
-        case 'eliminate':
-            confirmedPlacementElement.classList.add('status-eliminate');
-            break;
-        default:
-            confirmedPlacementElement.classList.add('status-pending');
-    }
-}
-
 // Setup all event listeners
 function setupEventListeners() {
     logger.debug('Setting up event listeners');
@@ -1552,6 +1343,37 @@ async function handleSaveButtonClick() {
     } catch (error) {
         logger.error('Error saving assessment:', error);
         alert('An error occurred while saving the assessment. Please try again.');
+    }
+}
+
+// Function to update the confirmed TIRE placement
+function updateConfirmedPlacement(category) {
+    const confirmedPlacementElement = document.getElementById('confirmedTimePlacement');
+    if (!confirmedPlacementElement) return;
+
+    // Capitalize the first letter of the category
+    const formattedCategory = category.charAt(0).toUpperCase() + category.slice(1);
+    
+    // Update the confirmed placement
+    confirmedPlacementElement.textContent = formattedCategory;
+    confirmedPlacementElement.className = ''; // Reset classes
+    
+    // Add styling based on the category
+    switch (formattedCategory.toLowerCase()) {
+        case 'tolerate':
+            confirmedPlacementElement.classList.add('status-tolerate');
+            break;
+        case 'invest':
+            confirmedPlacementElement.classList.add('status-invest');
+            break;
+        case 'replace':
+            confirmedPlacementElement.classList.add('status-replace');
+            break;
+        case 'eliminate':
+            confirmedPlacementElement.classList.add('status-eliminate');
+            break;
+        default:
+            confirmedPlacementElement.classList.add('status-pending');
     }
 }
 

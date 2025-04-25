@@ -106,7 +106,7 @@ function displayData(data) {
     data.forEach(item => {
         const row = document.createElement("tr");
         const isAppQuestionsCompleted = completedAppsList.includes(item['Application Name'] + '_app_questions');
-        const isStrategyQuestionsCompleted = completedAppsList.includes(item['Application Name']);
+        const isStrategyQuestionsCompleted = completedAppsList.includes(item['Application Name'] + '_strategy_questions');
         
         if (isStrategyQuestionsCompleted) {
             row.classList.add('completed-row');
@@ -285,18 +285,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.error('Admin button not found in the DOM');
     }
     
-    // Initialize filter elements
+    // Get all required elements
     const elements = {
         searchInput: document.getElementById("searchInput"),
         inScopeCheckbox: document.getElementById("inScopeCheckbox"),
         outScopeCheckbox: document.getElementById("outScopeCheckbox"),
         completedCheckbox: document.getElementById("completedCheckbox"),
         uncompletedCheckbox: document.getElementById("uncompletedCheckbox"),
-        clearStorageBtn: document.getElementById("clearStorageBtn"),
         exportBtn: document.getElementById("exportBtn"),
+        exportAppQuestionsBtn: document.getElementById("exportAppQuestionsBtn"),
+        clearStorageBtn: document.getElementById("clearStorageBtn"),
+        clearDataModal: document.getElementById("clearDataModal"),
         cancelClearBtn: document.getElementById("cancelClearBtn"),
         confirmClearBtn: document.getElementById("confirmClearBtn"),
-        clearDataModal: document.getElementById("clearDataModal")
+        adminBtn: document.getElementById("adminBtn")
     };
 
     // Attach filter listeners
@@ -333,6 +335,23 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             } catch (error) {
                 document.getElementById("statusMessage").textContent = "Error exporting data";
+                console.error('Export error:', error);
+            }
+        });
+    }
+
+    // Attach export app questions button listener
+    if (elements.exportAppQuestionsBtn) {
+        elements.exportAppQuestionsBtn.addEventListener("click", async () => {
+            try {
+                const result = await ipcRenderer.invoke('export-app-questions');
+                if (result.success) {
+                    document.getElementById("statusMessage").textContent = `App Questions exported to: ${result.path}`;
+                } else {
+                    document.getElementById("statusMessage").textContent = `Export failed: ${result.error}`;
+                }
+            } catch (error) {
+                document.getElementById("statusMessage").textContent = "Error exporting app questions";
                 console.error('Export error:', error);
             }
         });
