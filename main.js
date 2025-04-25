@@ -15,16 +15,28 @@ let adminWindow = null;
 let appQuestionsWindow = null;
 const store = new Store();
 
-// Load the questions.json to extract the distributionThreshold
+// Add function to load strategy questions
+function loadStrategyQuestions() {
+    try {
+        const questionsPath = path.join(__dirname, 'strategy-questions.json');
+        const questionsData = JSON.parse(fs.readFileSync(questionsPath, 'utf8'));
+        return questionsData;
+    } catch (error) {
+        console.error('Error loading strategy-questions.json:', error);
+        return null;
+    }
+}
+
+// Load the strategy-questions.json to extract the distributionThreshold
 function loadDistributionThreshold() {
     try {
-        const questionsPath = path.join(__dirname, 'questions.json');
+        const questionsPath = path.join(__dirname, 'strategy-questions.json');
         const questionsData = JSON.parse(fs.readFileSync(questionsPath, 'utf8'));
         if (questionsData && questionsData[0] && questionsData[0].config) {
             distributionThreshold = questionsData[0].config.distributionThreshold;
         }
     } catch (error) {
-        console.error('Error loading questions.json:', error);
+        console.error('Error loading strategy-questions.json:', error);
     }
 }
 
@@ -220,6 +232,11 @@ ipcMain.on('open-strategy-questions-window', (event, appName) => {
     strategyQuestionsWindow.show();      // Show after maximizing
 
     strategyQuestionsWindow.loadFile('strategy-questions.html').then(() => {
+        // Load and send strategy questions data
+        const strategyQuestions = loadStrategyQuestions();
+        if (strategyQuestions) {
+            strategyQuestionsWindow.webContents.send('strategy-questions-data', strategyQuestions);
+        }
         strategyQuestionsWindow.webContents.send('set-application-name', appName);
         strategyQuestionsWindow.webContents.send('set-distribution-threshold', distributionThreshold);
     });
@@ -1205,4 +1222,9 @@ ipcMain.on('close-app-questions', () => {
         appQuestionsWindow.close();
         appQuestionsWindow = null;
     }
+});
+
+// Add handler to get strategy questions data
+ipcMain.handle('get-strategy-questions', async () => {
+    return loadStrategyQuestions();
 });

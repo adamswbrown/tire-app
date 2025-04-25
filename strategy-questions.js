@@ -45,7 +45,7 @@ const logger = {
 };
 
 // Global variable to store strategy questions
-let strategyQuestions = [];
+let strategyQuestions = null;
 
 // Initialize global variables for answered questions and total questions
 let totalQuestions = 0;
@@ -67,6 +67,23 @@ ipcRenderer.on('set-application-name', async (event, appName) => {
         logger.error("Could not find applicationName element");
     }
 });
+
+// Listen for strategy questions data
+ipcRenderer.on('strategy-questions-data', (event, questions) => {
+    console.log('Received strategy questions data');
+    strategyQuestions = questions;
+    initializeQuestions();
+});
+
+// Initialize by requesting questions data if not received
+if (!strategyQuestions) {
+    ipcRenderer.invoke('get-strategy-questions').then(questions => {
+        if (questions) {
+            strategyQuestions = questions;
+            initializeQuestions();
+        }
+    });
+}
 
 async function loadStrategyQuestions() {
     try {
