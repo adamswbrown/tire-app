@@ -5,6 +5,9 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  contents: write
+
 jobs:
   create-release:
     runs-on: ubuntu-latest
@@ -30,7 +33,7 @@ jobs:
       - name: Create/Update Release
         uses: ncipollo/release-action@v1
         with:
-          token: ${{ secrets.GH_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
           name: Dr Migrate TIRE App v${{ steps.extract_version.outputs.version }}
           tag: ${{ github.ref_name }}
           bodyFile: release-notes.md
@@ -82,7 +85,7 @@ jobs:
           Copy-Item -Path package.json.backup -Destination package.json
           Remove-Item package.json.backup
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           USE_HARD_LINKS: false
           CSC_IDENTITY_AUTO_DISCOVERY: false
           EP_GH_IGNORE: true
@@ -107,7 +110,7 @@ jobs:
           cp package.json.backup package.json
           rm package.json.backup
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           USE_HARD_LINKS: false
           CSC_IDENTITY_AUTO_DISCOVERY: false
           EP_GH_IGNORE: true
@@ -139,7 +142,7 @@ jobs:
         if: matrix.os == 'windows-latest'
         uses: ncipollo/release-action@v1
         with:
-          token: ${{ secrets.GH_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref_name }}
           allowUpdates: true
           updateOnlyUnreleased: false
@@ -152,7 +155,7 @@ jobs:
         if: matrix.os == 'macos-latest'
         uses: ncipollo/release-action@v1
         with:
-          token: ${{ secrets.GH_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref_name }}
           allowUpdates: true
           updateOnlyUnreleased: false
