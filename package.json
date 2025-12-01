@@ -31,11 +31,15 @@
     ],
     "mac": {
       "category": "public.app-category.developer-tools",
-      "target": ["zip"],
+      "target": [
+        "zip"
+      ],
       "artifactName": "${productName}-${version}-${arch}-mac.${ext}",
       "hardenedRuntime": false,
       "gatekeeperAssess": false,
-      "electronLanguages": ["en"],
+      "electronLanguages": [
+        "en"
+      ],
       "identity": null,
       "icon": "build/icon.icns"
     },
@@ -43,7 +47,9 @@
       "target": [
         {
           "target": "portable",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "icon": "build/icon.ico"
@@ -58,8 +64,9 @@
   "license": "ISC",
   "description": "An Electron-based desktop application for managing and assessing applications using the TIRE framework",
   "dependencies": {
-    "xlsx": "^0.18.5",
-    "electron-store": "^8.1.0"
+    "electron-store": "^8.1.0",
+    "sanitize-filename": "^1.6.3",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "electron": "^33.2.0",

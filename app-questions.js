@@ -195,6 +195,7 @@ function initializeQuestions() {
 }
 
 function displayCurrentSection() {
+    renderSectionSidebar();
     if (!questionContainer || !appQuestions || !Array.isArray(appQuestions)) {
         logger.error('Missing required elements for displaying section');
         return;
@@ -1290,4 +1291,43 @@ async function loadQuestions() {
             `;
         }
     }
+}
+
+// Add this function to render the sidebar
+function renderSectionSidebar() {
+    let sidebar = document.getElementById('sectionSidebar');
+    if (!sidebar) {
+        // If sidebar container doesn't exist, create it and wrap main content
+        const layout = document.createElement('div');
+        layout.id = 'appQuestionsLayout';
+        const mainContent = document.body.firstElementChild;
+        layout.appendChild(document.createElement('div')).id = 'sectionSidebar';
+        const mainContentWrapper = document.createElement('div');
+        mainContentWrapper.id = 'mainContent';
+        while (document.body.firstChild) {
+            mainContentWrapper.appendChild(document.body.firstChild);
+        }
+        layout.appendChild(mainContentWrapper);
+        document.body.appendChild(layout);
+        sidebar = document.getElementById('sectionSidebar');
+    }
+    // Clear sidebar
+    sidebar.innerHTML = '';
+    if (!appQuestions || !Array.isArray(appQuestions)) return;
+    const ul = document.createElement('ul');
+    appQuestions.forEach((section, idx) => {
+        const li = document.createElement('li');
+        li.textContent = section.section;
+        if (idx === currentSection) {
+            li.classList.add('active');
+        }
+        li.addEventListener('click', () => {
+            currentSection = idx;
+            currentQuestionIndex = 0;
+            displayCurrentSection();
+            renderSectionSidebar();
+        });
+        ul.appendChild(li);
+    });
+    sidebar.appendChild(ul);
 } 

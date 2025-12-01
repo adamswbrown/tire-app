@@ -151,43 +151,82 @@ ipcMain.handle('upload-file', async () => {
             
             console.log('All Excel Headers:', headers);
 
-            // Find the correct column indices
-            const serverIndex = headers.findIndex(h => h === 'Server');
-            const scopeIndex = headers.findIndex(h => h === 'Assessment Scope');
-            const appNameIndex = headers.findIndex(h => h === 'Application Name');
-            const envIndex = headers.findIndex(h => h === 'Environment');
-            const dataCenterIndex = headers.findIndex(h => h === 'Data Center');
+            // Define required and optional fields
+            const requiredFields = [
+                'Application Name',
+                'Assessment Scope',
+                'Data Center',
+                'Environment',
+                'Server'
+            ];
+            
+            const optionalFields = [
+                'Treatment (optional)',
+                'Solution (optional)',
+                'Other Solution - if applicable (optional)',
+                'Power Status',
+                'Operating System',
+                'SQL Detected',
+                'VMWare Description'
+            ];
 
-            console.log('Column indices:', {
-                server: serverIndex,
-                scope: scopeIndex,
-                appName: appNameIndex,
-                env: envIndex,
-                dataCenter: dataCenterIndex
+            // Find column indices for all fields (required and optional)
+            const fieldIndices = {};
+            [...requiredFields, ...optionalFields].forEach(fieldName => {
+                const index = headers.findIndex(h => h === fieldName);
+                if (index !== -1) {
+                    fieldIndices[fieldName] = index;
+                } else if (requiredFields.includes(fieldName)) {
+                    // Log warning for missing required fields but don't fail
+                    console.warn(`Warning: Required field "${fieldName}" not found in Excel file`);
+                } else {
+                    // Log info for missing optional fields
+                    console.log(`Info: Optional field "${fieldName}" not found in Excel file`);
+                }
             });
+
+            console.log('Field indices found:', fieldIndices);
+
+            // Validate that required fields are present
+            const missingRequiredFields = requiredFields.filter(field => !(field in fieldIndices));
+            if (missingRequiredFields.length > 0) {
+                return { error: `Missing required columns: ${missingRequiredFields.join(', ')}` };
+            }
 
             // Read all rows starting from row 5
             const rows = [];
             for (let R = 4; R <= range.e.r; R++) { // Start from row 5 (index 4)
                 const row = {};
+                // Read all columns dynamically
                 for (let C = 0; C < headers.length; C++) {
-                    const cell = worksheet[xlsx.utils.encode_cell({r: R, c: C})];
-                    row[headers[C]] = cell ? cell.v : '';
+                    const headerName = headers[C];
+                    if (headerName) {
+                        const cell = worksheet[xlsx.utils.encode_cell({r: R, c: C})];
+                        row[headerName] = cell ? cell.v : '';
+                    }
                 }
                 rows.push(row);
             }
 
             console.log('First row raw data:', rows[0]);
 
-            // Transform the data using the correct column headers
+            // Transform the data - include all available fields
             const transformedData = rows.map(row => {
-                return {
-                    'Application Name': row['Application Name'] || '',
-                    'Assessment Scope': row['Assessment Scope'] || '',
-                    'Data Center': row['Data Center'] || '',
-                    'Environment': row['Environment'] || '',
-                    'Server': row['Server'] || ''
-                };
+                const transformedRow = {};
+                
+                // Add required fields
+                requiredFields.forEach(fieldName => {
+                    transformedRow[fieldName] = row[fieldName] || '';
+                });
+                
+                // Add optional fields if they exist in the headers (and thus in the row data)
+                optionalFields.forEach(fieldName => {
+                    if (fieldName in fieldIndices) {
+                        transformedRow[fieldName] = row[fieldName] || '';
+                    }
+                });
+                
+                return transformedRow;
             });
 
             // Filter out rows where Application Name is empty or 'Unassociated'
@@ -210,6 +249,7 @@ ipcMain.handle('upload-file', async () => {
 
             console.log('Sample transformed row:', deduplicatedData[0]);
             console.log('Total rows after filtering and deduplication:', deduplicatedData.length);
+            console.log('Available fields in transformed data:', Object.keys(deduplicatedData[0] || {}));
 
             return deduplicatedData;
         } else {

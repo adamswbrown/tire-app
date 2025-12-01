@@ -7,71 +7,76 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="app-questions-container">
-        <div class="app-header">
-            <h1>Application Questions</h1>
-            <div id="appNameDisplay" class="app-name"></div>
-            <div id="completionStatus" class="completion-header incomplete">
-                <span id="completionText">0 / 0 questions answered</span>
-                <span id="completionDate"></span>
-            </div>
-        </div>
-
-        <div class="app-questions-content">
-            <form id="appQuestionsForm" class="questions-form">
-                <div class="form-container">
-                    <div class="question-navigation">
-                        <div class="section-progress">
-                            <h2 id="currentSection"></h2>
-                            <div class="progress-bar">
-                                <div id="sectionProgress" class="progress"></div>
-                            </div>
-                        </div>
-                        <div class="section-buttons">
-                            <button type="button" id="prevSection" class="nav-button">&lt; Previous Section</button>
-                            <button type="button" id="nextSection" class="nav-button">Next Section &gt;</button>
-                        </div>
-                    </div>
-
-                    <div id="questionContainer" class="question-container">
-                        <!-- Questions will be dynamically inserted here -->
-                    </div>
-
-                    <div class="question-navigation-buttons">
-                        <button type="button" id="prevQuestion" class="nav-button">&lt; Previous</button>
-                        <button type="button" id="skipQuestion" class="nav-button">Skip</button>
-                        <button type="button" id="nextQuestion" class="nav-button">Next &gt;</button>
+    <div id="appQuestionsLayout">
+        <div id="sectionSidebar"></div>
+        <div id="mainContent">
+            <div class="app-questions-container">
+                <div class="app-header">
+                    <h1>Application Questions</h1>
+                    <div id="appNameDisplay" class="app-name"></div>
+                    <div id="completionStatus" class="completion-header incomplete">
+                        <span id="completionText">0 / 0 questions answered</span>
+                        <span id="completionDate"></span>
                     </div>
                 </div>
-            </form>
-        </div>
 
-        <div class="app-questions-footer" id="app-questions-footer">
-            <button type="button" id="closeButton" class="close-button">Close</button>
-            <button type="button" id="exportButton" class="export-button">Export</button>
-            <button type="button" id="saveButton" class="save-button">Save</button>
-        </div>
-    </div>
+                <div class="app-questions-content">
+                    <form id="appQuestionsForm" class="questions-form">
+                        <div class="form-container">
+                            <div class="question-navigation">
+                                <div class="section-progress">
+                                    <h2 id="currentSection"></h2>
+                                    <div class="progress-bar">
+                                        <div id="sectionProgress" class="progress"></div>
+                                    </div>
+                                </div>
+                                <div class="section-buttons">
+                                    <button type="button" id="prevSection" class="nav-button">&lt; Previous Section</button>
+                                    <button type="button" id="nextSection" class="nav-button">Next Section &gt;</button>
+                                </div>
+                            </div>
 
-    <!-- Close Confirmation Modal -->
-    <div id="closeConfirmModal" class="modal">
-        <div class="modal-content">
-            <h2>Confirm Close</h2>
-            <p>You have unsaved changes. Are you sure you want to close?</p>
-            <div class="modal-buttons">
-                <button id="cancelCloseBtn">Cancel</button>
-                <button id="confirmCloseBtn">Close Without Saving</button>
+                            <div id="questionContainer" class="question-container">
+                                <!-- Questions will be dynamically inserted here -->
+                            </div>
+
+                            <div class="question-navigation-buttons">
+                                <button type="button" id="prevQuestion" class="nav-button">&lt; Previous</button>
+                                <button type="button" id="skipQuestion" class="nav-button">Skip</button>
+                                <button type="button" id="nextQuestion" class="nav-button">Next &gt;</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="app-questions-footer" id="app-questions-footer">
+                    <button type="button" id="closeButton" class="close-button">Close</button>
+                    <button type="button" id="exportButton" class="export-button">Export</button>
+                    <button type="button" id="saveButton" class="save-button">Save</button>
+                </div>
             </div>
-        </div>
-    </div>
 
-    <!-- Completion Modal -->
-    <div id="completionModal" class="modal">
-        <div class="modal-content">
-            <h2>Questions Completed</h2>
-            <p id="completionMessage"></p>
-            <div class="modal-buttons">
-                <button id="completionOkBtn">OK</button>
+            <!-- Close Confirmation Modal -->
+            <div id="closeConfirmModal" class="modal">
+                <div class="modal-content">
+                    <h2>Confirm Close</h2>
+                    <p>You have unsaved changes. Are you sure you want to close?</p>
+                    <div class="modal-buttons">
+                        <button id="cancelCloseBtn">Cancel</button>
+                        <button id="confirmCloseBtn">Close Without Saving</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Completion Modal -->
+            <div id="completionModal" class="modal">
+                <div class="modal-content">
+                    <h2>Questions Completed</h2>
+                    <p id="completionMessage"></p>
+                    <div class="modal-buttons">
+                        <button id="completionOkBtn">OK</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

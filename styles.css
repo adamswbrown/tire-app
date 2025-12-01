@@ -2422,3 +2422,81 @@ tr.completed-row .action-cell button:hover {
         opacity: 1;
     }
 }
+
+/* --- Sidebar and App Questions Layout --- */
+#appQuestionsLayout {
+  display: flex;
+  min-height: 100vh;
+}
+
+#sectionSidebar {
+  width: 220px;
+  background: #f7fafd;
+  border-right: 1px solid #e0e0e0;
+  padding: 24px 0;
+  min-height: 100vh;
+}
+
+#sectionSidebar ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+#sectionSidebar li {
+  padding: 12px 24px;
+  cursor: pointer;
+  color: #333;
+  border-left: 4px solid transparent;
+  transition: background 0.2s, border-color 0.2s;
+  font-size: 16px;
+}
+
+#sectionSidebar li.active {
+  background: #e6f0fa;
+  border-left: 4px solid #1976d2;
+  font-weight: bold;
+}
+
+#mainContent {
+  flex: 1;
+  padding: 32px;
+  min-width: 0;
+}
+
+/* Responsive for sidebar */
+@media (max-width: 900px) {
+  #appQuestionsLayout {
+    flex-direction: column;
+  }
+  #sectionSidebar {
+    width: 100%;
+    min-height: unset;
+    border-right: none;
+    border-bottom: 1px solid #e0e0e0;
+    padding: 8px 0;
+    display: flex;
+    overflow-x: auto;
+  }
+  #sectionSidebar ul {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+  }
+  #sectionSidebar li {
+    padding: 10px 16px;
+    border-left: none;
+    border-bottom: 4px solid transparent;
+    font-size: 15px;
+  }
+  #sectionSidebar li.active {
+    background: #e6f0fa;
+    border-bottom: 4px solid #1976d2;
+    border-left: none;
+  }
+  #mainContent {
+    padding: 16px;
+  }
+}
+
+/* --- End Sidebar Styles --- */
