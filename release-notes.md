@@ -1,5 +1,25 @@
 # Dr Migrate TIRE App Release Notes
 
+## Version 1.0.3
+
+### What's New
+- **Enhanced Excel Import Support**: Added support for new App to Server Export format with optional fields (Treatment, Solution, Other Solution)
+- **Backward Compatibility**: Application now supports both old and new Excel file formats seamlessly
+- **Improved Field Extraction**: Dynamic field detection that automatically includes all available columns from Excel files
+- **Updated Documentation**: Comprehensive step-by-step guide for using the application with App to Server Export files
+- **Dependency Fix**: Added missing `sanitize-filename` dependency to package.json
+
+### Bug Fixes
+- Fixed missing module error for `sanitize-filename` that prevented application from launching
+- Improved error handling for missing optional columns in Excel files
+- Enhanced validation to gracefully handle both old and new Excel formats
+
+### Technical Improvements
+- Flexible field extraction that adapts to available columns
+- Better error messages for missing required fields
+- Improved logging for optional field detection
+- Enhanced data structure to store all available fields from Excel files
+
 ## Version 1.0.2
 
 ### What's New
