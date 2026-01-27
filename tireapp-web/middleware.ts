@@ -35,8 +35,9 @@ export default auth((req) => {
 
   const response = NextResponse.next()
 
-  // Add response timing header for observability
+  // Add observability headers
   response.headers.set('X-Response-Time', `${Date.now()}`)
+  response.headers.set('X-Request-Id', crypto.randomUUID())
 
   return response
 })
