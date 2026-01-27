@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { auth } from '@/auth'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 import { updateThresholdsSchema, formatZodErrors } from '@/lib/validations'
+import { conditionalResponse } from '@/lib/api-cache'
 
 // GET /api/thresholds - Get all thresholds
 export async function GET(request: NextRequest) {
@@ -28,7 +29,7 @@ export async function GET(request: NextRequest) {
       map[t.key] = t.value
     }
 
-    return NextResponse.json(map)
+    return conditionalResponse(request, map, { maxAge: 300 })
   } catch {
     return NextResponse.json({ error: 'Failed to fetch thresholds' }, { status: 500 })
   }

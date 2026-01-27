@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { auth } from '@/auth'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 import { createApplicationSchema, batchCreateApplicationsSchema, formatZodErrors } from '@/lib/validations'
+import { conditionalResponse } from '@/lib/api-cache'
 
 // GET /api/applications?customerId=xxx&page=1&limit=50&sort=name|createdAt&order=asc|desc&search=xxx
 export async function GET(request: NextRequest) {
@@ -57,7 +58,7 @@ export async function GET(request: NextRequest) {
       prisma.application.count({ where }),
     ])
 
-    return NextResponse.json({
+    const responseData = {
       data: applications,
       pagination: {
         page,
@@ -65,7 +66,9 @@ export async function GET(request: NextRequest) {
         total,
         totalPages: Math.ceil(total / limit),
       },
-    })
+    }
+
+    return conditionalResponse(request, responseData)
   } catch {
     return NextResponse.json({ error: 'Failed to fetch applications' }, { status: 500 })
   }

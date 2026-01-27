@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { auth } from '@/auth'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 import { updateUserRoleSchema, formatZodErrors } from '@/lib/validations'
+import { conditionalResponse } from '@/lib/api-cache'
 
 // GET /api/users - List all users (admin only)
 export async function GET(request: NextRequest) {
@@ -31,7 +32,7 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    return NextResponse.json(users)
+    return conditionalResponse(request, users)
   } catch {
     return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 })
   }

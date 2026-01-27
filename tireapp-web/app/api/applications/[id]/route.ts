@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { auth } from '@/auth'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 import { updateApplicationSchema, formatZodErrors } from '@/lib/validations'
+import { conditionalResponse } from '@/lib/api-cache'
 
 type RouteParams = { params: Promise<{ id: string }> }
 
@@ -33,7 +34,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Application not found' }, { status: 404 })
     }
 
-    return NextResponse.json(application)
+    return conditionalResponse(request, application)
   } catch {
     return NextResponse.json({ error: 'Failed to fetch application' }, { status: 500 })
   }

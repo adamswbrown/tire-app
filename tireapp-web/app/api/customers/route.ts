@@ -4,6 +4,7 @@ import { auth } from '@/auth'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 import { stripHtml } from '@/lib/sanitize'
 import { createCustomerSchema, formatZodErrors } from '@/lib/validations'
+import { conditionalResponse } from '@/lib/api-cache'
 
 // GET /api/customers?search=xxx&sort=name|createdAt&order=asc|desc - List customers
 export async function GET(request: NextRequest) {
@@ -37,7 +38,7 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    return NextResponse.json(customers)
+    return conditionalResponse(request, customers)
   } catch {
     return NextResponse.json({ error: 'Failed to fetch customers' }, { status: 500 })
   }

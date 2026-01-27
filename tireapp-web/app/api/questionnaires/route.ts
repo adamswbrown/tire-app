@@ -8,6 +8,7 @@ import {
   calculateTirePlacement,
   type StrategyQuestion,
 } from '@/lib/tire-scoring'
+import { conditionalResponse } from '@/lib/api-cache'
 
 // GET /api/questionnaires?applicationId=xxx&type=xxx
 export async function GET(request: NextRequest) {
@@ -37,7 +38,7 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: 'desc' },
     })
 
-    return NextResponse.json(questionnaires)
+    return conditionalResponse(request, questionnaires)
   } catch {
     return NextResponse.json({ error: 'Failed to fetch questionnaires' }, { status: 500 })
   }
