@@ -1,5 +1,6 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { CustomerActions } from '@/components/CustomerActions'
+import { apiFetch } from '@/lib/api-client'
 
 // Mock next/navigation
 const mockRefresh = jest.fn()
@@ -7,9 +8,9 @@ jest.mock('next/navigation', () => ({
   useRouter: () => ({ refresh: mockRefresh }),
 }))
 
-// Mock fetch
-const mockFetch = jest.fn()
-global.fetch = mockFetch
+// Mock apiFetch
+jest.mock('@/lib/api-client')
+const mockApiFetch = apiFetch as jest.MockedFunction<typeof apiFetch>
 
 describe('CustomerActions', () => {
   beforeEach(() => {
@@ -44,7 +45,11 @@ describe('CustomerActions', () => {
   })
 
   it('calls API and refreshes on successful create', async () => {
-    mockFetch.mockResolvedValue({ ok: true, json: () => Promise.resolve({ id: '1', name: 'Acme' }) })
+    mockApiFetch.mockResolvedValue({
+      data: { id: '1', name: 'Acme' },
+      status: 201,
+      fromCache: false,
+    })
 
     render(<CustomerActions />)
     fireEvent.click(screen.getByText('+ New Customer'))
@@ -52,7 +57,7 @@ describe('CustomerActions', () => {
     fireEvent.submit(screen.getByText('Create').closest('form')!)
 
     await waitFor(() => {
-      expect(mockFetch).toHaveBeenCalledWith('/api/customers', {
+      expect(mockApiFetch).toHaveBeenCalledWith('/api/customers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: 'Acme Corp' }),

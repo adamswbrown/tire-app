@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { apiFetch } from '@/lib/api-client'
 
 interface ApplicationData {
   id: string
@@ -40,29 +41,32 @@ export function ApplicationDetail({
     setSaving(true)
     setMessage('')
 
-    const res = await fetch(`/api/applications/${data.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: data.name,
-        assessmentScope: data.assessmentScope,
-        dataCenter: data.dataCenter || null,
-        environment: data.environment || null,
-        server: data.server || null,
-        os: data.os || null,
-        treatment: data.treatment || null,
-        solution: data.solution || null,
-        powerStatus: data.powerStatus || null,
-        confirmedTirePlacement: data.confirmedTirePlacement || null,
-      }),
-    })
+    try {
+      const { status, data: responseData } = await apiFetch<ApplicationData | { error: string }>(`/api/applications/${data.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: data.name,
+          assessmentScope: data.assessmentScope,
+          dataCenter: data.dataCenter || null,
+          environment: data.environment || null,
+          server: data.server || null,
+          os: data.os || null,
+          treatment: data.treatment || null,
+          solution: data.solution || null,
+          powerStatus: data.powerStatus || null,
+          confirmedTirePlacement: data.confirmedTirePlacement || null,
+        }),
+      })
 
-    if (res.ok) {
-      setMessage('Saved.')
-      router.refresh()
-    } else {
-      const err = await res.json()
-      setMessage(`Error: ${err.error}`)
+      if (status >= 200 && status < 300) {
+        setMessage('Saved.')
+        router.refresh()
+      } else {
+        setMessage(`Error: ${(responseData as { error: string }).error}`)
+      }
+    } catch {
+      setMessage('Error: Failed to save')
     }
     setSaving(false)
   }
@@ -70,13 +74,16 @@ export function ApplicationDetail({
   async function handleDelete() {
     if (!confirm(`Delete "${data.name}"? This cannot be undone.`)) return
 
-    const res = await fetch(`/api/applications/${data.id}`, { method: 'DELETE' })
-    if (res.ok) {
-      router.push(`/app/customers/${customerId}/applications`)
-      router.refresh()
-    } else {
-      const err = await res.json()
-      setMessage(`Error: ${err.error}`)
+    try {
+      const { status, data: responseData } = await apiFetch<{ success?: boolean; error?: string }>(`/api/applications/${data.id}`, { method: 'DELETE' })
+      if (status >= 200 && status < 300) {
+        router.push(`/app/customers/${customerId}/applications`)
+        router.refresh()
+      } else {
+        setMessage(`Error: ${(responseData as { error: string }).error}`)
+      }
+    } catch {
+      setMessage('Error: Failed to delete')
     }
   }
 

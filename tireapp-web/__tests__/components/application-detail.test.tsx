@@ -1,5 +1,6 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { ApplicationDetail } from '@/components/ApplicationDetail'
+import { apiFetch } from '@/lib/api-client'
 
 // Mock useRouter
 const mockPush = jest.fn()
@@ -7,6 +8,10 @@ const mockRefresh = jest.fn()
 jest.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockPush, refresh: mockRefresh }),
 }))
+
+// Mock apiFetch
+jest.mock('@/lib/api-client')
+const mockApiFetch = apiFetch as jest.MockedFunction<typeof apiFetch>
 
 // Mock window.confirm
 const mockConfirm = jest.fn()
@@ -33,7 +38,6 @@ const mockApp = {
 describe('ApplicationDetail', () => {
   beforeEach(() => {
     jest.clearAllMocks()
-    global.fetch = jest.fn()
   })
 
   it('renders application details', () => {
@@ -52,16 +56,17 @@ describe('ApplicationDetail', () => {
   })
 
   it('saves changes on button click', async () => {
-    ;(global.fetch as jest.Mock).mockResolvedValueOnce({
-      ok: true,
-      json: () => Promise.resolve({}),
+    mockApiFetch.mockResolvedValueOnce({
+      data: {},
+      status: 200,
+      fromCache: false,
     })
 
     render(<ApplicationDetail application={mockApp} customerId="cust-1" />)
     fireEvent.click(screen.getByText('Save Changes'))
 
     await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalledWith(
+      expect(mockApiFetch).toHaveBeenCalledWith(
         '/api/applications/app-1',
         expect.objectContaining({ method: 'PATCH' })
       )
@@ -69,9 +74,10 @@ describe('ApplicationDetail', () => {
   })
 
   it('shows error message on save failure', async () => {
-    ;(global.fetch as jest.Mock).mockResolvedValueOnce({
-      ok: false,
-      json: () => Promise.resolve({ error: 'Name too long' }),
+    mockApiFetch.mockResolvedValueOnce({
+      data: { error: 'Name too long' },
+      status: 400,
+      fromCache: false,
     })
 
     render(<ApplicationDetail application={mockApp} customerId="cust-1" />)
@@ -84,9 +90,10 @@ describe('ApplicationDetail', () => {
 
   it('deletes application with confirmation', async () => {
     mockConfirm.mockReturnValueOnce(true)
-    ;(global.fetch as jest.Mock).mockResolvedValueOnce({
-      ok: true,
-      json: () => Promise.resolve({}),
+    mockApiFetch.mockResolvedValueOnce({
+      data: { success: true },
+      status: 200,
+      fromCache: false,
     })
 
     render(<ApplicationDetail application={mockApp} customerId="cust-1" />)
@@ -97,7 +104,7 @@ describe('ApplicationDetail', () => {
     )
 
     await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalledWith(
+      expect(mockApiFetch).toHaveBeenCalledWith(
         '/api/applications/app-1',
         expect.objectContaining({ method: 'DELETE' })
       )
@@ -111,7 +118,7 @@ describe('ApplicationDetail', () => {
     render(<ApplicationDetail application={mockApp} customerId="cust-1" />)
     fireEvent.click(screen.getByText('Delete Application'))
 
-    expect(global.fetch).not.toHaveBeenCalled()
+    expect(mockApiFetch).not.toHaveBeenCalled()
   })
 
   it('updates field values on input change', () => {

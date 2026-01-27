@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import { apiFetch } from '@/lib/api-client'
 import {
   calculateClientScore,
   calculateTirePlacement,
@@ -97,23 +98,26 @@ export function StrategyQuestionsForm({
     setSaving(true)
     setMessage('')
 
-    const res = await fetch('/api/questionnaires', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        applicationId,
-        type: 'strategy_questions',
-        answers: questions,
-        completed,
-      }),
-    })
+    try {
+      const { status, data } = await apiFetch<{ success?: boolean; error?: string }>('/api/questionnaires', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          applicationId,
+          type: 'strategy_questions',
+          answers: questions,
+          completed,
+        }),
+      })
 
-    if (res.ok) {
-      setMessage(completed ? 'Assessment complete!' : 'Progress saved.')
-      router.refresh()
-    } else {
-      const data = await res.json()
-      setMessage(`Error: ${data.error}`)
+      if (status >= 200 && status < 300) {
+        setMessage(completed ? 'Assessment complete!' : 'Progress saved.')
+        router.refresh()
+      } else {
+        setMessage(`Error: ${(data as { error: string }).error}`)
+      }
+    } catch {
+      setMessage('Error: Failed to save')
     }
     setSaving(false)
   }, [applicationId, questions, router])

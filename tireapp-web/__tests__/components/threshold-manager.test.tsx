@@ -1,24 +1,26 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { ThresholdManager } from '@/components/ThresholdManager'
+import { apiFetch } from '@/lib/api-client'
 
-const mockFetch = jest.fn()
-global.fetch = mockFetch
+jest.mock('@/lib/api-client')
+const mockApiFetch = apiFetch as jest.MockedFunction<typeof apiFetch>
 
 describe('ThresholdManager', () => {
   beforeEach(() => {
-    mockFetch.mockReset()
+    mockApiFetch.mockReset()
   })
 
   it('shows loading state initially', () => {
-    mockFetch.mockReturnValue(new Promise(() => {})) // never resolves
+    mockApiFetch.mockReturnValue(new Promise(() => {})) // never resolves
     render(<ThresholdManager />)
     expect(screen.getByText('Loading thresholds...')).toBeInTheDocument()
   })
 
   it('renders thresholds after loading', async () => {
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: () => Promise.resolve({ distributionThreshold: 78, tiebreakThreshold: 6 }),
+    mockApiFetch.mockResolvedValueOnce({
+      data: { distributionThreshold: 78, tiebreakThreshold: 6 },
+      status: 200,
+      fromCache: false,
     })
 
     render(<ThresholdManager />)
@@ -34,14 +36,16 @@ describe('ThresholdManager', () => {
   })
 
   it('saves updated thresholds', async () => {
-    mockFetch
+    mockApiFetch
       .mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({ distributionThreshold: 78, tiebreakThreshold: 6 }),
+        data: { distributionThreshold: 78, tiebreakThreshold: 6 },
+        status: 200,
+        fromCache: false,
       })
       .mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({ success: true }),
+        data: { success: true },
+        status: 200,
+        fromCache: false,
       })
 
     render(<ThresholdManager />)
@@ -56,14 +60,14 @@ describe('ThresholdManager', () => {
       expect(screen.getByText('Thresholds saved successfully.')).toBeInTheDocument()
     })
 
-    expect(mockFetch).toHaveBeenCalledTimes(2)
-    expect(mockFetch).toHaveBeenLastCalledWith('/api/thresholds', expect.objectContaining({
+    expect(mockApiFetch).toHaveBeenCalledTimes(2)
+    expect(mockApiFetch).toHaveBeenLastCalledWith('/api/thresholds', expect.objectContaining({
       method: 'PUT',
     }))
   })
 
   it('shows error on failed load', async () => {
-    mockFetch.mockRejectedValueOnce(new Error('Network error'))
+    mockApiFetch.mockRejectedValueOnce(new Error('Network error'))
 
     render(<ThresholdManager />)
 

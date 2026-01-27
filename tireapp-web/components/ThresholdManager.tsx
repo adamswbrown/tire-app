@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { apiFetch } from '@/lib/api-client'
 
 interface Thresholds {
   distributionThreshold: number
@@ -14,9 +15,8 @@ export function ThresholdManager() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch('/api/thresholds')
-      .then(res => res.json())
-      .then(data => {
+    apiFetch<Thresholds>('/api/thresholds')
+      .then(({ data }) => {
         setThresholds(data)
         setLoading(false)
       })
@@ -31,17 +31,20 @@ export function ThresholdManager() {
     setSaving(true)
     setMessage('')
 
-    const res = await fetch('/api/thresholds', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(thresholds),
-    })
+    try {
+      const { status, data } = await apiFetch<Thresholds | { error: string }>('/api/thresholds', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(thresholds),
+      })
 
-    if (res.ok) {
-      setMessage('Thresholds saved successfully.')
-    } else {
-      const data = await res.json()
-      setMessage(`Error: ${data.error}`)
+      if (status >= 200 && status < 300) {
+        setMessage('Thresholds saved successfully.')
+      } else {
+        setMessage(`Error: ${(data as { error: string }).error}`)
+      }
+    } catch {
+      setMessage('Error: Failed to save thresholds')
     }
     setSaving(false)
   }

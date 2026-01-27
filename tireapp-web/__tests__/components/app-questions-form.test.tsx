@@ -1,11 +1,16 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { AppQuestionsForm } from '@/components/AppQuestionsForm'
+import { apiFetch } from '@/lib/api-client'
 
 // Mock useRouter
 const mockRefresh = jest.fn()
 jest.mock('next/navigation', () => ({
   useRouter: () => ({ refresh: mockRefresh }),
 }))
+
+// Mock apiFetch
+jest.mock('@/lib/api-client')
+const mockApiFetch = apiFetch as jest.MockedFunction<typeof apiFetch>
 
 const mockSections = [
   {
@@ -62,7 +67,6 @@ const mockSections = [
 describe('AppQuestionsForm', () => {
   beforeEach(() => {
     jest.clearAllMocks()
-    global.fetch = jest.fn()
   })
 
   it('renders section tabs', () => {
@@ -178,9 +182,10 @@ describe('AppQuestionsForm', () => {
   })
 
   it('saves progress via API', async () => {
-    ;(global.fetch as jest.Mock).mockResolvedValueOnce({
-      ok: true,
-      json: () => Promise.resolve({}),
+    mockApiFetch.mockResolvedValueOnce({
+      data: { success: true },
+      status: 200,
+      fromCache: false,
     })
 
     render(
@@ -193,7 +198,7 @@ describe('AppQuestionsForm', () => {
     fireEvent.click(screen.getByText('Save Progress'))
 
     await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalledWith(
+      expect(mockApiFetch).toHaveBeenCalledWith(
         '/api/questionnaires',
         expect.objectContaining({
           method: 'POST',
@@ -205,9 +210,10 @@ describe('AppQuestionsForm', () => {
   })
 
   it('saves and completes via API', async () => {
-    ;(global.fetch as jest.Mock).mockResolvedValueOnce({
-      ok: true,
-      json: () => Promise.resolve({}),
+    mockApiFetch.mockResolvedValueOnce({
+      data: { success: true },
+      status: 200,
+      fromCache: false,
     })
 
     render(
@@ -220,7 +226,7 @@ describe('AppQuestionsForm', () => {
     fireEvent.click(screen.getByText('Save & Complete'))
 
     await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalledWith(
+      expect(mockApiFetch).toHaveBeenCalledWith(
         '/api/questionnaires',
         expect.objectContaining({
           body: expect.stringContaining('"completed":true'),
@@ -231,9 +237,10 @@ describe('AppQuestionsForm', () => {
   })
 
   it('shows error on save failure', async () => {
-    ;(global.fetch as jest.Mock).mockResolvedValueOnce({
-      ok: false,
-      json: () => Promise.resolve({ error: 'DB error' }),
+    mockApiFetch.mockResolvedValueOnce({
+      data: { error: 'DB error' },
+      status: 500,
+      fromCache: false,
     })
 
     render(

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { apiFetch } from '@/lib/api-client'
 
 interface User {
   id: string
@@ -18,9 +19,8 @@ export function UserManager() {
   const [message, setMessage] = useState('')
 
   useEffect(() => {
-    fetch('/api/users')
-      .then(res => res.json())
-      .then(data => {
+    apiFetch<User[]>('/api/users')
+      .then(({ data }) => {
         if (Array.isArray(data)) setUsers(data)
         setLoading(false)
       })
@@ -32,19 +32,22 @@ export function UserManager() {
 
   async function updateRole(userId: string, role: string) {
     setMessage('')
-    const res = await fetch('/api/users', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId, role }),
-    })
+    try {
+      const { status, data } = await apiFetch<User | { error: string }>('/api/users', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, role }),
+      })
 
-    if (res.ok) {
-      const updated = await res.json()
-      setUsers(prev => prev.map(u => u.id === updated.id ? { ...u, role: updated.role } : u))
-      setMessage(`Updated ${updated.name || updated.email} to ${updated.role}`)
-    } else {
-      const err = await res.json()
-      setMessage(`Error: ${err.error}`)
+      if (status >= 200 && status < 300) {
+        const updated = data as User
+        setUsers(prev => prev.map(u => u.id === updated.id ? { ...u, role: updated.role } : u))
+        setMessage(`Updated ${updated.name || updated.email} to ${updated.role}`)
+      } else {
+        setMessage(`Error: ${(data as { error: string }).error}`)
+      }
+    } catch {
+      setMessage('Error: Failed to update role')
     }
   }
 

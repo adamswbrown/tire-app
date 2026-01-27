@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { apiFetch } from '@/lib/api-client'
 
 export function CustomerActions() {
   const router = useRouter()
@@ -14,18 +15,21 @@ export function CustomerActions() {
     if (!name.trim()) return
 
     setLoading(true)
-    const res = await fetch('/api/customers', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: name.trim() }),
-    })
+    try {
+      const { status } = await apiFetch('/api/customers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name.trim() }),
+      })
 
-    if (res.ok) {
-      setName('')
-      setShowForm(false)
-      router.refresh()
+      if (status >= 200 && status < 300) {
+        setName('')
+        setShowForm(false)
+        router.refresh()
+      }
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   return (

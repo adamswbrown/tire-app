@@ -1,11 +1,16 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { StrategyQuestionsForm } from '@/components/StrategyQuestionsForm'
+import { apiFetch } from '@/lib/api-client'
 
 // Mock useRouter
 const mockRefresh = jest.fn()
 jest.mock('next/navigation', () => ({
   useRouter: () => ({ refresh: mockRefresh }),
 }))
+
+// Mock apiFetch
+jest.mock('@/lib/api-client')
+const mockApiFetch = apiFetch as jest.MockedFunction<typeof apiFetch>
 
 const mockQuestions = [
   {
@@ -57,7 +62,6 @@ const mockQuestions = [
 describe('StrategyQuestionsForm', () => {
   beforeEach(() => {
     jest.clearAllMocks()
-    global.fetch = jest.fn()
   })
 
   it('renders all questions', () => {
@@ -155,9 +159,10 @@ describe('StrategyQuestionsForm', () => {
   })
 
   it('saves progress via API', async () => {
-    ;(global.fetch as jest.Mock).mockResolvedValueOnce({
-      ok: true,
-      json: () => Promise.resolve({}),
+    mockApiFetch.mockResolvedValueOnce({
+      data: { success: true },
+      status: 200,
+      fromCache: false,
     })
 
     render(
@@ -173,7 +178,7 @@ describe('StrategyQuestionsForm', () => {
     fireEvent.click(screen.getByText('Save Progress'))
 
     await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalledWith(
+      expect(mockApiFetch).toHaveBeenCalledWith(
         '/api/questionnaires',
         expect.objectContaining({
           method: 'POST',
@@ -184,9 +189,10 @@ describe('StrategyQuestionsForm', () => {
   })
 
   it('shows save error message', async () => {
-    ;(global.fetch as jest.Mock).mockResolvedValueOnce({
-      ok: false,
-      json: () => Promise.resolve({ error: 'Save failed' }),
+    mockApiFetch.mockResolvedValueOnce({
+      data: { error: 'Save failed' },
+      status: 500,
+      fromCache: false,
     })
 
     render(
