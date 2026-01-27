@@ -48,6 +48,12 @@ export default async function ApplicationPage({
         >
           Strategy Questions
         </Link>
+        <Link
+          href={`/app/customers/${customerId}/applications/${appId}/results`}
+          className="px-3 py-1.5 text-sm bg-teal-500 text-white rounded hover:bg-teal-600"
+        >
+          View Results
+        </Link>
       </div>
 
       <ApplicationDetail
