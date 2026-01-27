@@ -41,7 +41,7 @@ export function ExcelUpload({ customerId }: { customerId: string }) {
   return (
     <div className="flex items-center gap-3">
       {result && (
-        <span className={`text-sm ${result.startsWith('Error') ? 'text-red-500' : 'text-green-600'}`}>
+        <span role="status" className={`text-sm ${result.startsWith('Error') ? 'text-red-500' : 'text-green-600'}`}>
           {result}
         </span>
       )}
@@ -51,6 +51,7 @@ export function ExcelUpload({ customerId }: { customerId: string }) {
           ref={fileRef}
           type="file"
           accept=".xlsx,.xls"
+          aria-label="Upload Excel file"
           onChange={handleUpload}
           disabled={uploading}
           className="hidden"

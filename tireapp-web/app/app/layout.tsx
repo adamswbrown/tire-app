@@ -15,7 +15,7 @@ export default async function AppLayout({
       <header className="bg-gray-900 text-white px-6 py-3 flex items-center justify-between">
         <div className="flex items-center gap-6">
           <Link href="/app" className="text-lg font-bold">TIREApp</Link>
-          <nav className="flex gap-4 text-sm">
+          <nav aria-label="Main navigation" className="flex gap-4 text-sm">
             <Link href="/app" className="hover:text-blue-300">Dashboard</Link>
             {session.user?.role === 'Admin' && (
               <Link href="/admin" className="hover:text-purple-300">Admin</Link>
@@ -29,7 +29,7 @@ export default async function AppLayout({
           </a>
         </div>
       </header>
-      <main className="flex-1 bg-gray-50">
+      <main className="flex-1 bg-gray-50" role="main">
         {children}
       </main>
     </div>

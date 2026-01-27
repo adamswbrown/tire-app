@@ -51,6 +51,7 @@ export function ApplicationTable({
         <input
           type="text"
           placeholder="Search applications..."
+          aria-label="Search applications"
           value={search}
           onChange={e => setSearch(e.target.value)}
           className="border rounded px-3 py-1.5 text-sm flex-1 max-w-xs"
