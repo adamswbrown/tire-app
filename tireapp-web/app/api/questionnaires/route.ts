@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/auth'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 import {
   calculateTirePlacement,
   type StrategyQuestion,
@@ -12,6 +13,11 @@ export async function GET(request: NextRequest) {
   const session = await auth()
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const rl = checkRateLimit(getClientIp(request.headers), { limit: 60, windowSeconds: 60 })
+  if (!rl.success) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
   }
 
   const applicationId = request.nextUrl.searchParams.get('applicationId')
@@ -41,6 +47,11 @@ export async function POST(request: NextRequest) {
   const session = await auth()
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const rl2 = checkRateLimit(getClientIp(request.headers), { limit: 20, windowSeconds: 60 })
+  if (!rl2.success) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
   }
 
   const body = await request.json()

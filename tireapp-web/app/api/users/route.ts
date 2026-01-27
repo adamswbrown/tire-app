@@ -1,15 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/auth'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 
 // GET /api/users - List all users (admin only)
-export async function GET() {
+export async function GET(request: NextRequest) {
   const session = await auth()
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
   if (session.user?.role !== 'Admin') {
     return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
+  }
+
+  const rl = checkRateLimit(getClientIp(request.headers), { limit: 60, windowSeconds: 60 })
+  if (!rl.success) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
   }
 
   try {

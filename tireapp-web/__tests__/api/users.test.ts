@@ -9,6 +9,12 @@ jest.mock('@/auth', () => ({
   auth: () => mockAuth(),
 }))
 
+// Mock rate limiter
+jest.mock('@/lib/rate-limit', () => ({
+  checkRateLimit: () => ({ success: true, limit: 60, remaining: 59, resetAt: Date.now() + 60000 }),
+  getClientIp: () => '127.0.0.1',
+}))
+
 const mockFindMany = jest.fn()
 const mockUpdate = jest.fn()
 jest.mock('@/lib/prisma', () => ({
@@ -28,13 +34,13 @@ describe('GET /api/users', () => {
 
   it('returns 401 when not authenticated', async () => {
     mockAuth.mockResolvedValue(null)
-    const res = await GET()
+    const res = await GET(new NextRequest('http://localhost/api/users'))
     expect(res.status).toBe(401)
   })
 
   it('returns 403 for non-admin users', async () => {
     mockAuth.mockResolvedValue(consultantSession)
-    const res = await GET()
+    const res = await GET(new NextRequest('http://localhost/api/users'))
     expect(res.status).toBe(403)
   })
 
@@ -46,7 +52,7 @@ describe('GET /api/users', () => {
     ]
     mockFindMany.mockResolvedValue(users)
 
-    const res = await GET()
+    const res = await GET(new NextRequest('http://localhost/api/users'))
     expect(res.status).toBe(200)
     const body = await res.json()
     expect(body).toHaveLength(2)

@@ -1,14 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/auth'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 
 type RouteParams = { params: Promise<{ id: string }> }
 
 // GET /api/applications/:id - Get application with questionnaires
-export async function GET(_request: NextRequest, { params }: RouteParams) {
+export async function GET(request: NextRequest, { params }: RouteParams) {
   const session = await auth()
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const rl = checkRateLimit(getClientIp(request.headers), { limit: 60, windowSeconds: 60 })
+  if (!rl.success) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
   }
 
   try {
