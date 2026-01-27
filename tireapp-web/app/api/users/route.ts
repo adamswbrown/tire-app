@@ -12,18 +12,22 @@ export async function GET() {
     return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
   }
 
-  const users = await prisma.user.findMany({
-    orderBy: { name: 'asc' },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      role: true,
-      createdAt: true,
-    },
-  })
+  try {
+    const users = await prisma.user.findMany({
+      orderBy: { name: 'asc' },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        createdAt: true,
+      },
+    })
 
-  return NextResponse.json(users)
+    return NextResponse.json(users)
+  } catch {
+    return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 })
+  }
 }
 
 // PATCH /api/users - Update user role (admin only)
@@ -46,11 +50,15 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid role' }, { status: 400 })
   }
 
-  const user = await prisma.user.update({
-    where: { id: userId },
-    data: { role },
-    select: { id: true, name: true, email: true, role: true },
-  })
+  try {
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: { role },
+      select: { id: true, name: true, email: true, role: true },
+    })
 
-  return NextResponse.json(user)
+    return NextResponse.json(user)
+  } catch {
+    return NextResponse.json({ error: 'Failed to update user role' }, { status: 500 })
+  }
 }

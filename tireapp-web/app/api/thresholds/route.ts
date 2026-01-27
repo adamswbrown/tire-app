@@ -9,18 +9,22 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const thresholds = await prisma.threshold.findMany()
+  try {
+    const thresholds = await prisma.threshold.findMany()
 
-  // Return as key-value map with defaults
-  const map: Record<string, number> = {
-    distributionThreshold: 78,
-    tiebreakThreshold: 6,
-  }
-  for (const t of thresholds) {
-    map[t.key] = t.value
-  }
+    // Return as key-value map with defaults
+    const map: Record<string, number> = {
+      distributionThreshold: 78,
+      tiebreakThreshold: 6,
+    }
+    for (const t of thresholds) {
+      map[t.key] = t.value
+    }
 
-  return NextResponse.json(map)
+    return NextResponse.json(map)
+  } catch {
+    return NextResponse.json({ error: 'Failed to fetch thresholds' }, { status: 500 })
+  }
 }
 
 // PUT /api/thresholds - Update thresholds (admin only)
@@ -53,13 +57,17 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: 'No valid thresholds provided' }, { status: 400 })
   }
 
-  for (const { key, value } of updates) {
-    await prisma.threshold.upsert({
-      where: { key },
-      create: { key, value },
-      update: { value },
-    })
-  }
+  try {
+    for (const { key, value } of updates) {
+      await prisma.threshold.upsert({
+        where: { key },
+        create: { key, value },
+        update: { value },
+      })
+    }
 
-  return NextResponse.json({ success: true, updated: updates })
+    return NextResponse.json({ success: true, updated: updates })
+  } catch {
+    return NextResponse.json({ error: 'Failed to update thresholds' }, { status: 500 })
+  }
 }

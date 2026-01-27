@@ -21,15 +21,19 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'applicationId is required' }, { status: 400 })
   }
 
-  const where: Record<string, string> = { applicationId }
-  if (type) where.type = type
+  try {
+    const where: Record<string, string> = { applicationId }
+    if (type) where.type = type
 
-  const questionnaires = await prisma.questionnaire.findMany({
-    where,
-    orderBy: { createdAt: 'desc' },
-  })
+    const questionnaires = await prisma.questionnaire.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+    })
 
-  return NextResponse.json(questionnaires)
+    return NextResponse.json(questionnaires)
+  } catch {
+    return NextResponse.json({ error: 'Failed to fetch questionnaires' }, { status: 500 })
+  }
 }
 
 // POST /api/questionnaires - Save questionnaire answers
@@ -56,61 +60,65 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  // Calculate summary for strategy questions
-  let summary: Prisma.InputJsonValue | undefined = undefined
-  let tirePlacement = null
-  if (type === 'strategy_questions' && Array.isArray(answers)) {
-    const result = calculateTirePlacement(answers as StrategyQuestion[])
-    summary = JSON.parse(JSON.stringify({
-      totalQuestions: answers.length,
-      answeredQuestions: answers.filter(
-        (q: StrategyQuestion) => q.clientAnswer && q.clientAnswer !== '-'
-      ).length,
-      tireScores: result.scores,
-    }))
-    tirePlacement = result
-  }
+  try {
+    // Calculate summary for strategy questions
+    let summary: Prisma.InputJsonValue | undefined = undefined
+    let tirePlacement = null
+    if (type === 'strategy_questions' && Array.isArray(answers)) {
+      const result = calculateTirePlacement(answers as StrategyQuestion[])
+      summary = JSON.parse(JSON.stringify({
+        totalQuestions: answers.length,
+        answeredQuestions: answers.filter(
+          (q: StrategyQuestion) => q.clientAnswer && q.clientAnswer !== '-'
+        ).length,
+        tireScores: result.scores,
+      }))
+      tirePlacement = result
+    }
 
-  // Upsert: create or update questionnaire for this app+type
-  const questionnaire = await prisma.questionnaire.upsert({
-    where: {
-      applicationId_type: { applicationId, type },
-    },
-    create: {
-      applicationId,
-      type,
-      answers,
-      summary,
-      completedAt: body.completed ? new Date() : null,
-    },
-    update: {
-      answers,
-      summary,
-      completedAt: body.completed ? new Date() : null,
-    },
-  })
-
-  // Update application TIRE placement if strategy questions completed
-  if (tirePlacement && body.completed) {
-    await prisma.application.update({
-      where: { id: applicationId },
-      data: {
-        initialTirePlacement: tirePlacement.initialPlacement,
-        confirmedTirePlacement: tirePlacement.confirmedPlacement,
-        strategyCompleted: true,
-        status: 'completed',
-        completedAt: new Date(),
+    // Upsert: create or update questionnaire for this app+type
+    const questionnaire = await prisma.questionnaire.upsert({
+      where: {
+        applicationId_type: { applicationId, type },
+      },
+      create: {
+        applicationId,
+        type,
+        answers,
+        summary,
+        completedAt: body.completed ? new Date() : null,
+      },
+      update: {
+        answers,
+        summary,
+        completedAt: body.completed ? new Date() : null,
       },
     })
-  } else if (type === 'app_questions' && body.completed) {
-    await prisma.application.update({
-      where: { id: applicationId },
-      data: { appQuestionsCompleted: true },
-    })
-  }
 
-  return NextResponse.json({
-    questionnaire,
-    ...(tirePlacement && { tirePlacement }),
-  }, { status: 201 })
+    // Update application TIRE placement if strategy questions completed
+    if (tirePlacement && body.completed) {
+      await prisma.application.update({
+        where: { id: applicationId },
+        data: {
+          initialTirePlacement: tirePlacement.initialPlacement,
+          confirmedTirePlacement: tirePlacement.confirmedPlacement,
+          strategyCompleted: true,
+          status: 'completed',
+          completedAt: new Date(),
+        },
+      })
+    } else if (type === 'app_questions' && body.completed) {
+      await prisma.application.update({
+        where: { id: applicationId },
+        data: { appQuestionsCompleted: true },
+      })
+    }
+
+    return NextResponse.json({
+      questionnaire,
+      ...(tirePlacement && { tirePlacement }),
+    }, { status: 201 })
+  } catch {
+    return NextResponse.json({ error: 'Failed to save questionnaire' }, { status: 500 })
+  }
 }
