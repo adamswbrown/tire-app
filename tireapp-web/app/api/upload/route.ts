@@ -2,12 +2,18 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/auth'
 import { parseExcelFile } from '@/lib/excel-parser'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 
 // POST /api/upload - Upload Excel file and create applications
 export async function POST(request: NextRequest) {
   const session = await auth()
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const rl = checkRateLimit(getClientIp(request.headers), { limit: 10, windowSeconds: 60 })
+  if (!rl.success) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
   }
 
   try {

@@ -10,6 +10,12 @@ jest.mock('@/auth', () => ({
   auth: () => mockAuth(),
 }))
 
+// Mock rate limiter
+jest.mock('@/lib/rate-limit', () => ({
+  checkRateLimit: () => ({ success: true, limit: 60, remaining: 59, resetAt: Date.now() + 60000 }),
+  getClientIp: () => '127.0.0.1',
+}))
+
 // Mock prisma
 const mockFindMany = jest.fn()
 const mockCreate = jest.fn()
@@ -27,7 +33,8 @@ describe('GET /api/customers', () => {
 
   it('returns 401 when not authenticated', async () => {
     mockAuth.mockResolvedValue(null)
-    const res = await GET()
+    const req = new NextRequest('http://localhost/api/customers')
+    const res = await GET(req)
     expect(res.status).toBe(401)
     const body = await res.json()
     expect(body.error).toBe('Unauthorized')
@@ -41,7 +48,8 @@ describe('GET /api/customers', () => {
     ]
     mockFindMany.mockResolvedValue(customers)
 
-    const res = await GET()
+    const req = new NextRequest('http://localhost/api/customers')
+    const res = await GET(req)
     expect(res.status).toBe(200)
     const body = await res.json()
     expect(body).toEqual(customers)

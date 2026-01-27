@@ -10,6 +10,12 @@ jest.mock('@/auth', () => ({
   auth: () => mockAuth(),
 }))
 
+// Mock rate limiter
+jest.mock('@/lib/rate-limit', () => ({
+  checkRateLimit: () => ({ success: true, limit: 10, remaining: 9, resetAt: Date.now() + 60000 }),
+  getClientIp: () => '127.0.0.1',
+}))
+
 // Mock prisma
 const mockFindUnique = jest.fn()
 const mockFindMany = jest.fn()
