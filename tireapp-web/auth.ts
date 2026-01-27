@@ -35,18 +35,10 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
   ],
 
   callbacks: {
-    // Persist role in JWT token
-    jwt({ token, user }) {
-      if (user) {
-        token.role = user.role
-      }
-      return token
-    },
-
-    // Add role to session object
-    session({ session, token }) {
-      if (session.user) {
-        session.user.role = token.role as string
+    // Add role to session object (database strategy provides user, not token)
+    session({ session, user }) {
+      if (session.user && user) {
+        session.user.role = (user as { role?: string }).role ?? "Consultant"
       }
       return session
     },
