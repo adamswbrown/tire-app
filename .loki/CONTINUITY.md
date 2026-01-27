@@ -1,10 +1,10 @@
 # Loki Continuity - TIREApp Migration
 
 ## Current State
-- **Phase**: POST-MIGRATION - Quality hardening iteration 3
-- **Last Action**: Performance optimizations, a11y, TIRE scoring edge case tests, loading/error boundaries
-- **Git HEAD**: 24e105e (a11y on forms committed)
-- **Next Action**: E2E test setup, deployment config, or additional integration tests
+- **Phase**: POST-MIGRATION - Quality hardening iteration 4
+- **Last Action**: Component + API test expansion (177 tests, 22 suites)
+- **Git HEAD**: 098d9f0 (upload/export API tests committed)
+- **Next Action**: E2E test setup, deployment config, or additional hardening
 
 ## Mistakes & Learnings
 - Previous session committed M1 scaffold but directory was deleted from disk afterward
@@ -31,10 +31,11 @@
 - M7 Results + Users: COMPLETE (b750fb0 - results view, user management API)
 - M8 Quality Hardening: COMPLETE (af8ef35 - tests, security, a11y, error handling)
 - M9 Performance + Coverage: COMPLETE (24e105e - memoization, loading/error boundaries, edge case tests, a11y)
+- M10 Component Test Expansion: COMPLETE (54283cc - ApplicationDetail, StrategyQuestionsForm, AppQuestionsForm)
 
-## Test Coverage (129 tests, 17 suites)
-- **API Routes (5 suites, 55 tests)**: customers, applications, applications/[id], questionnaires, thresholds, users
-- **Components (7 suites, 30 tests)**: ExportButton, ThresholdManager, CustomerActions, UserManager, ApplicationTable, ExcelUpload, ErrorBoundary/Loading/NotFound
+## Test Coverage (177 tests, 22 suites)
+- **API Routes (7 suites, 69 tests)**: customers, applications, applications/[id], questionnaires, thresholds, users, upload (7), export (7)
+- **Components (10 suites, 64 tests)**: ExportButton, ThresholdManager, CustomerActions, UserManager, ApplicationTable, ExcelUpload, ErrorBoundary/Loading/NotFound, ApplicationDetail (7), StrategyQuestionsForm (10), AppQuestionsForm (17)
 - **Lib (2 suites, 24 tests)**: TIRE Scoring (18 - includes 8 edge cases), Excel Parser (6)
 - **Pages (2 suites, 6 tests)**: HomePage (3), UnauthorizedPage (3)
 - **Schema (1 suite, 9 tests)**: Prisma schema validation
