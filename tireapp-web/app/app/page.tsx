@@ -1,45 +1,60 @@
-// Protected application home (requires authentication)
+// Dashboard - Customer list with create/upload functionality
 
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
+import Link from "next/link"
+import { prisma } from "@/lib/prisma"
+import { CustomerActions } from "@/components/CustomerActions"
 
-export default async function AppPage() {
+export default async function DashboardPage() {
   const session = await auth()
+  if (!session) redirect('/api/auth/signin')
 
-  if (!session) {
-    redirect('/api/auth/signin')
-  }
+  const customers = await prisma.customer.findMany({
+    orderBy: { createdAt: 'desc' },
+    include: {
+      _count: { select: { applications: true } },
+    },
+  })
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-24">
-      <div className="text-center">
-        <h1 className="text-3xl font-bold mb-4">
-          Welcome, {session.user?.name}!
-        </h1>
-        <p className="text-lg mb-4">
-          Role: <span className="font-semibold">{session.user?.role}</span>
-        </p>
-        <p className="text-gray-600 mb-8">
-          You have successfully authenticated.
-        </p>
-
-        <div className="space-x-4">
-          {session.user?.role === 'Admin' && (
-            <a
-              href="/admin"
-              className="bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded"
-            >
-              Admin Dashboard
-            </a>
-          )}
-          <a
-            href="/api/auth/signout"
-            className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded"
-          >
-            Sign Out
-          </a>
-        </div>
+    <div className="p-6 max-w-6xl mx-auto">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">Customer Assessments</h1>
+        <CustomerActions />
       </div>
-    </main>
+
+      {customers.length === 0 ? (
+        <div className="text-center py-12 bg-white rounded-lg border">
+          <p className="text-gray-500 text-lg mb-4">No customers yet</p>
+          <p className="text-gray-400">Create a customer to get started with TIRE assessments.</p>
+        </div>
+      ) : (
+        <div className="grid gap-4">
+          {customers.map(customer => (
+            <Link
+              key={customer.id}
+              href={`/app/customers/${customer.id}/applications`}
+              className="block bg-white p-4 rounded-lg border hover:border-blue-400 transition-colors"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-semibold">{customer.name}</h2>
+                  <p className="text-sm text-gray-500">
+                    Created {customer.createdAt.toLocaleDateString()}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <span className="text-2xl font-bold text-blue-600">
+                    {customer._count.applications}
+                  </span>
+                  <p className="text-sm text-gray-500">applications</p>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
   )
 }
