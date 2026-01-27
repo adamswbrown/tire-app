@@ -1,5 +1,5 @@
-// Prisma schema for TIREApp Web (M1: Foundation and Authentication)
-// Based on: M1-ResearchPack.md (Auth.js adapter requirements)
+// Prisma schema for TIREApp Web
+// M1: Auth.js models | M2: Domain models with TIRE scoring
 
 generator client {
   provider = "prisma-client-js"
@@ -11,7 +11,6 @@ datasource db {
 
 // ============================================
 // AUTH.JS REQUIRED MODELS (v5 with PrismaAdapter)
-// Source: https://authjs.dev/reference/adapter/prisma
 // ============================================
 
 model User {
@@ -72,8 +71,7 @@ model VerificationToken {
 }
 
 // ============================================
-// TIREAPP DOMAIN MODELS (Future-ready for M2+)
-// Empty tables to establish schema structure
+// TIREAPP DOMAIN MODELS (M2)
 // ============================================
 
 model Customer {
@@ -87,59 +85,89 @@ model Customer {
   @@map("customers")
 }
 
+// Application imported from Excel "App-to-Server List" sheet
 model Application {
-  id          String   @id @default(cuid())
-  customerId  String
-  name        String
+  id              String   @id @default(cuid())
+  customerId      String
+  name            String
+  assessmentScope String   @default("In Scope") // "In Scope" | "Out of Scope"
+  dataCenter      String?
+  environment     String?
+  server          String?
+  treatment       String?  // Pre-existing treatment from Excel
+  solution        String?
+  powerStatus     String?
+  os              String?
+  sqlDetected     String?
+  vmwareDesc      String?
+
+  // TIRE Assessment Results
+  initialTirePlacement   String?  // "Tolerate" | "Invest" | "Replace" | "Eliminate" | "Not Set"
+  confirmedTirePlacement String?  // Final placement after tiebreaker
+  appQuestionsCompleted  Boolean  @default(false)
+  strategyCompleted      Boolean  @default(false)
+
   status      String   @default("pending") // "pending" | "in_progress" | "completed"
+  completedAt DateTime?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  customer      Customer       @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  questionnaires Questionnaire[]
+  customer           Customer            @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  questionnaires     Questionnaire[]
+  assessmentHistory  AssessmentHistory[]
 
   @@map("applications")
 }
 
+// Questionnaire answers stored as JSON (flexible schema)
 model Questionnaire {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   applicationId String
-  type          String   // "app_questions" | "strategy_questions"
-  answers       Json     // Store question answers as JSON
+  type          String    // "app_questions" | "strategy_questions"
+  answers       Json      // Question answers as JSON blob
+  summary       Json?     // Scoring summary (totalQuestions, answeredQuestions, tireScores)
   completedAt   DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
 
+  @@unique([applicationId, type])
   @@map("questionnaires")
 }
 
-model Response {
-  id        String   @id @default(cuid())
-  userId    String   // Reference to User.id (not FK for now, will add later)
-  appId     String   // Reference to Application.id
-  data      Json     // Generic JSON storage for responses
-  createdAt DateTime @default(now())
+// Track assessment restarts and treatment changes
+model AssessmentHistory {
+  id            String   @id @default(cuid())
+  applicationId String
+  action        String   // "restart" | "treatment_change"
+  previousValue String?  // Previous treatment/state
+  newValue      String?  // New treatment/state
+  reason        String?
+  createdAt     DateTime @default(now())
 
-  @@map("responses")
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@map("assessment_history")
 }
 
+// Export tracking
 model Export {
   id        String   @id @default(cuid())
-  userId    String   // Reference to User.id
-  appId     String   // Reference to Application.id
-  fileUrl   String   // Vercel Blob URL
+  userId    String
+  appId     String?
+  fileUrl   String
   format    String   // "xlsx" | "csv"
   createdAt DateTime @default(now())
 
   @@map("exports")
 }
 
+// Admin-configurable thresholds for TIRE scoring
 model Threshold {
   id        String   @id @default(cuid())
-  key       String   @unique // e.g., "low_complexity", "high_risk"
-  value     Float    // Numeric threshold value
+  key       String   @unique // "distributionThreshold" | "tiebreakThreshold"
+  value     Float
   updatedAt DateTime @updatedAt
 
   @@map("thresholds")

@@ -25,9 +25,20 @@ describe('Prisma Schema', () => {
     expect(schema).toContain('model Customer')
     expect(schema).toContain('model Application')
     expect(schema).toContain('model Questionnaire')
-    expect(schema).toContain('model Response')
+    expect(schema).toContain('model AssessmentHistory')
     expect(schema).toContain('model Export')
     expect(schema).toContain('model Threshold')
+  })
+
+  it('has TIRE placement fields on Application', () => {
+    expect(schema).toContain('initialTirePlacement')
+    expect(schema).toContain('confirmedTirePlacement')
+    expect(schema).toContain('appQuestionsCompleted')
+    expect(schema).toContain('strategyCompleted')
+  })
+
+  it('has unique constraint on questionnaire application+type', () => {
+    expect(schema).toContain('@@unique([applicationId, type])')
   })
 
   it('has role field on User model with Consultant default', () => {

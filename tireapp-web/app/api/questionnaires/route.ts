@@ -1,0 +1,116 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { Prisma } from '@prisma/client'
+import { prisma } from '@/lib/prisma'
+import { auth } from '@/auth'
+import {
+  calculateTirePlacement,
+  type StrategyQuestion,
+} from '@/lib/tire-scoring'
+
+// GET /api/questionnaires?applicationId=xxx&type=xxx
+export async function GET(request: NextRequest) {
+  const session = await auth()
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const applicationId = request.nextUrl.searchParams.get('applicationId')
+  const type = request.nextUrl.searchParams.get('type')
+
+  if (!applicationId) {
+    return NextResponse.json({ error: 'applicationId is required' }, { status: 400 })
+  }
+
+  const where: Record<string, string> = { applicationId }
+  if (type) where.type = type
+
+  const questionnaires = await prisma.questionnaire.findMany({
+    where,
+    orderBy: { createdAt: 'desc' },
+  })
+
+  return NextResponse.json(questionnaires)
+}
+
+// POST /api/questionnaires - Save questionnaire answers
+export async function POST(request: NextRequest) {
+  const session = await auth()
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const body = await request.json()
+  const { applicationId, type, answers } = body
+
+  if (!applicationId || !type || !answers) {
+    return NextResponse.json(
+      { error: 'applicationId, type, and answers are required' },
+      { status: 400 },
+    )
+  }
+
+  if (!['app_questions', 'strategy_questions'].includes(type)) {
+    return NextResponse.json(
+      { error: 'type must be "app_questions" or "strategy_questions"' },
+      { status: 400 },
+    )
+  }
+
+  // Calculate summary for strategy questions
+  let summary: Prisma.InputJsonValue | undefined = undefined
+  let tirePlacement = null
+  if (type === 'strategy_questions' && Array.isArray(answers)) {
+    const result = calculateTirePlacement(answers as StrategyQuestion[])
+    summary = JSON.parse(JSON.stringify({
+      totalQuestions: answers.length,
+      answeredQuestions: answers.filter(
+        (q: StrategyQuestion) => q.clientAnswer && q.clientAnswer !== '-'
+      ).length,
+      tireScores: result.scores,
+    }))
+    tirePlacement = result
+  }
+
+  // Upsert: create or update questionnaire for this app+type
+  const questionnaire = await prisma.questionnaire.upsert({
+    where: {
+      applicationId_type: { applicationId, type },
+    },
+    create: {
+      applicationId,
+      type,
+      answers,
+      summary,
+      completedAt: body.completed ? new Date() : null,
+    },
+    update: {
+      answers,
+      summary,
+      completedAt: body.completed ? new Date() : null,
+    },
+  })
+
+  // Update application TIRE placement if strategy questions completed
+  if (tirePlacement && body.completed) {
+    await prisma.application.update({
+      where: { id: applicationId },
+      data: {
+        initialTirePlacement: tirePlacement.initialPlacement,
+        confirmedTirePlacement: tirePlacement.confirmedPlacement,
+        strategyCompleted: true,
+        status: 'completed',
+        completedAt: new Date(),
+      },
+    })
+  } else if (type === 'app_questions' && body.completed) {
+    await prisma.application.update({
+      where: { id: applicationId },
+      data: { appQuestionsCompleted: true },
+    })
+  }
+
+  return NextResponse.json({
+    questionnaire,
+    ...(tirePlacement && { tirePlacement }),
+  }, { status: 201 })
+}

@@ -1,0 +1,59 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
+import { auth } from '@/auth'
+
+// GET /api/thresholds - Get all thresholds
+export async function GET() {
+  const session = await auth()
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const thresholds = await prisma.threshold.findMany()
+
+  // Return as key-value map with defaults
+  const map: Record<string, number> = {
+    distributionThreshold: 78,
+    tiebreakThreshold: 6,
+  }
+  for (const t of thresholds) {
+    map[t.key] = t.value
+  }
+
+  return NextResponse.json(map)
+}
+
+// PUT /api/thresholds - Update thresholds (admin only)
+export async function PUT(request: NextRequest) {
+  const session = await auth()
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+  if (session.user?.role !== 'Admin') {
+    return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
+  }
+
+  const body = await request.json()
+  const updates: { key: string; value: number }[] = []
+
+  if (typeof body.distributionThreshold === 'number') {
+    updates.push({ key: 'distributionThreshold', value: body.distributionThreshold })
+  }
+  if (typeof body.tiebreakThreshold === 'number') {
+    updates.push({ key: 'tiebreakThreshold', value: body.tiebreakThreshold })
+  }
+
+  if (updates.length === 0) {
+    return NextResponse.json({ error: 'No valid thresholds provided' }, { status: 400 })
+  }
+
+  for (const { key, value } of updates) {
+    await prisma.threshold.upsert({
+      where: { key },
+      create: { key, value },
+      update: { value },
+    })
+  }
+
+  return NextResponse.json({ success: true, updated: updates })
+}
