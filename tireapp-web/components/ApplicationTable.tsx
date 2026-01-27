@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import Link from 'next/link'
 
 interface AppData {
@@ -34,7 +34,7 @@ export function ApplicationTable({
   const [filter, setFilter] = useState<FilterType>('all')
   const [search, setSearch] = useState('')
 
-  const filtered = applications.filter(app => {
+  const filtered = useMemo(() => applications.filter(app => {
     if (search && !app.name.toLowerCase().includes(search.toLowerCase())) return false
     switch (filter) {
       case 'in_scope': return app.assessmentScope === 'In Scope'
@@ -43,7 +43,7 @@ export function ApplicationTable({
       case 'pending': return app.status !== 'completed'
       default: return true
     }
-  })
+  }), [applications, search, filter])
 
   return (
     <div>

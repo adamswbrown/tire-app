@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   calculateClientScore,
@@ -68,9 +68,12 @@ export function StrategyQuestionsForm({
     return calculateTirePlacement(questions, distributionThreshold, tiebreakThreshold)
   }, [questions, distributionThreshold, tiebreakThreshold])
 
-  const answeredCount = questions.filter(q => q.clientAnswer !== '-').length
+  const answeredCount = useMemo(
+    () => questions.filter(q => q.clientAnswer !== '-').length,
+    [questions]
+  )
 
-  function updateAnswer(index: number, answer: ClientAnswer) {
+  const updateAnswer = useCallback((index: number, answer: ClientAnswer) => {
     setQuestions(prev => {
       const updated = [...prev]
       updated[index] = {
@@ -80,17 +83,17 @@ export function StrategyQuestionsForm({
       }
       return updated
     })
-  }
+  }, [])
 
-  function updateExtended(index: number, value: string) {
+  const updateExtended = useCallback((index: number, value: string) => {
     setQuestions(prev => {
       const updated = [...prev]
       updated[index] = { ...updated[index], extendedAnswer: value }
       return updated
     })
-  }
+  }, [])
 
-  async function handleSave(completed: boolean = false) {
+  const handleSave = useCallback(async (completed: boolean = false) => {
     setSaving(true)
     setMessage('')
 
@@ -113,11 +116,14 @@ export function StrategyQuestionsForm({
       setMessage(`Error: ${data.error}`)
     }
     setSaving(false)
-  }
+  }, [applicationId, questions, router])
 
-  const filtered = filterCategory === 'all'
-    ? questions
-    : questions.filter(q => q.time === filterCategory)
+  const filtered = useMemo(
+    () => filterCategory === 'all'
+      ? questions
+      : questions.filter(q => q.time === filterCategory),
+    [questions, filterCategory]
+  )
 
   return (
     <div>

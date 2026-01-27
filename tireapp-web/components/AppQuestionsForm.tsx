@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 
 interface Question {
@@ -36,23 +36,32 @@ export function AppQuestionsForm({
   const section = sections[currentSection]
 
   // Filter questions by showIf conditions
-  const visibleQuestions = section.questions.filter(q => {
-    if (!q.showIf) return true
-    return answers[q.showIf.field] === q.showIf.value
-  })
+  const visibleQuestions = useMemo(
+    () => section.questions.filter(q => {
+      if (!q.showIf) return true
+      return answers[q.showIf.field] === q.showIf.value
+    }),
+    [section.questions, answers]
+  )
 
   // Count answered questions
-  const totalQuestions = sections.flatMap(s => s.questions).length
-  const answeredCount = Object.keys(answers).filter(k => {
-    const v = answers[k]
-    return v !== undefined && v !== null && v !== '' && !(Array.isArray(v) && v.length === 0)
-  }).length
+  const totalQuestions = useMemo(
+    () => sections.flatMap(s => s.questions).length,
+    [sections]
+  )
+  const answeredCount = useMemo(
+    () => Object.keys(answers).filter(k => {
+      const v = answers[k]
+      return v !== undefined && v !== null && v !== '' && !(Array.isArray(v) && v.length === 0)
+    }).length,
+    [answers]
+  )
 
-  function updateAnswer(id: string, value: unknown) {
+  const updateAnswer = useCallback((id: string, value: unknown) => {
     setAnswers(prev => ({ ...prev, [id]: value }))
-  }
+  }, [])
 
-  async function handleSave(completed: boolean = false) {
+  const handleSave = useCallback(async (completed: boolean = false) => {
     setSaving(true)
     setMessage('')
 
@@ -75,7 +84,7 @@ export function AppQuestionsForm({
       setMessage(`Error: ${data.error}`)
     }
     setSaving(false)
-  }
+  }, [applicationId, answers, router])
 
   return (
     <div>
