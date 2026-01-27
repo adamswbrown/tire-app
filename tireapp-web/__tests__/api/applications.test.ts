@@ -84,6 +84,32 @@ describe('GET /api/applications', () => {
     })
   })
 
+  it('supports search filter', async () => {
+    mockAuth.mockResolvedValue(authedSession)
+    mockFindMany.mockResolvedValue([])
+    mockCount.mockResolvedValue(0)
+
+    const req = new NextRequest('http://localhost/api/applications?customerId=cust-1&search=myapp')
+    const res = await GET(req)
+    expect(res.status).toBe(200)
+    expect(mockFindMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: { customerId: 'cust-1', name: { contains: 'myapp', mode: 'insensitive' } },
+    }))
+  })
+
+  it('supports sort and order params', async () => {
+    mockAuth.mockResolvedValue(authedSession)
+    mockFindMany.mockResolvedValue([])
+    mockCount.mockResolvedValue(0)
+
+    const req = new NextRequest('http://localhost/api/applications?customerId=cust-1&sort=name&order=asc')
+    const res = await GET(req)
+    expect(res.status).toBe(200)
+    expect(mockFindMany).toHaveBeenCalledWith(expect.objectContaining({
+      orderBy: { name: 'asc' },
+    }))
+  })
+
   it('respects page and limit params', async () => {
     mockAuth.mockResolvedValue(authedSession)
     mockFindMany.mockResolvedValue([])

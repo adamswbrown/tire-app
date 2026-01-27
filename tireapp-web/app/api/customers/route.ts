@@ -5,7 +5,7 @@ import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 import { stripHtml } from '@/lib/sanitize'
 import { createCustomerSchema, formatZodErrors } from '@/lib/validations'
 
-// GET /api/customers - List all customers
+// GET /api/customers?search=xxx&sort=name|createdAt&order=asc|desc - List customers
 export async function GET(request: NextRequest) {
   const session = await auth()
   if (!session) {
@@ -17,9 +17,21 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
   }
 
+  const search = request.nextUrl.searchParams.get('search')
+  const sort = request.nextUrl.searchParams.get('sort') || 'createdAt'
+  const order = request.nextUrl.searchParams.get('order') || 'desc'
+
+  const orderBy: Record<string, string> = {}
+  if (sort === 'name' || sort === 'createdAt') {
+    orderBy[sort] = order === 'asc' ? 'asc' : 'desc'
+  } else {
+    orderBy.createdAt = 'desc'
+  }
+
   try {
     const customers = await prisma.customer.findMany({
-      orderBy: { createdAt: 'desc' },
+      where: search ? { name: { contains: search, mode: 'insensitive' } } : undefined,
+      orderBy,
       include: {
         _count: { select: { applications: true } },
       },

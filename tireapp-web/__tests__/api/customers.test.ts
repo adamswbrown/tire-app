@@ -53,10 +53,34 @@ describe('GET /api/customers', () => {
     expect(res.status).toBe(200)
     const body = await res.json()
     expect(body).toEqual(customers)
-    expect(mockFindMany).toHaveBeenCalledWith({
+    expect(mockFindMany).toHaveBeenCalledWith(expect.objectContaining({
       orderBy: { createdAt: 'desc' },
       include: { _count: { select: { applications: true } } },
-    })
+    }))
+  })
+
+  it('filters customers by search term', async () => {
+    mockAuth.mockResolvedValue({ user: { email: 'test@test.com' } })
+    mockFindMany.mockResolvedValue([])
+
+    const req = new NextRequest('http://localhost/api/customers?search=acme')
+    const res = await GET(req)
+    expect(res.status).toBe(200)
+    expect(mockFindMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: { name: { contains: 'acme', mode: 'insensitive' } },
+    }))
+  })
+
+  it('sorts customers by name ascending', async () => {
+    mockAuth.mockResolvedValue({ user: { email: 'test@test.com' } })
+    mockFindMany.mockResolvedValue([])
+
+    const req = new NextRequest('http://localhost/api/customers?sort=name&order=asc')
+    const res = await GET(req)
+    expect(res.status).toBe(200)
+    expect(mockFindMany).toHaveBeenCalledWith(expect.objectContaining({
+      orderBy: { name: 'asc' },
+    }))
   })
 })
 

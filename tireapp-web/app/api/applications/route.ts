@@ -4,7 +4,7 @@ import { auth } from '@/auth'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 import { createApplicationSchema, batchCreateApplicationsSchema, formatZodErrors } from '@/lib/validations'
 
-// GET /api/applications?customerId=xxx&page=1&limit=50 - List applications for a customer
+// GET /api/applications?customerId=xxx&page=1&limit=50&sort=name|createdAt&order=asc|desc&search=xxx
 export async function GET(request: NextRequest) {
   const session = await auth()
   if (!session) {
@@ -24,12 +24,27 @@ export async function GET(request: NextRequest) {
   const page = Math.max(1, parseInt(request.nextUrl.searchParams.get('page') || '1', 10))
   const limit = Math.min(100, Math.max(1, parseInt(request.nextUrl.searchParams.get('limit') || '50', 10)))
   const skip = (page - 1) * limit
+  const sort = request.nextUrl.searchParams.get('sort') || 'createdAt'
+  const order = request.nextUrl.searchParams.get('order') || 'desc'
+  const search = request.nextUrl.searchParams.get('search')
+
+  const orderBy: Record<string, string> = {}
+  if (['name', 'createdAt', 'status'].includes(sort)) {
+    orderBy[sort] = order === 'asc' ? 'asc' : 'desc'
+  } else {
+    orderBy.createdAt = 'desc'
+  }
+
+  const where: Record<string, unknown> = { customerId }
+  if (search) {
+    where.name = { contains: search, mode: 'insensitive' }
+  }
 
   try {
     const [applications, total] = await Promise.all([
       prisma.application.findMany({
-        where: { customerId },
-        orderBy: { createdAt: 'desc' },
+        where,
+        orderBy,
         skip,
         take: limit,
         include: {
@@ -39,7 +54,7 @@ export async function GET(request: NextRequest) {
           _count: { select: { assessmentHistory: true } },
         },
       }),
-      prisma.application.count({ where: { customerId } }),
+      prisma.application.count({ where }),
     ])
 
     return NextResponse.json({
