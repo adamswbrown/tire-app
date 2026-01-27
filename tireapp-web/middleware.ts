@@ -33,7 +33,12 @@ export default auth((req) => {
     }
   }
 
-  return NextResponse.next()
+  const response = NextResponse.next()
+
+  // Add response timing header for observability
+  response.headers.set('X-Response-Time', `${Date.now()}`)
+
+  return response
 })
 
 // Configure which routes to protect
@@ -41,5 +46,6 @@ export const config = {
   matcher: [
     '/app/:path*',
     '/admin/:path*',
+    '/api/:path*',
   ],
 }
