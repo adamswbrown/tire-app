@@ -82,6 +82,48 @@ describe('GET /api/customers', () => {
       orderBy: { name: 'asc' },
     }))
   })
+
+  it('returns ETag and Cache-Control headers', async () => {
+    mockAuth.mockResolvedValue({ user: { email: 'test@test.com' } })
+    mockFindMany.mockResolvedValue([{ id: '1', name: 'Test' }])
+
+    const req = new NextRequest('http://localhost/api/customers')
+    const res = await GET(req)
+    expect(res.status).toBe(200)
+    expect(res.headers.get('ETag')).toMatch(/^"[a-f0-9]{32}"$/)
+    expect(res.headers.get('Cache-Control')).toBe('private, no-cache')
+    expect(res.headers.get('Vary')).toBe('Authorization')
+  })
+
+  it('returns 304 when ETag matches If-None-Match', async () => {
+    mockAuth.mockResolvedValue({ user: { email: 'test@test.com' } })
+    const data = [{ id: '1', name: 'Test' }]
+    mockFindMany.mockResolvedValue(data)
+
+    // First request to get ETag
+    const req1 = new NextRequest('http://localhost/api/customers')
+    const res1 = await GET(req1)
+    const etag = res1.headers.get('ETag')!
+
+    // Second request with matching ETag
+    const req2 = new NextRequest('http://localhost/api/customers', {
+      headers: { 'If-None-Match': etag },
+    })
+    const res2 = await GET(req2)
+    expect(res2.status).toBe(304)
+  })
+
+  it('returns 200 when ETag does not match If-None-Match', async () => {
+    mockAuth.mockResolvedValue({ user: { email: 'test@test.com' } })
+    mockFindMany.mockResolvedValue([{ id: '1', name: 'Changed' }])
+
+    const req = new NextRequest('http://localhost/api/customers', {
+      headers: { 'If-None-Match': '"stale-etag"' },
+    })
+    const res = await GET(req)
+    expect(res.status).toBe(200)
+    expect(res.headers.get('ETag')).toMatch(/^"[a-f0-9]{32}"$/)
+  })
 })
 
 describe('POST /api/customers', () => {

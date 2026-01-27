@@ -60,6 +60,15 @@ describe('GET /api/thresholds', () => {
     expect(body.distributionThreshold).toBe(85)
     expect(body.tiebreakThreshold).toBe(6) // still default
   })
+
+  it('returns ETag and 5-minute Cache-Control', async () => {
+    mockAuth.mockResolvedValue(consultantSession)
+    mockFindMany.mockResolvedValue([])
+
+    const res = await GET(new NextRequest('http://localhost/api/thresholds'))
+    expect(res.headers.get('ETag')).toMatch(/^"[a-f0-9]{32}"$/)
+    expect(res.headers.get('Cache-Control')).toBe('private, max-age=300, must-revalidate')
+  })
 })
 
 describe('PUT /api/thresholds', () => {
