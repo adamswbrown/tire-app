@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import Link from "next/link"
 import { ExcelUpload } from "@/components/ExcelUpload"
 import { ApplicationTable } from "@/components/ApplicationTable"
+import { ExportButton } from "@/components/ExportButton"
 
 export default async function ApplicationsPage({
   params,
@@ -48,7 +49,10 @@ export default async function ApplicationsPage({
 
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">{customer.name}</h1>
-        <ExcelUpload customerId={customerId} />
+        <div className="flex items-center gap-2">
+          {applications.length > 0 && <ExportButton customerId={customerId} />}
+          <ExcelUpload customerId={customerId} />
+        </div>
       </div>
 
       {/* Metrics */}
