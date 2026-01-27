@@ -13,8 +13,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "TIREApp",
-  description: "TIRE Framework Assessment Tool",
+  title: {
+    default: "TIREApp",
+    template: "%s | TIREApp",
+  },
+  description: "TIRE Framework Assessment Tool - Tolerate, Invest, Replace, Eliminate",
 };
 
 export default function RootLayout({

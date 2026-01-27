@@ -1,9 +1,14 @@
+import type { Metadata } from "next"
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import { ThresholdManager } from "@/components/ThresholdManager"
 import { UserManager } from "@/components/UserManager"
 import { prisma } from "@/lib/prisma"
+
+export const metadata: Metadata = {
+  title: "Admin",
+}
 
 export default async function AdminPage() {
   const session = await auth()
