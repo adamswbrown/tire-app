@@ -93,7 +93,14 @@ export function ApplicationTable({
           <tbody className="divide-y">
             {filtered.map(app => (
               <tr key={app.id} className="hover:bg-gray-50">
-                <td className="px-4 py-2 font-medium">{app.name}</td>
+                <td className="px-4 py-2 font-medium">
+                  <Link
+                    href={`/app/customers/${customerId}/applications/${app.id}`}
+                    className="text-blue-600 hover:text-blue-800 hover:underline"
+                  >
+                    {app.name}
+                  </Link>
+                </td>
                 <td className="px-4 py-2">
                   <span className={`text-xs px-2 py-0.5 rounded ${
                     app.assessmentScope === 'In Scope'
