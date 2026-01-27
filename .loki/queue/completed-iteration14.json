@@ -1,0 +1,76 @@
+[
+  {
+    "id": "m28-client-caching",
+    "milestone": "M28",
+    "title": "Client-Side ETag Caching",
+    "status": "completed",
+    "commit": "098a640",
+    "tests": 9,
+    "files": [
+      "lib/api-client.ts",
+      "__tests__/lib/api-client.test.ts",
+      "components/ThresholdManager.tsx",
+      "components/UserManager.tsx",
+      "components/CustomerActions.tsx",
+      "components/ApplicationDetail.tsx",
+      "components/AppQuestionsForm.tsx",
+      "components/StrategyQuestionsForm.tsx"
+    ]
+  },
+  {
+    "id": "m29-integration-tests",
+    "milestone": "M29",
+    "title": "Integration Tests for API Caching",
+    "status": "completed",
+    "commit": "3b31200",
+    "tests": 14,
+    "files": [
+      "__tests__/integration/api-caching.test.ts"
+    ]
+  },
+  {
+    "id": "m30-performance-benchmarks",
+    "milestone": "M30",
+    "title": "Performance Benchmarks",
+    "status": "completed",
+    "commit": "fa2d592",
+    "tests": 10,
+    "files": [
+      "__tests__/performance/caching-benchmark.test.ts"
+    ],
+    "metrics": {
+      "throughput": "117,057 req/s",
+      "speedup_304": "2.83x",
+      "p50_latency": "< 1ms",
+      "p95_latency": "< 10ms"
+    }
+  },
+  {
+    "id": "m31-monitoring-dashboard",
+    "milestone": "M31",
+    "title": "Monitoring Dashboard",
+    "status": "completed",
+    "commit": "c94c715",
+    "tests": 13,
+    "files": [
+      "components/MonitoringDashboard.tsx",
+      "__tests__/components/monitoring-dashboard.test.tsx"
+    ]
+  },
+  {
+    "id": "m32-analytics-dashboard",
+    "milestone": "M32",
+    "title": "Analytics Dashboard",
+    "status": "in_progress",
+    "commit": "2c07d75",
+    "tests": 0,
+    "files": [
+      "components/AnalyticsDashboard.tsx"
+    ],
+    "pending": [
+      "Add comprehensive tests",
+      "Integrate into admin page",
+      "Add export functionality"
+    ]
+  }
+]
