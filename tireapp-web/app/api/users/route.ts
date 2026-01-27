@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/auth'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
+import { updateUserRoleSchema, formatZodErrors } from '@/lib/validations'
 
 // GET /api/users - List all users (admin only)
 export async function GET(request: NextRequest) {
@@ -46,15 +47,13 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
   }
 
-  const { userId, role } = await request.json()
-
-  if (!userId || !role) {
-    return NextResponse.json({ error: 'userId and role are required' }, { status: 400 })
+  const body = await request.json()
+  const parsed = updateUserRoleSchema.safeParse(body)
+  if (!parsed.success) {
+    return NextResponse.json({ error: formatZodErrors(parsed.error) }, { status: 400 })
   }
 
-  if (!['Admin', 'Consultant', 'Viewer'].includes(role)) {
-    return NextResponse.json({ error: 'Invalid role' }, { status: 400 })
-  }
+  const { userId, role } = parsed.data
 
   try {
     const user = await prisma.user.update({

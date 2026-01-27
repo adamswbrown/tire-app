@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/auth'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
+import { updateThresholdsSchema, formatZodErrors } from '@/lib/validations'
 
 // GET /api/thresholds - Get all thresholds
 export async function GET(request: NextRequest) {
@@ -44,23 +45,17 @@ export async function PUT(request: NextRequest) {
   }
 
   const body = await request.json()
+  const parsed = updateThresholdsSchema.safeParse(body)
+  if (!parsed.success) {
+    return NextResponse.json({ error: formatZodErrors(parsed.error) }, { status: 400 })
+  }
+
   const updates: { key: string; value: number }[] = []
-
-  if (typeof body.distributionThreshold === 'number') {
-    if (body.distributionThreshold < 0 || body.distributionThreshold > 100) {
-      return NextResponse.json({ error: 'distributionThreshold must be between 0 and 100' }, { status: 400 })
-    }
-    updates.push({ key: 'distributionThreshold', value: body.distributionThreshold })
+  if (parsed.data.distributionThreshold !== undefined) {
+    updates.push({ key: 'distributionThreshold', value: parsed.data.distributionThreshold })
   }
-  if (typeof body.tiebreakThreshold === 'number') {
-    if (body.tiebreakThreshold < 0 || body.tiebreakThreshold > 100) {
-      return NextResponse.json({ error: 'tiebreakThreshold must be between 0 and 100' }, { status: 400 })
-    }
-    updates.push({ key: 'tiebreakThreshold', value: body.tiebreakThreshold })
-  }
-
-  if (updates.length === 0) {
-    return NextResponse.json({ error: 'No valid thresholds provided' }, { status: 400 })
+  if (parsed.data.tiebreakThreshold !== undefined) {
+    updates.push({ key: 'tiebreakThreshold', value: parsed.data.tiebreakThreshold })
   }
 
   try {

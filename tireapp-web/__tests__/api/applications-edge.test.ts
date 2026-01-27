@@ -24,6 +24,7 @@ const mockCreate = jest.fn()
 const mockCreateMany = jest.fn()
 const mockUpdate = jest.fn()
 const mockDelete = jest.fn()
+const mockCount = jest.fn()
 jest.mock('@/lib/prisma', () => ({
   prisma: {
     application: {
@@ -33,6 +34,7 @@ jest.mock('@/lib/prisma', () => ({
       createMany: (...args: unknown[]) => mockCreateMany(...args),
       update: (...args: unknown[]) => mockUpdate(...args),
       delete: (...args: unknown[]) => mockDelete(...args),
+      count: (...args: unknown[]) => mockCount(...args),
     },
   },
 }))

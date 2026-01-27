@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/auth'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
+import { createApplicationSchema, batchCreateApplicationsSchema, formatZodErrors } from '@/lib/validations'
 
-// GET /api/applications?customerId=xxx - List applications for a customer
+// GET /api/applications?customerId=xxx&page=1&limit=50 - List applications for a customer
 export async function GET(request: NextRequest) {
   const session = await auth()
   if (!session) {
@@ -20,19 +21,36 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'customerId is required' }, { status: 400 })
   }
 
+  const page = Math.max(1, parseInt(request.nextUrl.searchParams.get('page') || '1', 10))
+  const limit = Math.min(100, Math.max(1, parseInt(request.nextUrl.searchParams.get('limit') || '50', 10)))
+  const skip = (page - 1) * limit
+
   try {
-    const applications = await prisma.application.findMany({
-      where: { customerId },
-      orderBy: { createdAt: 'desc' },
-      include: {
-        questionnaires: {
-          select: { id: true, type: true, completedAt: true },
+    const [applications, total] = await Promise.all([
+      prisma.application.findMany({
+        where: { customerId },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+        include: {
+          questionnaires: {
+            select: { id: true, type: true, completedAt: true },
+          },
+          _count: { select: { assessmentHistory: true } },
         },
-        _count: { select: { assessmentHistory: true } },
+      }),
+      prisma.application.count({ where: { customerId } }),
+    ])
+
+    return NextResponse.json({
+      data: applications,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
       },
     })
-
-    return NextResponse.json(applications)
   } catch {
     return NextResponse.json({ error: 'Failed to fetch applications' }, { status: 500 })
   }
@@ -55,14 +73,14 @@ export async function POST(request: NextRequest) {
   try {
     // Support single or batch creation
     if (Array.isArray(body.applications)) {
-      // Batch creation from Excel upload
-      const { customerId, applications } = body
-      if (!customerId || !applications.length) {
-        return NextResponse.json({ error: 'customerId and applications are required' }, { status: 400 })
+      const parsed = batchCreateApplicationsSchema.safeParse(body)
+      if (!parsed.success) {
+        return NextResponse.json({ error: formatZodErrors(parsed.error) }, { status: 400 })
       }
 
+      const { customerId, applications } = parsed.data
       const created = await prisma.application.createMany({
-        data: applications.map((app: Record<string, string>) => ({
+        data: applications.map((app) => ({
           customerId,
           name: app.name,
           assessmentScope: app.assessmentScope || 'In Scope',
@@ -83,18 +101,19 @@ export async function POST(request: NextRequest) {
     }
 
     // Single creation
-    if (!body.customerId || !body.name) {
-      return NextResponse.json({ error: 'customerId and name are required' }, { status: 400 })
+    const parsed = createApplicationSchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: formatZodErrors(parsed.error) }, { status: 400 })
     }
 
     const application = await prisma.application.create({
       data: {
-        customerId: body.customerId,
-        name: body.name.trim(),
-        assessmentScope: body.assessmentScope || 'In Scope',
-        dataCenter: body.dataCenter || null,
-        environment: body.environment || null,
-        server: body.server || null,
+        customerId: parsed.data.customerId,
+        name: parsed.data.name,
+        assessmentScope: parsed.data.assessmentScope || 'In Scope',
+        dataCenter: parsed.data.dataCenter || null,
+        environment: parsed.data.environment || null,
+        server: parsed.data.server || null,
       },
     })
 

@@ -24,6 +24,7 @@ const mockCreate = jest.fn()
 const mockCreateMany = jest.fn()
 const mockUpdate = jest.fn()
 const mockDelete = jest.fn()
+const mockCount = jest.fn()
 jest.mock('@/lib/prisma', () => ({
   prisma: {
     application: {
@@ -33,6 +34,7 @@ jest.mock('@/lib/prisma', () => ({
       createMany: (...args: unknown[]) => mockCreateMany(...args),
       update: (...args: unknown[]) => mockUpdate(...args),
       delete: (...args: unknown[]) => mockDelete(...args),
+      count: (...args: unknown[]) => mockCount(...args),
     },
   },
 }))
@@ -58,22 +60,44 @@ describe('GET /api/applications', () => {
     expect(body.error).toBe('customerId is required')
   })
 
-  it('returns applications for customer', async () => {
+  it('returns paginated applications for customer', async () => {
     mockAuth.mockResolvedValue(authedSession)
     const apps = [{ id: '1', name: 'App1' }]
     mockFindMany.mockResolvedValue(apps)
+    mockCount.mockResolvedValue(1)
 
     const req = new NextRequest('http://localhost/api/applications?customerId=cust-1')
     const res = await GET(req)
     expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.data).toEqual(apps)
+    expect(body.pagination).toEqual({ page: 1, limit: 50, total: 1, totalPages: 1 })
     expect(mockFindMany).toHaveBeenCalledWith({
       where: { customerId: 'cust-1' },
       orderBy: { createdAt: 'desc' },
+      skip: 0,
+      take: 50,
       include: {
         questionnaires: { select: { id: true, type: true, completedAt: true } },
         _count: { select: { assessmentHistory: true } },
       },
     })
+  })
+
+  it('respects page and limit params', async () => {
+    mockAuth.mockResolvedValue(authedSession)
+    mockFindMany.mockResolvedValue([])
+    mockCount.mockResolvedValue(75)
+
+    const req = new NextRequest('http://localhost/api/applications?customerId=cust-1&page=2&limit=25')
+    const res = await GET(req)
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.pagination).toEqual({ page: 2, limit: 25, total: 75, totalPages: 3 })
+    expect(mockFindMany).toHaveBeenCalledWith(expect.objectContaining({
+      skip: 25,
+      take: 25,
+    }))
   })
 })
 

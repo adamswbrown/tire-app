@@ -105,7 +105,7 @@ describe('PATCH /api/users', () => {
     const res = await PATCH(req)
     expect(res.status).toBe(400)
     const body = await res.json()
-    expect(body.error).toBe('Invalid role')
+    expect(body.error).toContain('role')
   })
 
   it('updates user role for admin', async () => {

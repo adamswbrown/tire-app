@@ -124,7 +124,7 @@ describe('POST /api/questionnaires', () => {
     const res = await POST(req)
     expect(res.status).toBe(400)
     const body = await res.json()
-    expect(body.error).toContain('type must be')
+    expect(body.error).toContain('type')
   })
 
   it('saves app_questions and marks complete', async () => {

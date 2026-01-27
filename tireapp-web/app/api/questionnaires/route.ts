@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/auth'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
+import { createQuestionnaireSchema, formatZodErrors } from '@/lib/validations'
 import {
   calculateTirePlacement,
   type StrategyQuestion,
@@ -55,21 +56,13 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json()
-  const { applicationId, type, answers } = body
-
-  if (!applicationId || !type || !answers) {
-    return NextResponse.json(
-      { error: 'applicationId, type, and answers are required' },
-      { status: 400 },
-    )
+  const parsed = createQuestionnaireSchema.safeParse(body)
+  if (!parsed.success) {
+    return NextResponse.json({ error: formatZodErrors(parsed.error) }, { status: 400 })
   }
 
-  if (!['app_questions', 'strategy_questions'].includes(type)) {
-    return NextResponse.json(
-      { error: 'type must be "app_questions" or "strategy_questions"' },
-      { status: 400 },
-    )
-  }
+  const { applicationId, type, completed } = parsed.data
+  const answers = parsed.data.answers as Prisma.InputJsonValue
 
   try {
     // Calculate summary for strategy questions
@@ -97,17 +90,17 @@ export async function POST(request: NextRequest) {
         type,
         answers,
         summary,
-        completedAt: body.completed ? new Date() : null,
+        completedAt: completed ? new Date() : null,
       },
       update: {
         answers,
         summary,
-        completedAt: body.completed ? new Date() : null,
+        completedAt: completed ? new Date() : null,
       },
     })
 
     // Update application TIRE placement if strategy questions completed
-    if (tirePlacement && body.completed) {
+    if (tirePlacement && completed) {
       await prisma.application.update({
         where: { id: applicationId },
         data: {
@@ -118,7 +111,7 @@ export async function POST(request: NextRequest) {
           completedAt: new Date(),
         },
       })
-    } else if (type === 'app_questions' && body.completed) {
+    } else if (type === 'app_questions' && completed) {
       await prisma.application.update({
         where: { id: applicationId },
         data: { appQuestionsCompleted: true },
