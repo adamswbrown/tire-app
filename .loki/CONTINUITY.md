@@ -1,10 +1,10 @@
 # Loki Continuity - TIREApp Migration
 
 ## Current State
-- **Phase**: MIGRATION COMPLETE - All core features implemented
-- **Last Action**: Committed M7 (results view, user management)
-- **Git HEAD**: b750fb0 (M7 committed)
-- **Next Action**: Deployment preparation or further enhancements
+- **Phase**: POST-MIGRATION - Quality hardening iteration 3
+- **Last Action**: Performance optimizations, a11y, TIRE scoring edge case tests, loading/error boundaries
+- **Git HEAD**: 24e105e (a11y on forms committed)
+- **Next Action**: E2E test setup, deployment config, or additional integration tests
 
 ## Mistakes & Learnings
 - Previous session committed M1 scaffold but directory was deleted from disk afterward
@@ -14,6 +14,12 @@
 - XLSX library: empty arrays [] are collapsed, use [''] for placeholder rows
 - TypeScript JSON imports need `as never[]` or `as unknown` casts for strict types
 - npx commands must run from tireapp-web/ directory, not project root
+- Jest API route tests need `@jest-environment node` docblock (jsdom lacks Request/Response)
+- Component named `Error` shadows global Error constructor - use `ErrorPage` alias in tests
+- `getByText('In Scope')` fails when text appears in both filter buttons and table badges - use `getAllByText` and filter by tagName
+- All API routes should have try/catch to prevent unhandled Prisma errors leaking stack traces
+- Babel-jest in next/jest doesn't support `type` keyword in imports - use inline union types or separate type import file
+- `JSON.parse(JSON.stringify())` is valid pattern for passing Prisma Date objects to client components in Next.js
 
 ## Progress
 - M1 Foundation: COMPLETE (7b0a6e9 - build fixes, 7d806a6 - tests)
@@ -23,11 +29,36 @@
 - M5 Polish + Tests: COMPLETE (062ec40 - app detail, loading, error boundary, 39 tests)
 - M6 Dashboard: COMPLETE (2345b15 - TIRE stats, not-found page)
 - M7 Results + Users: COMPLETE (b750fb0 - results view, user management API)
+- M8 Quality Hardening: COMPLETE (af8ef35 - tests, security, a11y, error handling)
+- M9 Performance + Coverage: COMPLETE (24e105e - memoization, loading/error boundaries, edge case tests, a11y)
 
-## Test Coverage
-- 39 tests passing across 7 suites
-- HomePage (3), UnauthorizedPage (3), Schema (9), TIRE Scoring (12), Excel Parser (6)
-- ExportButton (4), ThresholdManager (4)
+## Test Coverage (129 tests, 17 suites)
+- **API Routes (5 suites, 55 tests)**: customers, applications, applications/[id], questionnaires, thresholds, users
+- **Components (7 suites, 30 tests)**: ExportButton, ThresholdManager, CustomerActions, UserManager, ApplicationTable, ExcelUpload, ErrorBoundary/Loading/NotFound
+- **Lib (2 suites, 24 tests)**: TIRE Scoring (18 - includes 8 edge cases), Excel Parser (6)
+- **Pages (2 suites, 6 tests)**: HomePage (3), UnauthorizedPage (3)
+- **Schema (1 suite, 9 tests)**: Prisma schema validation
+
+## Performance Improvements (Iteration 3)
+- [x] useMemo on filtered lists: ApplicationTable, StrategyQuestionsForm, AppQuestionsForm
+- [x] useMemo on computed values: answeredCount, visibleQuestions, totalQuestions
+- [x] useCallback on event handlers: updateAnswer, updateExtended, handleSave in forms
+- [x] Loading boundaries: admin, applications list, app detail route segments
+- [x] Error boundaries: admin, applications list, app detail route segments
+
+## Security Improvements (Iteration 2)
+- [x] Input validation: customer/app names max 500 chars
+- [x] 404 guards: PATCH/DELETE check record exists before operating
+- [x] Range validation: thresholds must be 0-100
+- [x] Error handling: try/catch on all API routes (prevents stack trace leaks)
+- [x] RBAC enforcement: admin-only routes return 403 for non-admins
+
+## Accessibility Improvements (Iterations 2+3)
+- [x] ARIA labels on search inputs and file uploads
+- [x] Navigation landmarks (aria-label on nav)
+- [x] role="main" on content area
+- [x] role="status" on dynamic messages (ExcelUpload, StrategyQuestionsForm, AppQuestionsForm, ApplicationDetail)
+- [x] aria-label on strategy question selects and note inputs
 
 ## Feature Parity Checklist (vs Electron App)
 - [x] Authentication (Entra ID via Auth.js)
