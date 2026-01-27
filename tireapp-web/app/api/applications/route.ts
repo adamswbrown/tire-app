@@ -6,6 +6,7 @@ import { createApplicationSchema, batchCreateApplicationsSchema, formatZodErrors
 import { conditionalResponse } from '@/lib/api-cache'
 
 // GET /api/applications?customerId=xxx&page=1&limit=50&sort=name|createdAt&order=asc|desc&search=xxx
+// When customerId is omitted, returns all applications (for analytics/admin views)
 export async function GET(request: NextRequest) {
   const session = await auth()
   if (!session) {
@@ -18,9 +19,6 @@ export async function GET(request: NextRequest) {
   }
 
   const customerId = request.nextUrl.searchParams.get('customerId')
-  if (!customerId) {
-    return NextResponse.json({ error: 'customerId is required' }, { status: 400 })
-  }
 
   const page = Math.max(1, parseInt(request.nextUrl.searchParams.get('page') || '1', 10))
   const limit = Math.min(100, Math.max(1, parseInt(request.nextUrl.searchParams.get('limit') || '50', 10)))
@@ -36,7 +34,10 @@ export async function GET(request: NextRequest) {
     orderBy.createdAt = 'desc'
   }
 
-  const where: Record<string, unknown> = { customerId }
+  const where: Record<string, unknown> = {}
+  if (customerId) {
+    where.customerId = customerId
+  }
   if (search) {
     where.name = { contains: search, mode: 'insensitive' }
   }

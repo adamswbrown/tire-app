@@ -51,13 +51,21 @@ describe('GET /api/applications', () => {
     expect(res.status).toBe(401)
   })
 
-  it('returns 400 when customerId missing', async () => {
+  it('returns all applications when customerId omitted', async () => {
     mockAuth.mockResolvedValue(authedSession)
+    const apps = [{ id: '1', name: 'App1' }, { id: '2', name: 'App2' }]
+    mockFindMany.mockResolvedValue(apps)
+    mockCount.mockResolvedValue(2)
+
     const req = new NextRequest('http://localhost/api/applications')
     const res = await GET(req)
-    expect(res.status).toBe(400)
+    expect(res.status).toBe(200)
     const body = await res.json()
-    expect(body.error).toBe('customerId is required')
+    expect(body.data).toEqual(apps)
+    expect(body.pagination.total).toBe(2)
+    expect(mockFindMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: {},
+    }))
   })
 
   it('returns paginated applications for customer', async () => {

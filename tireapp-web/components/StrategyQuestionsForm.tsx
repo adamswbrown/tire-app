@@ -211,7 +211,7 @@ export function StrategyQuestionsForm({
             </tr>
           </thead>
           <tbody className="divide-y">
-            {filtered.map((q, _fi) => {
+            {filtered.map((q) => {
               const globalIndex = questions.indexOf(q)
               return (
                 <tr key={globalIndex} className="hover:bg-gray-50">

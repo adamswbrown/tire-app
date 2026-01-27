@@ -60,11 +60,11 @@ export function AnalyticsDashboard() {
   async function loadData() {
     try {
       const [appsRes, customersRes] = await Promise.all([
-        apiFetch<Application[]>('/api/applications'),
+        apiFetch<{ data: Application[]; pagination: { total: number } }>('/api/applications?limit=100'),
         apiFetch<Customer[]>('/api/customers'),
       ])
 
-      setApplications(appsRes.data)
+      setApplications(appsRes.data.data)
       setCustomers(customersRes.data)
       setError(null)
     } catch (err) {

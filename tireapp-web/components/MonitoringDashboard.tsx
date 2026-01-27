@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { apiFetch } from '@/lib/api-client'
 
 interface HealthStatus {
@@ -18,19 +18,24 @@ interface HealthStatus {
   }
 }
 
-interface CacheStats {
-  size: number
-  hits: number
-  misses: number
-  hitRate: number
-}
-
 export function MonitoringDashboard() {
   const [health, setHealth] = useState<HealthStatus | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [refreshInterval, setRefreshInterval] = useState<number>(5000)
   const [autoRefresh, setAutoRefresh] = useState(true)
+
+  const fetchHealth = useCallback(async () => {
+    try {
+      const { data } = await apiFetch<HealthStatus>('/api/health')
+      setHealth(data)
+      setError(null)
+      setLoading(false)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch health status')
+      setLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
     fetchHealth()
@@ -39,24 +44,7 @@ export function MonitoringDashboard() {
 
     const interval = setInterval(fetchHealth, refreshInterval)
     return () => clearInterval(interval)
-  }, [refreshInterval, autoRefresh])
-
-  async function fetchHealth() {
-    try {
-      const { data, fromCache } = await apiFetch<HealthStatus>('/api/health')
-      setHealth(data)
-      setError(null)
-      setLoading(false)
-
-      // Log cache hit/miss for debugging
-      if (fromCache) {
-        console.log('Health data from cache (304)')
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch health status')
-      setLoading(false)
-    }
-  }
+  }, [refreshInterval, autoRefresh, fetchHealth])
 
   function formatUptime(seconds: number): string {
     const days = Math.floor(seconds / 86400)

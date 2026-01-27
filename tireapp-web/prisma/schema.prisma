@@ -82,6 +82,7 @@ model Customer {
 
   applications Application[]
 
+  @@index([name])
   @@map("customers")
 }
 
@@ -116,6 +117,9 @@ model Application {
   questionnaires     Questionnaire[]
   assessmentHistory  AssessmentHistory[]
 
+  @@index([customerId])
+  @@index([status])
+  @@index([customerId, status])
   @@map("applications")
 }
 
@@ -148,6 +152,8 @@ model AssessmentHistory {
 
   application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
 
+  @@index([applicationId])
+  @@index([createdAt])
   @@map("assessment_history")
 }
 

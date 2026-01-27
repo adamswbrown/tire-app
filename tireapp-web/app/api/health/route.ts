@@ -1,29 +1,50 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import os from 'os'
 
 // GET /api/health - Health check endpoint (no auth required)
 export async function GET() {
   const health: {
     status: string
     timestamp: string
-    database: string
+    database: {
+      connected: boolean
+      latency?: number
+    }
     uptime: number
+    memory: {
+      used: number
+      total: number
+      percent: number
+    }
   } = {
-    status: 'ok',
+    status: 'healthy',
     timestamp: new Date().toISOString(),
-    database: 'unknown',
+    database: { connected: false },
     uptime: process.uptime(),
+    memory: { used: 0, total: 0, percent: 0 },
   }
 
+  // Database connectivity check with latency measurement
   try {
-    // Test database connectivity with a simple query
+    const start = performance.now()
     await prisma.$queryRaw`SELECT 1`
-    health.database = 'connected'
+    const latency = Math.round(performance.now() - start)
+    health.database = { connected: true, latency }
   } catch {
-    health.database = 'disconnected'
-    health.status = 'degraded'
+    health.database = { connected: false }
+    health.status = 'unhealthy'
   }
 
-  const statusCode = health.status === 'ok' ? 200 : 503
+  // Memory usage
+  const mem = process.memoryUsage()
+  const totalMem = os.totalmem()
+  health.memory = {
+    used: mem.rss,
+    total: totalMem,
+    percent: (mem.rss / totalMem) * 100,
+  }
+
+  const statusCode = health.status === 'healthy' ? 200 : 503
   return NextResponse.json(health, { status: statusCode })
 }

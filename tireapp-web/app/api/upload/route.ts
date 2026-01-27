@@ -28,6 +28,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'customerId is required' }, { status: 400 })
     }
 
+    // Validate file size (max 10MB)
+    const MAX_FILE_SIZE = 10 * 1024 * 1024
+    if (file.size > MAX_FILE_SIZE) {
+      return NextResponse.json({ error: 'File too large. Maximum size is 10MB.' }, { status: 400 })
+    }
+
+    // Validate file type (Excel files only)
+    const allowedTypes = [
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+      'application/vnd.ms-excel', // .xls
+    ]
+    const isValidType = allowedTypes.includes(file.type) ||
+      file.name.endsWith('.xlsx') || file.name.endsWith('.xls')
+    if (!isValidType) {
+      return NextResponse.json({ error: 'Invalid file type. Only Excel files (.xlsx, .xls) are accepted.' }, { status: 400 })
+    }
+
     const buffer = await file.arrayBuffer()
     const result = parseExcelFile(buffer)
 

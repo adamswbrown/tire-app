@@ -24,8 +24,9 @@ describe('GET /api/health', () => {
     const data = await response.json()
 
     expect(response.status).toBe(200)
-    expect(data.status).toBe('ok')
-    expect(data.database).toBe('connected')
+    expect(data.status).toBe('healthy')
+    expect(data.database.connected).toBe(true)
+    expect(typeof data.database.latency).toBe('number')
     expect(data.timestamp).toBeDefined()
     expect(typeof data.uptime).toBe('number')
   })
@@ -37,8 +38,23 @@ describe('GET /api/health', () => {
     const data = await response.json()
 
     expect(response.status).toBe(503)
-    expect(data.status).toBe('degraded')
-    expect(data.database).toBe('disconnected')
+    expect(data.status).toBe('unhealthy')
+    expect(data.database.connected).toBe(false)
+  })
+
+  it('includes memory usage in response', async () => {
+    ;(prisma.$queryRaw as jest.Mock).mockResolvedValue([{ '?column?': 1 }])
+
+    const response = await GET()
+    const data = await response.json()
+
+    expect(typeof data.memory.used).toBe('number')
+    expect(typeof data.memory.total).toBe('number')
+    expect(typeof data.memory.percent).toBe('number')
+    expect(data.memory.used).toBeGreaterThan(0)
+    expect(data.memory.total).toBeGreaterThan(0)
+    expect(data.memory.percent).toBeGreaterThan(0)
+    expect(data.memory.percent).toBeLessThanOrEqual(100)
   })
 
   it('includes uptime in response', async () => {
