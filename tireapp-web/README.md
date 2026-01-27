@@ -1,234 +1,270 @@
-# TIREApp Web - Next.js 15 Migration
+# TIREApp Web Application
 
-Milestone 1 (M1): Foundation and Authentication
+Modern web application for TIRE (Technology, Infrastructure, Risk, Environment) assessment and scoring.
+
+## Overview
+
+TIREApp helps organizations evaluate applications across four key dimensions:
+- **T**echnology: Technical capabilities and architecture
+- **I**nfrastructure: Hosting and operational requirements
+- **R**isk: Security and compliance considerations
+- **E**nvironment: Business and organizational fit
+
+## Features
+
+✅ **Authentication & RBAC**
+- Microsoft Entra ID (Azure AD) integration
+- Role-based access control (Admin, Consultant, Viewer)
+- Database sessions for enterprise security
+
+✅ **Customer & Application Management**
+- Multi-tenant customer support
+- Excel bulk import from "App-to-Server List"
+- Individual application creation and editing
+- Scoping workflow (In Scope, Not In Scope, Pending)
+
+✅ **Assessment Workflows**
+- **App Questions**: Section-based questionnaire with conditional logic
+- **Strategy Questions**: TIRE category scoring with real-time visualization
+- **TIRE Scoring Engine**: Automated calculation with distribution and tiebreak logic
+
+✅ **Results & Reporting**
+- TIRE score breakdown by category
+- Placement recommendations (Retire, Tolerate, Invest, Eliminate)
+- Multi-sheet Excel export (summary, scores, answers)
+
+✅ **Admin Panel**
+- Customizable TIRE thresholds
+- System statistics dashboard
+- User management with role assignment
 
 ## Tech Stack
 
-- **Framework**: Next.js 15 (App Router)
-- **Language**: TypeScript 5.x
-- **Authentication**: Auth.js v5 (NextAuth) with Microsoft Entra ID
-- **Database**: Neon Postgres
-- **ORM**: Prisma 6.16+
-- **Hosting**: Vercel (planned)
+- **Framework**: Next.js 16 (App Router)
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS 4
+- **Database**: PostgreSQL (Neon)
+- **ORM**: Prisma 7 with PrismaNeon adapter
+- **Authentication**: Auth.js v5 (NextAuth)
+- **Testing**: Jest (177 unit/integration), Playwright (8 E2E)
+- **Deployment**: Vercel
 
-## Prerequisites
+## Quick Start
 
-- Node.js 20.x
-- npm (or pnpm/yarn)
-- Neon Postgres account: https://console.neon.tech/
-- Azure AD tenant: https://portal.azure.com/
+### Prerequisites
+- Node.js 20+
+- PostgreSQL database (local or Neon)
+- Microsoft Entra ID app registration
 
-## Setup Instructions
-
-### 1. Install Dependencies
+### Installation
 
 ```bash
+# Install dependencies
 npm install
-```
 
-### 2. Configure Environment Variables
-
-```bash
-# Copy example environment file
-cp .env.local.example .env.local
-
+# Set up environment variables
+cp .env.example .env.local
 # Edit .env.local with your credentials
-```
 
-**Required Variables**:
+# Run database migrations
+npx prisma migrate dev
 
-- `DATABASE_URL`: Neon pooled connection URL
-- `DIRECT_URL`: Neon direct connection URL (for migrations)
-- `AUTH_SECRET`: Generate with `npx auth secret`
-- `AUTH_MICROSOFT_ENTRA_ID_ID`: Azure AD Application (client) ID
-- `AUTH_MICROSOFT_ENTRA_ID_SECRET`: Azure AD Client Secret
-- `AUTH_MICROSOFT_ENTRA_ID_ISSUER`: Tenant-specific issuer URL
-- `NEXTAUTH_URL`: Callback URL (http://localhost:3000 for dev)
-
-### 3. Set Up Neon Database
-
-1. Create database at https://console.neon.tech/
-2. Copy connection strings to `.env.local`:
-   - **Pooled URL** (with `-pooler` suffix) → `DATABASE_URL`
-   - **Direct URL** (without `-pooler`) → `DIRECT_URL`
-
-### 4. Set Up Microsoft Entra ID (Azure AD)
-
-1. Navigate to https://portal.azure.com/
-2. Go to **Microsoft Entra ID** → **App registrations** → **New registration**
-3. Name: "TIREApp Web"
-4. Supported account types: **Single tenant**
-5. Redirect URI: `http://localhost:3000/api/auth/callback/microsoft-entra-id`
-6. Click **Register**
-7. Copy **Application (client) ID** → `AUTH_MICROSOFT_ENTRA_ID_ID`
-8. Go to **Certificates & secrets** → **New client secret**
-9. Copy secret value → `AUTH_MICROSOFT_ENTRA_ID_SECRET`
-10. Copy **Directory (tenant) ID** from Overview
-11. Build issuer URL: `https://login.microsoftonline.com/[tenant-id]/v2.0` → `AUTH_MICROSOFT_ENTRA_ID_ISSUER`
-
-**Optional: Configure App Roles**
-
-To enable Admin role assignment:
-
-1. Go to **App roles** → **Create app role**
-2. Display name: "Admin"
-3. Allowed member types: "Users/Groups"
-4. Value: "Admin"
-5. Description: "Administrator role for TIREApp"
-6. Enable
-7. Repeat for "Consultant" role (optional, this is the default)
-8. Go to **Enterprise applications** → Find your app → **Users and groups**
-9. Assign users to roles
-
-### 5. Run Database Migration
-
-```bash
-# Generate Prisma Client
-npx prisma generate
-
-# Run migration to create tables
-npx prisma migrate dev --name init
-
-# Verify migration
-npx prisma studio
-# Opens browser UI to view database tables
-```
-
-### 6. Start Development Server
-
-```bash
+# Start development server
 npm run dev
 ```
 
-Open http://localhost:3000
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-## Testing M1 Features
+## Development
 
-### Authentication Flow
+### Available Scripts
 
-1. Navigate to http://localhost:3000
-2. Click "Sign In with Microsoft"
-3. Complete Entra ID authentication
-4. Should redirect to `/app` (protected route)
-5. Verify name and role displayed
+```bash
+npm run dev         # Start development server
+npm run build       # Build for production
+npm run start       # Start production server
+npm test            # Run Jest tests (177 tests)
+npm run test:watch  # Run tests in watch mode
+npm run test:e2e    # Run Playwright E2E tests (8 tests)
+npm run test:e2e:ui # Run E2E tests in UI mode
+npm run lint        # Run ESLint
+```
 
-### Role-Based Access Control
-
-**As Consultant**:
-- ✅ Can access `/app/*` routes
-- ❌ Cannot access `/admin/*` routes (redirects to `/unauthorized`)
-
-**As Admin**:
-- ✅ Can access `/app/*` routes
-- ✅ Can access `/admin/*` routes
-
-### Session Persistence
-
-1. Sign in
-2. Refresh page → Should stay signed in
-3. Close tab, reopen → Should stay signed in (until session expires)
-
-## Project Structure
+### Project Structure
 
 ```
 tireapp-web/
-├── app/
-│   ├── layout.tsx              # Root layout
-│   ├── page.tsx                # Landing page (public)
-│   ├── api/
-│   │   └── auth/
-│   │       └── [...nextauth]/
-│   │           └── route.ts    # Auth.js handlers
-│   ├── app/
-│   │   └── page.tsx            # Protected app home
-│   ├── admin/
-│   │   └── page.tsx            # Admin dashboard
-│   └── unauthorized/
-│       └── page.tsx            # Unauthorized access
-├── prisma/
-│   └── schema.prisma           # Database schema
-├── lib/
-│   └── prisma.ts               # Prisma Client singleton
-├── auth.ts                     # Auth.js configuration
-├── middleware.ts               # Route protection
-├── .env.local                  # Environment variables (git-ignored)
-├── .env.local.example          # Environment template
-└── README.md                   # This file
+├── app/                    # Next.js App Router pages
+│   ├── api/               # API routes (REST endpoints)
+│   ├── app/               # Protected application routes
+│   ├── admin/             # Admin panel
+│   └── unauthorized/      # Access denied page
+├── components/            # React components
+├── lib/                   # Shared utilities
+│   ├── questions/         # Question data (JSON)
+│   ├── tire-scoring.ts    # TIRE calculation engine
+│   └── excel-parser.ts    # Excel import logic
+├── prisma/               # Database schema and migrations
+├── __tests__/            # Jest tests (unit + integration)
+├── e2e/                  # Playwright E2E tests
+└── public/               # Static assets
 ```
 
-## Database Schema (M1)
+## Testing
 
-**Auth.js Models** (fully implemented):
-- `User` - User accounts with role field
-- `Account` - OAuth provider linkage
-- `Session` - Database session persistence
-- `VerificationToken` - Email verification
-
-**TIREApp Models** (future-ready, empty):
-- `Customer` - Customer management
-- `Application` - Application assessments
-- `Questionnaire` - Question/answer storage
-- `Response` - Generic responses
-- `Export` - Export tracking
-- `Threshold` - Admin thresholds
-
-These will be populated in M2 (Data Model + Core APIs).
-
-## Troubleshooting
-
-### "Too many connections" Error
-
-**Cause**: Prisma Client instantiated multiple times in development (hot reload)
-
-**Solution**: Already implemented via singleton pattern in `lib/prisma.ts`
-
-### Authentication Fails
-
-**Check**:
-1. `.env.local` has correct Azure AD credentials
-2. Redirect URI in Azure matches exactly: `http://localhost:3000/api/auth/callback/microsoft-entra-id`
-3. Issuer URL uses correct tenant ID (single tenant format)
-
-**Debug**:
+### Unit & Integration Tests (Jest)
 ```bash
-# View Auth.js logs
-npm run dev
-# Check terminal for OAuth errors
+npm test
 ```
 
-### Database Connection Timeout
+**Coverage**: 177 tests across 22 suites
+- API routes (7 suites, 69 tests)
+- Components (10 suites, 64 tests)
+- Business logic (2 suites, 24 tests)
+- Pages (2 suites, 6 tests)
+- Schema validation (1 suite, 9 tests)
 
-**Cause**: Serverless cold start exceeds default timeout
+### E2E Tests (Playwright)
+```bash
+npm run test:e2e
+```
 
-**Solution**: Already configured in DATABASE_URL:
-- `connect_timeout=15`
-- `pool_timeout=15`
+**Coverage**: 8 smoke tests
+- Home page loading
+- Authentication flow
+- Route protection
+- Accessibility checks
 
-### Prisma Migration Fails
+## Deployment
 
-**Cause**: Using pooled URL for migration
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for complete deployment guide.
 
-**Solution**: Ensure `DIRECT_URL` configured (without `-pooler` suffix)
+### Quick Deploy to Vercel
 
 ```bash
-# Run migration with direct URL
-npx prisma migrate dev --name init
+# Install Vercel CLI
+npm i -g vercel
+
+# Deploy
+vercel --prod
 ```
 
-## Next Steps (M2: Data Model + Core APIs)
+## Environment Variables
 
-- Implement CRUD APIs for Customer, Application, Questionnaire
-- Add server actions for data mutations
-- Implement automated testing (Jest + Playwright)
-- Port Electron app data models to Prisma schema
+Required variables (see `.env.example`):
 
-## Links
+```env
+# Database
+DATABASE_URL="postgresql://..."
 
-- **Research**: `/migration/M1-ResearchPack.md`
-- **Implementation Plan**: `/migration/M1-ImplementationPlan.md`
-- **Migration Plan**: `/migration/1-migration-plan.md`
-- **Electron App**: `../` (parent directory)
+# Auth.js
+AUTH_SECRET="..."
+AUTH_MICROSOFT_ENTRA_ID_ID="..."
+AUTH_MICROSOFT_ENTRA_ID_SECRET="..."
+AUTH_MICROSOFT_ENTRA_ID_TENANT_ID="..."
+NEXTAUTH_URL="http://localhost:3000"
+```
+
+## Architecture Decisions
+
+### Why Next.js App Router?
+- Server components for optimal performance
+- Built-in API routes with type safety
+- Edge middleware for authentication
+- Streaming and React Suspense support
+
+### Why Prisma + Neon?
+- Type-safe database queries
+- Automatic migrations
+- Serverless-optimized connection pooling
+- Modern developer experience
+
+### Why Auth.js v5?
+- First-class Next.js integration
+- Database sessions (vs JWT-only)
+- Microsoft Entra ID provider
+- Edge runtime compatible
+
+## Database Schema
+
+Key entities:
+- **User**: Authentication and RBAC
+- **Customer**: Multi-tenant organization
+- **Application**: Assessed application with TIRE score
+- **Threshold**: Configurable TIRE placement boundaries
+
+See `prisma/schema.prisma` for complete schema.
+
+## API Endpoints
+
+```
+POST   /api/customers              # Create customer
+GET    /api/customers              # List customers
+POST   /api/applications           # Create application
+GET    /api/applications           # List applications
+PATCH  /api/applications/[id]      # Update application
+DELETE /api/applications/[id]      # Delete application
+GET    /api/questionnaires         # Get question definitions
+POST   /api/upload                 # Bulk import from Excel
+POST   /api/export                 # Export to Excel
+GET    /api/thresholds             # Get TIRE thresholds
+PATCH  /api/thresholds             # Update thresholds (Admin)
+GET    /api/users                  # List users (Admin)
+PATCH  /api/users                  # Update user role (Admin)
+```
+
+## Contributing
+
+### Code Style
+- TypeScript strict mode enabled
+- ESLint + Prettier for formatting
+- Component naming: PascalCase
+- API routes: kebab-case
+
+### Testing Requirements
+- Unit tests for business logic
+- Integration tests for API routes
+- Component tests for UI interactions
+- E2E tests for critical user journeys
+
+### Git Workflow
+- Feature branches from `main`
+- Descriptive commit messages
+- Pull requests for review
+- Atomic commits preferred
+
+## Security
+
+- ✅ Input validation (max lengths, range checks)
+- ✅ RBAC enforcement (Admin, Consultant, Viewer)
+- ✅ Security headers (CSP, XSS protection, frame denial)
+- ✅ SQL injection protection (Prisma parameterized queries)
+- ✅ XSS prevention (React automatic escaping)
+- ✅ CSRF protection (Auth.js built-in)
+- ⏳ Rate limiting (TODO: implement with Vercel Edge Config)
+
+## Performance
+
+- ✅ useMemo for expensive computations
+- ✅ useCallback for event handlers
+- ✅ Loading states with Suspense boundaries
+- ✅ Error boundaries for graceful degradation
+- ✅ Database query optimization (select only needed fields)
+- ✅ Edge middleware for auth (low latency)
+
+## Accessibility
+
+- ✅ Semantic HTML (nav, main, section)
+- ✅ ARIA labels on interactive elements
+- ✅ Keyboard navigation support
+- ✅ Dynamic status announcements (role="status")
+- ✅ Color contrast compliance
+- ✅ Responsive design (mobile-first)
+
+## License
+
+Proprietary - All rights reserved
 
 ---
 
-**M1 Status**: Foundation and Authentication ✅
+**Built with ❤️ using Next.js and TypeScript**

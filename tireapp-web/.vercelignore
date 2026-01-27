@@ -1,0 +1,39 @@
+# Vercel ignore file - exclude from deployment
+
+# Tests
+__tests__/
+e2e/
+test-results/
+playwright-report/
+coverage/
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+
+# Development files
+.env.local
+.env.test
+.env.development
+
+# Documentation
+*.md
+!README.md
+
+# Loki autonomy files
+../.loki/
+../migration/
+../STATE.md
+../WORKLOG.md
+../today.md
+../migration.md
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
