@@ -38,7 +38,7 @@ test.describe('Smoke Tests', () => {
       expect(url).toContain('/api/auth/signin');
     } catch (error) {
       // Redirect loop is expected behavior without proper auth setup
-      expect(error.message).toContain('ERR_TOO_MANY_REDIRECTS');
+      expect((error as Error).message).toContain('ERR_TOO_MANY_REDIRECTS');
     }
   });
 
@@ -51,7 +51,7 @@ test.describe('Smoke Tests', () => {
       expect(url).toContain('/api/auth/signin');
     } catch (error) {
       // Redirect loop is expected behavior without proper auth setup
-      expect(error.message).toContain('ERR_TOO_MANY_REDIRECTS');
+      expect((error as Error).message).toContain('ERR_TOO_MANY_REDIRECTS');
     }
   });
 

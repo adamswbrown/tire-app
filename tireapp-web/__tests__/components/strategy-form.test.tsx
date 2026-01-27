@@ -212,7 +212,7 @@ describe('StrategyQuestionsForm', () => {
       { clientAnswer: 'No', clientScore: 0, extendedAnswer: '' },
       null,
       null,
-    ]
+    ] as unknown as Record<string, unknown>[]
 
     render(
       <StrategyQuestionsForm
