@@ -27,8 +27,11 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json()
-  if (!body.name || typeof body.name !== 'string') {
+  if (!body.name || typeof body.name !== 'string' || body.name.trim().length === 0) {
     return NextResponse.json({ error: 'Name is required' }, { status: 400 })
+  }
+  if (body.name.length > 500) {
+    return NextResponse.json({ error: 'Name must be under 500 characters' }, { status: 400 })
   }
 
   const customer = await prisma.customer.create({

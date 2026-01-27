@@ -118,4 +118,38 @@ describe('PUT /api/thresholds', () => {
     expect(res.status).toBe(200)
     expect(mockUpsert).toHaveBeenCalledTimes(2)
   })
+
+  it('rejects negative distribution threshold', async () => {
+    mockAuth.mockResolvedValue(adminSession)
+    const req = new NextRequest('http://localhost/api/thresholds', {
+      method: 'PUT',
+      body: JSON.stringify({ distributionThreshold: -5 }),
+    })
+    const res = await PUT(req)
+    expect(res.status).toBe(400)
+    const body = await res.json()
+    expect(body.error).toContain('distributionThreshold')
+  })
+
+  it('rejects distribution threshold over 100', async () => {
+    mockAuth.mockResolvedValue(adminSession)
+    const req = new NextRequest('http://localhost/api/thresholds', {
+      method: 'PUT',
+      body: JSON.stringify({ distributionThreshold: 150 }),
+    })
+    const res = await PUT(req)
+    expect(res.status).toBe(400)
+  })
+
+  it('rejects negative tiebreak threshold', async () => {
+    mockAuth.mockResolvedValue(adminSession)
+    const req = new NextRequest('http://localhost/api/thresholds', {
+      method: 'PUT',
+      body: JSON.stringify({ tiebreakThreshold: -1 }),
+    })
+    const res = await PUT(req)
+    expect(res.status).toBe(400)
+    const body = await res.json()
+    expect(body.error).toContain('tiebreakThreshold')
+  })
 })

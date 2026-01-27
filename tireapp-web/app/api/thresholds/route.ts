@@ -37,9 +37,15 @@ export async function PUT(request: NextRequest) {
   const updates: { key: string; value: number }[] = []
 
   if (typeof body.distributionThreshold === 'number') {
+    if (body.distributionThreshold < 0 || body.distributionThreshold > 100) {
+      return NextResponse.json({ error: 'distributionThreshold must be between 0 and 100' }, { status: 400 })
+    }
     updates.push({ key: 'distributionThreshold', value: body.distributionThreshold })
   }
   if (typeof body.tiebreakThreshold === 'number') {
+    if (body.tiebreakThreshold < 0 || body.tiebreakThreshold > 100) {
+      return NextResponse.json({ error: 'tiebreakThreshold must be between 0 and 100' }, { status: 400 })
+    }
     updates.push({ key: 'tiebreakThreshold', value: body.tiebreakThreshold })
   }
 

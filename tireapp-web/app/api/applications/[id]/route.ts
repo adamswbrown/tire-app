@@ -38,10 +38,20 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   const { id } = await params
   const body = await request.json()
 
+  // Validate name length if provided
+  if (body.name !== undefined && (typeof body.name !== 'string' || body.name.trim().length === 0 || body.name.length > 500)) {
+    return NextResponse.json({ error: 'Name must be a non-empty string under 500 characters' }, { status: 400 })
+  }
+
+  const existing = await prisma.application.findUnique({ where: { id } })
+  if (!existing) {
+    return NextResponse.json({ error: 'Application not found' }, { status: 404 })
+  }
+
   const application = await prisma.application.update({
     where: { id },
     data: {
-      ...(body.name !== undefined && { name: body.name }),
+      ...(body.name !== undefined && { name: body.name.trim() }),
       ...(body.assessmentScope !== undefined && { assessmentScope: body.assessmentScope }),
       ...(body.initialTirePlacement !== undefined && { initialTirePlacement: body.initialTirePlacement }),
       ...(body.confirmedTirePlacement !== undefined && { confirmedTirePlacement: body.confirmedTirePlacement }),
@@ -63,6 +73,12 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
   }
 
   const { id } = await params
+
+  const existing = await prisma.application.findUnique({ where: { id } })
+  if (!existing) {
+    return NextResponse.json({ error: 'Application not found' }, { status: 404 })
+  }
+
   await prisma.application.delete({ where: { id } })
 
   return NextResponse.json({ success: true })

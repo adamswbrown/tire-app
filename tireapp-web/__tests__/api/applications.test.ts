@@ -188,8 +188,43 @@ describe('PATCH /api/applications/:id', () => {
     expect(res.status).toBe(401)
   })
 
+  it('returns 404 when application not found', async () => {
+    mockAuth.mockResolvedValue(authedSession)
+    mockFindUnique.mockResolvedValue(null)
+
+    const req = new NextRequest('http://localhost/api/applications/1', {
+      method: 'PATCH',
+      body: JSON.stringify({ name: 'Updated' }),
+    })
+    const res = await PATCH(req, { params: Promise.resolve({ id: 'missing' }) })
+    expect(res.status).toBe(404)
+  })
+
+  it('returns 400 for empty name', async () => {
+    mockAuth.mockResolvedValue(authedSession)
+
+    const req = new NextRequest('http://localhost/api/applications/1', {
+      method: 'PATCH',
+      body: JSON.stringify({ name: '   ' }),
+    })
+    const res = await PATCH(req, { params: Promise.resolve({ id: '1' }) })
+    expect(res.status).toBe(400)
+  })
+
+  it('returns 400 for name over 500 chars', async () => {
+    mockAuth.mockResolvedValue(authedSession)
+
+    const req = new NextRequest('http://localhost/api/applications/1', {
+      method: 'PATCH',
+      body: JSON.stringify({ name: 'x'.repeat(501) }),
+    })
+    const res = await PATCH(req, { params: Promise.resolve({ id: '1' }) })
+    expect(res.status).toBe(400)
+  })
+
   it('updates application fields selectively', async () => {
     mockAuth.mockResolvedValue(authedSession)
+    mockFindUnique.mockResolvedValue({ id: '1', name: 'Old' })
     const updated = { id: '1', name: 'Updated', status: 'in_progress' }
     mockUpdate.mockResolvedValue(updated)
 
@@ -219,8 +254,18 @@ describe('DELETE /api/applications/:id', () => {
     expect(res.status).toBe(401)
   })
 
+  it('returns 404 when application not found', async () => {
+    mockAuth.mockResolvedValue(authedSession)
+    mockFindUnique.mockResolvedValue(null)
+
+    const req = new NextRequest('http://localhost/api/applications/missing', { method: 'DELETE' })
+    const res = await DELETE(req, { params: Promise.resolve({ id: 'missing' }) })
+    expect(res.status).toBe(404)
+  })
+
   it('deletes application successfully', async () => {
     mockAuth.mockResolvedValue(authedSession)
+    mockFindUnique.mockResolvedValue({ id: '1', name: 'App' })
     mockDelete.mockResolvedValue({ id: '1' })
 
     const req = new NextRequest('http://localhost/api/applications/1', { method: 'DELETE' })
