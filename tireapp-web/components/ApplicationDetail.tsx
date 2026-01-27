@@ -160,7 +160,7 @@ export function ApplicationDetail({
         </button>
         <div className="flex items-center gap-3">
           {message && (
-            <span className={`text-sm ${message.startsWith('Error') ? 'text-red-500' : 'text-green-600'}`}>
+            <span role="status" className={`text-sm ${message.startsWith('Error') ? 'text-red-500' : 'text-green-600'}`}>
               {message}
             </span>
           )}

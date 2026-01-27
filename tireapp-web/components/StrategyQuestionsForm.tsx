@@ -226,6 +226,7 @@ export function StrategyQuestionsForm({
                   <td className="px-3 py-2 text-center font-mono">{q.weight}</td>
                   <td className="px-3 py-2 text-center">
                     <select
+                      aria-label={`Answer for question ${globalIndex + 1}`}
                       value={q.clientAnswer}
                       onChange={e => updateAnswer(globalIndex, e.target.value as ClientAnswer)}
                       className={`border rounded px-2 py-1 text-sm w-full ${
@@ -249,6 +250,7 @@ export function StrategyQuestionsForm({
                   <td className="px-3 py-2">
                     <input
                       type="text"
+                      aria-label={`Notes for question ${globalIndex + 1}`}
                       value={q.extendedAnswer || ''}
                       onChange={e => updateExtended(globalIndex, e.target.value)}
                       placeholder="Notes..."
@@ -265,7 +267,7 @@ export function StrategyQuestionsForm({
       {/* Save buttons */}
       <div className="flex items-center justify-end gap-3 mt-6">
         {message && (
-          <span className={`text-sm ${message.startsWith('Error') ? 'text-red-500' : 'text-green-600'}`}>
+          <span role="status" className={`text-sm ${message.startsWith('Error') ? 'text-red-500' : 'text-green-600'}`}>
             {message}
           </span>
         )}
