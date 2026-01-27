@@ -14,7 +14,12 @@ function createPrismaClient(): PrismaClient {
   if (!connectionString) {
     throw new Error('DATABASE_URL environment variable is not set')
   }
-  const adapter = new PrismaNeon({ connectionString })
+  const adapter = new PrismaNeon({
+    connectionString,
+    max: parseInt(process.env.DB_POOL_SIZE || '10', 10),
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 10000,
+  })
 
   return new PrismaClient({
     adapter,
