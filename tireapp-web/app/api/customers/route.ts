@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/auth'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
+import { sanitizeName } from '@/lib/sanitize'
 
 // GET /api/customers - List all customers
 export async function GET(request: NextRequest) {
@@ -42,16 +43,14 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json()
-  if (!body.name || typeof body.name !== 'string' || body.name.trim().length === 0) {
-    return NextResponse.json({ error: 'Name is required' }, { status: 400 })
-  }
-  if (body.name.length > 500) {
-    return NextResponse.json({ error: 'Name must be under 500 characters' }, { status: 400 })
+  const name = sanitizeName(body.name)
+  if (!name) {
+    return NextResponse.json({ error: 'Name is required (max 500 characters)' }, { status: 400 })
   }
 
   try {
     const customer = await prisma.customer.create({
-      data: { name: body.name.trim() },
+      data: { name },
     })
 
     return NextResponse.json(customer, { status: 201 })

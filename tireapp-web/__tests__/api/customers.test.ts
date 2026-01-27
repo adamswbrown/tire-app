@@ -82,7 +82,7 @@ describe('POST /api/customers', () => {
     const res = await POST(req)
     expect(res.status).toBe(400)
     const body = await res.json()
-    expect(body.error).toBe('Name is required')
+    expect(body.error).toBe('Name is required (max 500 characters)')
   })
 
   it('returns 400 when name is not a string', async () => {
