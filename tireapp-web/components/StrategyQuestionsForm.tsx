@@ -212,19 +212,8 @@ export function StrategyQuestionsForm({
         <div className="bg-white rounded-lg border p-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div>
-                <span className="text-sm text-gray-500">Initial: </span>
-                <span className={`font-bold ${TIRE_TEXT_COLORS[placement.initialPlacement as TireCategory] || 'text-gray-700'}`}>
-                  {placement.initialPlacement}
-                </span>
-                {placement.tiebreakNeeded && (
-                  <span className="ml-2 text-xs text-orange-500">
-                    (Tie: {placement.tiedCategories.join(', ')})
-                  </span>
-                )}
-              </div>
               <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-500">Confirmed:</span>
+                <span className="text-sm text-gray-500">Initial:</span>
                 <select
                   value={selectedPlacement}
                   onChange={e => setSelectedPlacement(e.target.value as TireCategory | '')}
@@ -235,6 +224,17 @@ export function StrategyQuestionsForm({
                     <option key={cat} value={cat}>{cat}</option>
                   ))}
                 </select>
+              </div>
+              <div>
+                <span className="text-sm text-gray-500">Confirmed: </span>
+                <span className={`font-bold ${TIRE_TEXT_COLORS[placement.confirmedPlacement as TireCategory] || 'text-gray-700'}`}>
+                  {placement.confirmedPlacement}
+                </span>
+                {placement.tiebreakNeeded && (
+                  <span className="ml-2 text-xs text-orange-500">
+                    (Tie: {placement.tiedCategories.join(', ')})
+                  </span>
+                )}
               </div>
             </div>
             <div className="text-right">

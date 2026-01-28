@@ -105,8 +105,8 @@ export async function POST(request: NextRequest) {
       await prisma.application.update({
         where: { id: applicationId },
         data: {
-          initialTirePlacement: tirePlacement.initialPlacement,
-          confirmedTirePlacement: userConfirmedPlacement || tirePlacement.confirmedPlacement,
+          initialTirePlacement: userConfirmedPlacement || tirePlacement.initialPlacement,
+          confirmedTirePlacement: tirePlacement.confirmedPlacement,
           strategyCompleted: true,
           status: 'completed',
           completedAt: new Date(),
