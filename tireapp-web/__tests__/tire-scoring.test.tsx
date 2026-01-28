@@ -5,7 +5,7 @@ import {
 } from '@/lib/tire-scoring'
 
 function makeQuestion(
-  time: 'Tolerate' | 'Invest' | 'Replace' | 'Eliminate',
+  time: 'Tolerate' | 'Invest' | 'Retain' | 'Replace' | 'Eliminate',
   weight: number,
   clientAnswer: 'Yes' | 'No' | 'Partial/Unsure' | '-' = '-',
 ) {
@@ -74,6 +74,21 @@ describe('calculateTireScores', () => {
     const scores = calculateTireScores([])
     expect(scores.Tolerate.percentageScore).toBe(0)
     expect(scores.Invest.percentageScore).toBe(0)
+  })
+
+  it('calculates Retain scores correctly', () => {
+    const questions = [
+      makeQuestion('Retain', 5, 'Yes'),
+      makeQuestion('Retain', 4, 'Partial/Unsure'),
+      makeQuestion('Retain', 3, 'No'),
+    ]
+
+    const scores = calculateTireScores(questions)
+
+    expect(scores.Retain.totalScore).toBe(7)
+    expect(scores.Retain.maxPossibleScore).toBe(12)
+    expect(scores.Retain.percentageScore).toBe(58)
+    expect(scores.Retain.answeredQuestions).toBe(3)
   })
 })
 
@@ -235,5 +250,23 @@ describe('calculateTirePlacement', () => {
     ]
     const result = calculateTirePlacement(questions, 50, 6)
     expect(result.confirmedPlacement).toBe('Tolerate')
+  })
+
+  it('returns Retain placement when Retain category dominates', () => {
+    const questions = [
+      makeQuestion('Retain', 5, 'Yes'),
+      makeQuestion('Retain', 5, 'Yes'),
+      makeQuestion('Retain', 5, 'Yes'),
+      makeQuestion('Tolerate', 5, 'No'),
+      makeQuestion('Invest', 5, 'No'),
+      makeQuestion('Replace', 5, 'No'),
+      makeQuestion('Eliminate', 5, 'No'),
+    ]
+
+    const result = calculateTirePlacement(questions, 78, 6)
+
+    expect(result.confirmedPlacement).toBe('Retain')
+    expect(result.tiebreakNeeded).toBe(false)
+    expect(result.scores.Retain.percentageScore).toBe(100)
   })
 })

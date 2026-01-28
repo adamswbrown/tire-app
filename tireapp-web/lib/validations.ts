@@ -51,7 +51,7 @@ export const createQuestionnaireSchema = z.object({
   type: z.enum(['app_questions', 'strategy_questions']),
   answers: z.union([z.array(z.any()).min(1), z.object({}).passthrough()]),
   completed: z.boolean().optional(),
-  confirmedPlacement: z.enum(['Tolerate', 'Invest', 'Replace', 'Eliminate']).optional(),
+  confirmedPlacement: z.enum(['Tolerate', 'Invest', 'Retain', 'Replace', 'Eliminate']).optional(),
 })
 
 // Threshold update

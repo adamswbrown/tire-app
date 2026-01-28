@@ -32,6 +32,7 @@ interface AnalyticsData {
   tirePlacements: {
     Tolerate: number
     Invest: number
+    Retain: number
     Replace: number
     Eliminate: number
     Unassigned: number
@@ -95,6 +96,7 @@ export function AnalyticsDashboard() {
     const tirePlacements = {
       Tolerate: 0,
       Invest: 0,
+      Retain: 0,
       Replace: 0,
       Eliminate: 0,
       Unassigned: 0,
@@ -181,6 +183,7 @@ export function AnalyticsDashboard() {
   const tireColors = {
     Tolerate: 'bg-blue-500',
     Invest: 'bg-green-500',
+    Retain: 'bg-purple-500',
     Replace: 'bg-yellow-500',
     Eliminate: 'bg-red-500',
     Unassigned: 'bg-gray-300',

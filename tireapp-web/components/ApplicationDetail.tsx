@@ -23,7 +23,7 @@ interface ApplicationData {
 }
 
 const SCOPES = ['In Scope', 'Out of Scope', 'TBD']
-const TIRE_OPTIONS = ['', 'Tolerate', 'Invest', 'Replace', 'Eliminate']
+const TIRE_OPTIONS = ['', 'Tolerate', 'Invest', 'Retain', 'Replace', 'Eliminate']
 
 export function ApplicationDetail({
   application,

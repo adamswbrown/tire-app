@@ -1,7 +1,7 @@
 // TIRE Scoring Engine - ported from Electron strategy-questions.js
 // Calculates Tolerate/Invest/Replace/Eliminate placement scores
 
-export type TireCategory = 'Tolerate' | 'Invest' | 'Replace' | 'Eliminate'
+export type TireCategory = 'Tolerate' | 'Invest' | 'Retain' | 'Replace' | 'Eliminate'
 export type ClientAnswer = 'Yes' | 'No' | 'Partial/Unsure' | '-'
 
 export interface StrategyQuestion {
@@ -26,6 +26,7 @@ export interface TireCategoryScore {
 export interface TireScores {
   Tolerate: TireCategoryScore
   Invest: TireCategoryScore
+  Retain: TireCategoryScore
   Replace: TireCategoryScore
   Eliminate: TireCategoryScore
 }
@@ -38,7 +39,7 @@ export interface TirePlacementResult {
   tiedCategories: TireCategory[]
 }
 
-const TIRE_CATEGORIES: TireCategory[] = ['Tolerate', 'Invest', 'Replace', 'Eliminate']
+const TIRE_CATEGORIES: TireCategory[] = ['Tolerate', 'Invest', 'Retain', 'Replace', 'Eliminate']
 
 export function calculateClientScore(clientAnswer: ClientAnswer, weight: number): number {
   switch (clientAnswer) {
@@ -54,6 +55,7 @@ export function calculateTireScores(questions: StrategyQuestion[]): TireScores {
   const scores: TireScores = {
     Tolerate: { totalScore: 0, maxPossibleScore: 0, percentageScore: 0, answeredQuestions: 0 },
     Invest: { totalScore: 0, maxPossibleScore: 0, percentageScore: 0, answeredQuestions: 0 },
+    Retain: { totalScore: 0, maxPossibleScore: 0, percentageScore: 0, answeredQuestions: 0 },
     Replace: { totalScore: 0, maxPossibleScore: 0, percentageScore: 0, answeredQuestions: 0 },
     Eliminate: { totalScore: 0, maxPossibleScore: 0, percentageScore: 0, answeredQuestions: 0 },
   }

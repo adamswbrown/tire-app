@@ -16,6 +16,7 @@ const ANSWER_OPTIONS: ClientAnswer[] = ['-', 'Yes', 'No', 'Partial/Unsure']
 const TIRE_COLORS: Record<TireCategory, string> = {
   Tolerate: 'bg-blue-500',
   Invest: 'bg-green-500',
+  Retain: 'bg-purple-500',
   Replace: 'bg-yellow-500',
   Eliminate: 'bg-red-500',
 }
@@ -23,6 +24,7 @@ const TIRE_COLORS: Record<TireCategory, string> = {
 const TIRE_TEXT_COLORS: Record<TireCategory, string> = {
   Tolerate: 'text-blue-700',
   Invest: 'text-green-700',
+  Retain: 'text-purple-700',
   Replace: 'text-yellow-700',
   Eliminate: 'text-red-700',
 }
@@ -166,8 +168,8 @@ export function StrategyQuestionsForm({
         </div>
 
         {/* TIRE Score Dashboard */}
-        <div className="grid grid-cols-4 gap-3 mb-3">
-          {(['Tolerate', 'Invest', 'Replace', 'Eliminate'] as TireCategory[]).map(cat => {
+        <div className="grid grid-cols-5 gap-3 mb-3">
+          {(['Tolerate', 'Invest', 'Retain', 'Replace', 'Eliminate'] as TireCategory[]).map(cat => {
             const score = placement.scores[cat]
             return (
               <div
@@ -207,7 +209,7 @@ export function StrategyQuestionsForm({
                   className="border border-gray-300 rounded px-3 py-1.5 font-bold text-sm bg-white cursor-pointer hover:border-blue-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                 >
                   <option value="">Select...</option>
-                  {(['Tolerate', 'Invest', 'Replace', 'Eliminate'] as TireCategory[]).map(cat => (
+                  {(['Tolerate', 'Invest', 'Retain', 'Replace', 'Eliminate'] as TireCategory[]).map(cat => (
                     <option key={cat} value={cat}>{cat}</option>
                   ))}
                 </select>
@@ -235,7 +237,7 @@ export function StrategyQuestionsForm({
 
       {/* Filter buttons */}
       <div className="flex gap-1 mb-4">
-        {(['all', 'Tolerate', 'Invest', 'Replace', 'Eliminate'] as const).map(cat => (
+        {(['all', 'Tolerate', 'Invest', 'Retain', 'Replace', 'Eliminate'] as const).map(cat => (
           <button
             key={cat}
             onClick={() => setFilterCategory(cat)}

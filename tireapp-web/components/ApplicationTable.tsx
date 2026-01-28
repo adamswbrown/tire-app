@@ -18,6 +18,7 @@ interface AppData {
 const TIRE_COLORS: Record<string, string> = {
   Tolerate: 'bg-blue-100 text-blue-800',
   Invest: 'bg-green-100 text-green-800',
+  Retain: 'bg-purple-100 text-purple-800',
   Replace: 'bg-yellow-100 text-yellow-800',
   Eliminate: 'bg-red-100 text-red-800',
 }
