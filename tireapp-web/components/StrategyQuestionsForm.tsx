@@ -211,31 +211,40 @@ export function StrategyQuestionsForm({
         {/* Placement result */}
         <div className="bg-white rounded-lg border p-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-gray-500">TIRE Placement:</span>
-              <select
-                value={selectedPlacement || ''}
-                onChange={e => setSelectedPlacement(e.target.value as TireCategory | '')}
-                className={`border rounded px-3 py-1.5 font-bold text-sm ${
-                  selectedPlacement ? 'border-blue-400 bg-blue-50' : ''
-                }`}
-              >
-                <option value="">
-                  {placement.tiebreakNeeded ? 'Select placement...' : placement.confirmedPlacement}
-                </option>
-                {(['Tolerate', 'Invest', 'Replace', 'Eliminate'] as TireCategory[]).map(cat => (
-                  <option key={cat} value={cat}>{cat} ({placement.scores[cat].percentageScore}%)</option>
-                ))}
-              </select>
-              {placement.tiebreakNeeded && !selectedPlacement && (
-                <span className="text-xs text-orange-500">
-                  Tiebreak needed: {placement.tiedCategories.join(', ')}
+            <div className="flex items-center gap-4">
+              <div>
+                <span className="text-sm text-gray-500">Computed: </span>
+                <span className={`font-bold ${TIRE_TEXT_COLORS[placement.confirmedPlacement as TireCategory] || 'text-gray-700'}`}>
+                  {placement.confirmedPlacement}
                 </span>
+                {placement.tiebreakNeeded && (
+                  <span className="ml-2 text-xs text-orange-500">
+                    (Tie: {placement.tiedCategories.join(', ')})
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-500">Confirmed:</span>
+                <select
+                  value={selectedPlacement}
+                  onChange={e => setSelectedPlacement(e.target.value as TireCategory | '')}
+                  className="border border-gray-300 rounded px-3 py-1.5 font-bold text-sm bg-white cursor-pointer hover:border-blue-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                >
+                  <option value="">Select...</option>
+                  {(['Tolerate', 'Invest', 'Replace', 'Eliminate'] as TireCategory[]).map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="text-right">
+              <span className={`text-sm ${answeredCount < questions.length ? 'text-orange-500' : 'text-green-600'}`}>
+                {answeredCount}/{questions.length} answered
+              </span>
+              {answeredCount < questions.length && (
+                <p className="text-xs text-gray-400">Answer all to complete</p>
               )}
             </div>
-            <span className="text-sm text-gray-500">
-              {answeredCount}/{questions.length} answered
-            </span>
           </div>
         </div>
       </div>
