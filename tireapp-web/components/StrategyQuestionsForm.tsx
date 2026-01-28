@@ -213,9 +213,9 @@ export function StrategyQuestionsForm({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div>
-                <span className="text-sm text-gray-500">Computed: </span>
-                <span className={`font-bold ${TIRE_TEXT_COLORS[placement.confirmedPlacement as TireCategory] || 'text-gray-700'}`}>
-                  {placement.confirmedPlacement}
+                <span className="text-sm text-gray-500">Initial: </span>
+                <span className={`font-bold ${TIRE_TEXT_COLORS[placement.initialPlacement as TireCategory] || 'text-gray-700'}`}>
+                  {placement.initialPlacement}
                 </span>
                 {placement.tiebreakNeeded && (
                   <span className="ml-2 text-xs text-orange-500">
