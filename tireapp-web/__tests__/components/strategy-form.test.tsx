@@ -4,8 +4,9 @@ import { apiFetch } from '@/lib/api-client'
 
 // Mock useRouter
 const mockRefresh = jest.fn()
+const mockPush = jest.fn()
 jest.mock('next/navigation', () => ({
-  useRouter: () => ({ refresh: mockRefresh }),
+  useRouter: () => ({ refresh: mockRefresh, push: mockPush }),
 }))
 
 // Mock apiFetch
@@ -71,7 +72,7 @@ describe('StrategyQuestionsForm', () => {
         questions={mockQuestions}
         existingAnswers={null}
         distributionThreshold={78}
-        tiebreakThreshold={6}
+        tiebreakThreshold={6} backUrl="/test"
       />
     )
     expect(screen.getByText('Is the application stable?')).toBeInTheDocument()
@@ -87,7 +88,7 @@ describe('StrategyQuestionsForm', () => {
         questions={mockQuestions}
         existingAnswers={null}
         distributionThreshold={78}
-        tiebreakThreshold={6}
+        tiebreakThreshold={6} backUrl="/test"
       />
     )
     expect(screen.getByText('Tolerate')).toBeInTheDocument()
@@ -103,7 +104,7 @@ describe('StrategyQuestionsForm', () => {
         questions={mockQuestions}
         existingAnswers={null}
         distributionThreshold={78}
-        tiebreakThreshold={6}
+        tiebreakThreshold={6} backUrl="/test"
       />
     )
     expect(screen.getByText('0/4 answered')).toBeInTheDocument()
@@ -116,7 +117,7 @@ describe('StrategyQuestionsForm', () => {
         questions={mockQuestions}
         existingAnswers={null}
         distributionThreshold={78}
-        tiebreakThreshold={6}
+        tiebreakThreshold={6} backUrl="/test"
       />
     )
 
@@ -133,7 +134,7 @@ describe('StrategyQuestionsForm', () => {
         questions={mockQuestions}
         existingAnswers={null}
         distributionThreshold={78}
-        tiebreakThreshold={6}
+        tiebreakThreshold={6} backUrl="/test"
       />
     )
     expect(screen.getByText('Complete Assessment')).toBeDisabled()
@@ -146,7 +147,7 @@ describe('StrategyQuestionsForm', () => {
         questions={mockQuestions}
         existingAnswers={null}
         distributionThreshold={78}
-        tiebreakThreshold={6}
+        tiebreakThreshold={6} backUrl="/test"
       />
     )
 
@@ -171,7 +172,7 @@ describe('StrategyQuestionsForm', () => {
         questions={mockQuestions}
         existingAnswers={null}
         distributionThreshold={78}
-        tiebreakThreshold={6}
+        tiebreakThreshold={6} backUrl="/test"
       />
     )
 
@@ -201,7 +202,7 @@ describe('StrategyQuestionsForm', () => {
         questions={mockQuestions}
         existingAnswers={null}
         distributionThreshold={78}
-        tiebreakThreshold={6}
+        tiebreakThreshold={6} backUrl="/test"
       />
     )
 
@@ -226,7 +227,7 @@ describe('StrategyQuestionsForm', () => {
         questions={mockQuestions}
         existingAnswers={existingAnswers}
         distributionThreshold={78}
-        tiebreakThreshold={6}
+        tiebreakThreshold={6} backUrl="/test"
       />
     )
 
@@ -240,7 +241,7 @@ describe('StrategyQuestionsForm', () => {
         questions={mockQuestions}
         existingAnswers={null}
         distributionThreshold={78}
-        tiebreakThreshold={6}
+        tiebreakThreshold={6} backUrl="/test"
       />
     )
 

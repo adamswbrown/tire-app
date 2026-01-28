@@ -62,6 +62,7 @@ export default async function StrategyQuestionsPage({
         existingAnswers={existingAnswers}
         distributionThreshold={thresholdMap.distributionThreshold}
         tiebreakThreshold={thresholdMap.tiebreakThreshold}
+        backUrl={`/app/customers/${customerId}/applications`}
       />
     </div>
   )

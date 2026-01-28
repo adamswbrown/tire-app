@@ -33,12 +33,14 @@ export function StrategyQuestionsForm({
   existingAnswers,
   distributionThreshold,
   tiebreakThreshold,
+  backUrl,
 }: {
   applicationId: string
   questions: StrategyQuestion[]
   existingAnswers: Record<string, unknown>[] | null
   distributionThreshold: number
   tiebreakThreshold: number
+  backUrl: string
 }) {
   const router = useRouter()
   const [saving, setSaving] = useState(false)
@@ -111,8 +113,13 @@ export function StrategyQuestionsForm({
       })
 
       if (status >= 200 && status < 300) {
-        setMessage(completed ? 'Assessment complete!' : 'Progress saved.')
-        router.refresh()
+        if (!completed) {
+          // Redirect back to applications list after saving progress
+          router.push(backUrl)
+        } else {
+          setMessage('Assessment complete!')
+          router.refresh()
+        }
       } else {
         setMessage(`Error: ${(data as { error: string }).error}`)
       }
@@ -120,7 +127,7 @@ export function StrategyQuestionsForm({
       setMessage('Error: Failed to save')
     }
     setSaving(false)
-  }, [applicationId, questions, router])
+  }, [applicationId, questions, router, backUrl])
 
   const filtered = useMemo(
     () => filterCategory === 'all'
@@ -131,51 +138,77 @@ export function StrategyQuestionsForm({
 
   return (
     <div>
-      {/* TIRE Score Dashboard */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
-        {(['Tolerate', 'Invest', 'Replace', 'Eliminate'] as TireCategory[]).map(cat => {
-          const score = placement.scores[cat]
-          return (
-            <div
-              key={cat}
-              className={`bg-white rounded-lg border p-4 cursor-pointer ${
-                placement.confirmedPlacement === cat ? 'ring-2 ring-blue-500' : ''
-              }`}
-              onClick={() => setFilterCategory(filterCategory === cat ? 'all' : cat)}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <span className={`font-bold ${TIRE_TEXT_COLORS[cat]}`}>{cat}</span>
-                <span className="text-2xl font-bold">{score.percentageScore}%</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-3">
-                <div
-                  className={`${TIRE_COLORS[cat]} h-3 rounded-full transition-all`}
-                  style={{ width: `${score.percentageScore}%` }}
-                />
-              </div>
-              <p className="text-xs text-gray-500 mt-1">
-                {score.totalScore}/{score.maxPossibleScore} pts ({score.answeredQuestions} answered)
-              </p>
-            </div>
-          )
-        })}
-      </div>
+      {/* Sticky header with scores, placement, and action buttons */}
+      <div className="sticky top-0 z-10 bg-gray-50 -mx-6 px-6 pt-2 pb-4 border-b mb-4">
+        {/* Action buttons at top */}
+        <div className="flex items-center justify-end gap-3 mb-4">
+          {message && (
+            <span role="status" className={`text-sm ${message.startsWith('Error') ? 'text-red-500' : 'text-green-600'}`}>
+              {message}
+            </span>
+          )}
+          <button
+            onClick={() => handleSave(false)}
+            disabled={saving}
+            className="px-4 py-2 text-sm bg-gray-500 text-white rounded hover:bg-gray-600 disabled:opacity-50"
+          >
+            Save Progress
+          </button>
+          <button
+            onClick={() => handleSave(true)}
+            disabled={saving || answeredCount < questions.length}
+            className="px-4 py-2 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+          >
+            Complete Assessment
+          </button>
+        </div>
 
-      {/* Placement result */}
-      <div className="bg-white rounded-lg border p-4 mb-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <span className="text-sm text-gray-500">TIRE Placement: </span>
-            <span className="font-bold text-lg">{placement.confirmedPlacement}</span>
-            {placement.tiebreakNeeded && (
-              <span className="ml-2 text-xs text-orange-500">
-                (Tiebreak: {placement.tiedCategories.join(', ')})
-              </span>
-            )}
+        {/* TIRE Score Dashboard */}
+        <div className="grid grid-cols-4 gap-3 mb-3">
+          {(['Tolerate', 'Invest', 'Replace', 'Eliminate'] as TireCategory[]).map(cat => {
+            const score = placement.scores[cat]
+            return (
+              <div
+                key={cat}
+                className={`bg-white rounded-lg border p-3 cursor-pointer ${
+                  placement.confirmedPlacement === cat ? 'ring-2 ring-blue-500' : ''
+                }`}
+                onClick={() => setFilterCategory(filterCategory === cat ? 'all' : cat)}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className={`font-bold text-sm ${TIRE_TEXT_COLORS[cat]}`}>{cat}</span>
+                  <span className="text-xl font-bold">{score.percentageScore}%</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className={`${TIRE_COLORS[cat]} h-2 rounded-full transition-all`}
+                    style={{ width: `${score.percentageScore}%` }}
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  {score.totalScore}/{score.maxPossibleScore} pts
+                </p>
+              </div>
+            )
+          })}
+        </div>
+
+        {/* Placement result */}
+        <div className="bg-white rounded-lg border p-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-sm text-gray-500">TIRE Placement: </span>
+              <span className="font-bold text-lg">{placement.confirmedPlacement}</span>
+              {placement.tiebreakNeeded && (
+                <span className="ml-2 text-xs text-orange-500">
+                  (Tiebreak: {placement.tiedCategories.join(', ')})
+                </span>
+              )}
+            </div>
+            <span className="text-sm text-gray-500">
+              {answeredCount}/{questions.length} answered
+            </span>
           </div>
-          <span className="text-sm text-gray-500">
-            {answeredCount}/{questions.length} answered
-          </span>
         </div>
       </div>
 
@@ -268,28 +301,6 @@ export function StrategyQuestionsForm({
         </table>
       </div>
 
-      {/* Save buttons */}
-      <div className="flex items-center justify-end gap-3 mt-6">
-        {message && (
-          <span role="status" className={`text-sm ${message.startsWith('Error') ? 'text-red-500' : 'text-green-600'}`}>
-            {message}
-          </span>
-        )}
-        <button
-          onClick={() => handleSave(false)}
-          disabled={saving}
-          className="px-4 py-2 text-sm bg-gray-500 text-white rounded hover:bg-gray-600 disabled:opacity-50"
-        >
-          Save Progress
-        </button>
-        <button
-          onClick={() => handleSave(true)}
-          disabled={saving || answeredCount < questions.length}
-          className="px-4 py-2 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
-        >
-          Complete Assessment
-        </button>
-      </div>
     </div>
   )
 }

@@ -47,6 +47,7 @@ export default async function AppQuestionsPage({
         applicationId={appId}
         sections={questionsData as never[]}
         existingAnswers={existingAnswers || {}}
+        backUrl={`/app/customers/${customerId}/applications`}
       />
     </div>
   )

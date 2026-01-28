@@ -4,8 +4,9 @@ import { apiFetch } from '@/lib/api-client'
 
 // Mock useRouter
 const mockRefresh = jest.fn()
+const mockPush = jest.fn()
 jest.mock('next/navigation', () => ({
-  useRouter: () => ({ refresh: mockRefresh }),
+  useRouter: () => ({ refresh: mockRefresh, push: mockPush }),
 }))
 
 // Mock apiFetch
@@ -74,7 +75,7 @@ describe('AppQuestionsForm', () => {
       <AppQuestionsForm
         applicationId="app-1"
         sections={mockSections}
-        existingAnswers={{}}
+        existingAnswers={{}} backUrl="/test"
       />
     )
     const tabs = screen.getAllByText('General Info')
@@ -88,7 +89,7 @@ describe('AppQuestionsForm', () => {
       <AppQuestionsForm
         applicationId="app-1"
         sections={mockSections}
-        existingAnswers={{}}
+        existingAnswers={{}} backUrl="/test"
       />
     )
     expect(screen.getByText('Application owner?')).toBeInTheDocument()
@@ -102,7 +103,7 @@ describe('AppQuestionsForm', () => {
       <AppQuestionsForm
         applicationId="app-1"
         sections={mockSections}
-        existingAnswers={{}}
+        existingAnswers={{}} backUrl="/test"
       />
     )
     fireEvent.click(screen.getByText('Technical Details'))
@@ -116,7 +117,7 @@ describe('AppQuestionsForm', () => {
       <AppQuestionsForm
         applicationId="app-1"
         sections={mockSections}
-        existingAnswers={{}}
+        existingAnswers={{}} backUrl="/test"
       />
     )
     expect(screen.getByText('0 / 6 answered')).toBeInTheDocument()
@@ -127,7 +128,7 @@ describe('AppQuestionsForm', () => {
       <AppQuestionsForm
         applicationId="app-1"
         sections={mockSections}
-        existingAnswers={{}}
+        existingAnswers={{}} backUrl="/test"
       />
     )
     const input = screen.getByRole('textbox')
@@ -140,7 +141,7 @@ describe('AppQuestionsForm', () => {
       <AppQuestionsForm
         applicationId="app-1"
         sections={mockSections}
-        existingAnswers={{}}
+        existingAnswers={{}} backUrl="/test"
       />
     )
     const select = screen.getByRole('combobox')
@@ -154,7 +155,7 @@ describe('AppQuestionsForm', () => {
       <AppQuestionsForm
         applicationId="app-1"
         sections={mockSections}
-        existingAnswers={{}}
+        existingAnswers={{}} backUrl="/test"
       />
     )
     // Previous disabled on first section
@@ -172,7 +173,7 @@ describe('AppQuestionsForm', () => {
       <AppQuestionsForm
         applicationId="app-1"
         sections={mockSections}
-        existingAnswers={{}}
+        existingAnswers={{}} backUrl="/test"
       />
     )
     // Navigate to last section
@@ -192,7 +193,7 @@ describe('AppQuestionsForm', () => {
       <AppQuestionsForm
         applicationId="app-1"
         sections={mockSections}
-        existingAnswers={{}}
+        existingAnswers={{}} backUrl="/test"
       />
     )
     fireEvent.click(screen.getByText('Save Progress'))
@@ -220,7 +221,7 @@ describe('AppQuestionsForm', () => {
       <AppQuestionsForm
         applicationId="app-1"
         sections={mockSections}
-        existingAnswers={{}}
+        existingAnswers={{}} backUrl="/test"
       />
     )
     fireEvent.click(screen.getByText('Save & Complete'))
@@ -247,7 +248,7 @@ describe('AppQuestionsForm', () => {
       <AppQuestionsForm
         applicationId="app-1"
         sections={mockSections}
-        existingAnswers={{}}
+        existingAnswers={{}} backUrl="/test"
       />
     )
     fireEvent.click(screen.getByText('Save Progress'))
@@ -263,6 +264,7 @@ describe('AppQuestionsForm', () => {
         applicationId="app-1"
         sections={mockSections}
         existingAnswers={{ q1: 'Jane', q2: 'External' }}
+        backUrl="/test"
       />
     )
     expect(screen.getByDisplayValue('Jane')).toBeInTheDocument()
@@ -274,7 +276,7 @@ describe('AppQuestionsForm', () => {
       <AppQuestionsForm
         applicationId="app-1"
         sections={mockSections}
-        existingAnswers={{}}
+        existingAnswers={{}} backUrl="/test"
       />
     )
     fireEvent.click(screen.getByText('Technical Details'))
@@ -288,7 +290,7 @@ describe('AppQuestionsForm', () => {
       <AppQuestionsForm
         applicationId="app-1"
         sections={mockSections}
-        existingAnswers={{}}
+        existingAnswers={{}} backUrl="/test"
       />
     )
     fireEvent.click(screen.getByText('Technical Details'))
@@ -303,7 +305,7 @@ describe('AppQuestionsForm', () => {
       <AppQuestionsForm
         applicationId="app-1"
         sections={mockSections}
-        existingAnswers={{}}
+        existingAnswers={{}} backUrl="/test"
       />
     )
     fireEvent.click(screen.getByText('Conditional'))
@@ -317,6 +319,7 @@ describe('AppQuestionsForm', () => {
         applicationId="app-1"
         sections={mockSections}
         existingAnswers={{ q2: 'External' }}
+        backUrl="/test"
       />
     )
     fireEvent.click(screen.getByText('Conditional'))
@@ -329,7 +332,7 @@ describe('AppQuestionsForm', () => {
       <AppQuestionsForm
         applicationId="app-1"
         sections={mockSections}
-        existingAnswers={{}}
+        existingAnswers={{}} backUrl="/test"
       />
     )
     // The required question should have a * marker

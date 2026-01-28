@@ -23,10 +23,12 @@ export function AppQuestionsForm({
   applicationId,
   sections,
   existingAnswers,
+  backUrl,
 }: {
   applicationId: string
   sections: Section[]
   existingAnswers: Record<string, unknown>
+  backUrl: string
 }) {
   const router = useRouter()
   const [answers, setAnswers] = useState<Record<string, unknown>>(existingAnswers)
@@ -79,8 +81,13 @@ export function AppQuestionsForm({
       })
 
       if (status >= 200 && status < 300) {
-        setMessage(completed ? 'Saved and marked complete!' : 'Progress saved.')
-        router.refresh()
+        if (!completed) {
+          // Redirect back to applications list after saving progress
+          router.push(backUrl)
+        } else {
+          setMessage('Saved and marked complete!')
+          router.refresh()
+        }
       } else {
         setMessage(`Error: ${(data as { error: string }).error}`)
       }
@@ -88,38 +95,64 @@ export function AppQuestionsForm({
       setMessage('Error: Failed to save')
     }
     setSaving(false)
-  }, [applicationId, answers, router])
+  }, [applicationId, answers, router, backUrl])
 
   return (
     <div>
-      {/* Section tabs */}
-      <div className="flex gap-1 mb-6 flex-wrap">
-        {sections.map((s, i) => (
+      {/* Sticky header with progress and buttons */}
+      <div className="sticky top-0 z-10 bg-gray-50 -mx-6 px-6 pt-2 pb-4 border-b mb-4">
+        {/* Action buttons at top */}
+        <div className="flex items-center justify-end gap-3 mb-3">
+          {message && (
+            <span role="status" className={`text-sm ${message.startsWith('Error') ? 'text-red-500' : 'text-green-600'}`}>
+              {message}
+            </span>
+          )}
           <button
-            key={s.section}
-            onClick={() => setCurrentSection(i)}
-            className={`px-3 py-1.5 rounded text-xs ${
-              i === currentSection
-                ? 'bg-blue-500 text-white'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
+            onClick={() => handleSave(false)}
+            disabled={saving}
+            className="px-4 py-2 text-sm bg-gray-500 text-white rounded hover:bg-gray-600 disabled:opacity-50"
           >
-            {s.section}
+            Save Progress
           </button>
-        ))}
-      </div>
-
-      {/* Progress bar */}
-      <div className="mb-4">
-        <div className="flex justify-between text-xs text-gray-500 mb-1">
-          <span>{answeredCount} / {totalQuestions} answered</span>
-          <span>{Math.round((answeredCount / totalQuestions) * 100)}%</span>
+          <button
+            onClick={() => handleSave(true)}
+            disabled={saving}
+            className="px-4 py-2 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+          >
+            Save & Complete
+          </button>
         </div>
-        <div className="w-full bg-gray-200 rounded-full h-2">
-          <div
-            className="bg-blue-500 h-2 rounded-full transition-all"
-            style={{ width: `${(answeredCount / totalQuestions) * 100}%` }}
-          />
+
+        {/* Section tabs */}
+        <div className="flex gap-1 mb-3 flex-wrap">
+          {sections.map((s, i) => (
+            <button
+              key={s.section}
+              onClick={() => setCurrentSection(i)}
+              className={`px-3 py-1.5 rounded text-xs ${
+                i === currentSection
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              {s.section}
+            </button>
+          ))}
+        </div>
+
+        {/* Progress bar */}
+        <div>
+          <div className="flex justify-between text-xs text-gray-500 mb-1">
+            <span>{answeredCount} / {totalQuestions} answered</span>
+            <span>{Math.round((answeredCount / totalQuestions) * 100)}%</span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-2">
+            <div
+              className="bg-blue-500 h-2 rounded-full transition-all"
+              style={{ width: `${(answeredCount / totalQuestions) * 100}%` }}
+            />
+          </div>
         </div>
       </div>
 
@@ -198,7 +231,7 @@ export function AppQuestionsForm({
         ))}
       </div>
 
-      {/* Navigation & Save */}
+      {/* Navigation */}
       <div className="flex items-center justify-between mt-6">
         <div className="flex gap-2">
           <button
@@ -214,28 +247,6 @@ export function AppQuestionsForm({
             className="px-4 py-2 text-sm bg-gray-100 rounded hover:bg-gray-200 disabled:opacity-50"
           >
             Next
-          </button>
-        </div>
-
-        <div className="flex items-center gap-3">
-          {message && (
-            <span role="status" className={`text-sm ${message.startsWith('Error') ? 'text-red-500' : 'text-green-600'}`}>
-              {message}
-            </span>
-          )}
-          <button
-            onClick={() => handleSave(false)}
-            disabled={saving}
-            className="px-4 py-2 text-sm bg-gray-500 text-white rounded hover:bg-gray-600 disabled:opacity-50"
-          >
-            Save Progress
-          </button>
-          <button
-            onClick={() => handleSave(true)}
-            disabled={saving}
-            className="px-4 py-2 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
-          >
-            Save & Complete
           </button>
         </div>
       </div>
