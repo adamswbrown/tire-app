@@ -4,7 +4,9 @@ import { prisma } from '@/lib/prisma'
 import { auth } from '@/auth'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 
-// GET /api/export?customerId=xxx&format=xlsx
+const APP_STRATEGY_INSTRUCTIONS = `Selecting an Application Strategy provides guidance for technical planning, ensuring that migration treatments align with desired business outcomes. This is a strategic, non technical exercise, aimed at assessing the current role and future potential of each application in your business. Use the guide below to choose the strategy that best fits each application's current plans or overall usage. If the strategy is unknown for an application, simply proceed to the next one.`
+
+// GET /api/export?customerId=xxx&format=xlsx&type=full|app_strategies
 export async function GET(request: NextRequest) {
   const session = await auth()
   if (!session) {
@@ -18,6 +20,7 @@ export async function GET(request: NextRequest) {
 
   const customerId = request.nextUrl.searchParams.get('customerId')
   const format = request.nextUrl.searchParams.get('format') || 'xlsx'
+  const exportType = request.nextUrl.searchParams.get('type') || 'full'
 
   if (!customerId) {
     return NextResponse.json({ error: 'customerId is required' }, { status: 400 })
@@ -41,6 +44,49 @@ export async function GET(request: NextRequest) {
     })
 
     const wb = XLSX.utils.book_new()
+
+    // Export type: app_strategies - Simple format matching the template
+    if (exportType === 'app_strategies') {
+      // Build the sheet data with exact format from template
+      const sheetData: (string | undefined)[][] = [
+        ['Instructions'],
+        [APP_STRATEGY_INSTRUCTIONS],
+        [], // Empty row 2
+        ['Application', 'Select Application Strategy'], // Headers at row 3
+      ]
+
+      // Add application data starting at row 4
+      applications.forEach(app => {
+        sheetData.push([
+          app.name,
+          app.initialTirePlacement || '', // Use initialTirePlacement (user's selection)
+        ])
+      })
+
+      const sheet = XLSX.utils.aoa_to_sheet(sheetData)
+
+      // Set column widths
+      sheet['!cols'] = [
+        { wch: 40 }, // Application column
+        { wch: 30 }, // Strategy column
+      ]
+
+      XLSX.utils.book_append_sheet(wb, sheet, 'App Strategies')
+
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0]
+      const filename = `${customer.name}-Application Strategy Export - ${timestamp}.xlsx`
+
+      const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' })
+
+      return new NextResponse(buffer, {
+        headers: {
+          'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          'Content-Disposition': `attachment; filename="${filename}"`,
+        },
+      })
+    }
+
+    // Default: Full export with multiple sheets
 
     // Sheet 1: Completed Applications Summary
     const summaryData = applications.map(app => ({
