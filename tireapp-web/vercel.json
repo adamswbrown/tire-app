@@ -7,10 +7,9 @@
   "regions": ["iad1"],
   "env": {
     "DATABASE_URL": "@database_url",
+    "DIRECT_URL": "@direct_url",
     "AUTH_SECRET": "@auth_secret",
-    "AUTH_MICROSOFT_ENTRA_ID_ID": "@auth_microsoft_entra_id_id",
-    "AUTH_MICROSOFT_ENTRA_ID_SECRET": "@auth_microsoft_entra_id_secret",
-    "AUTH_MICROSOFT_ENTRA_ID_TENANT_ID": "@auth_microsoft_entra_id_tenant_id",
+    "JWT_SECRET": "@jwt_secret",
     "NEXTAUTH_URL": "@nextauth_url"
   },
   "headers": [
