@@ -1,8 +1,8 @@
 // Route protection middleware for TIREApp
 // Source: M1-ResearchPack.md (Auth.js middleware with RBAC)
 
-import { NextResponse } from "next/server"
-export default function middleware(req) {
+import { NextRequest, NextResponse } from "next/server"
+export default function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   // Fallback: protect /app and /admin (session-based, redirect)

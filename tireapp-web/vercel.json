@@ -5,13 +5,6 @@
   "installCommand": "npm install",
   "framework": "nextjs",
   "regions": ["iad1"],
-  "env": {
-    "DATABASE_URL": "@database_url",
-    "DIRECT_URL": "@direct_url",
-    "AUTH_SECRET": "@auth_secret",
-    "JWT_SECRET": "@jwt_secret",
-    "NEXTAUTH_URL": "@nextauth_url"
-  },
   "headers": [
     {
       "source": "/(.*)",

@@ -1,7 +1,9 @@
 import { PrismaClient } from '@prisma/client';
+import { PrismaNeon } from '@prisma/adapter-neon';
 import bcrypt from 'bcrypt';
 
-const prisma = new PrismaClient();
+const adapter = new PrismaNeon({ connectionString: process.env.DATABASE_URL });
+const prisma = new PrismaClient({ adapter });
 
 async function main() {
   const password = await bcrypt.hash('consultant123', 10);
