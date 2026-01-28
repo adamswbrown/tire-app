@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: formatZodErrors(parsed.error) }, { status: 400 })
   }
 
-  const { applicationId, type, completed } = parsed.data
+  const { applicationId, type, completed, confirmedPlacement: userConfirmedPlacement } = parsed.data
   const answers = parsed.data.answers as Prisma.InputJsonValue
 
   try {
@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
         where: { id: applicationId },
         data: {
           initialTirePlacement: tirePlacement.initialPlacement,
-          confirmedTirePlacement: tirePlacement.confirmedPlacement,
+          confirmedTirePlacement: userConfirmedPlacement || tirePlacement.confirmedPlacement,
           strategyCompleted: true,
           status: 'completed',
           completedAt: new Date(),

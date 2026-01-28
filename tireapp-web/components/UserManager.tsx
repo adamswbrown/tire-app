@@ -43,15 +43,35 @@ export function UserManager() {
   const [userAssignments, setUserAssignments] = useState<Assignment[]>([])
   const [loadingAssignments, setLoadingAssignments] = useState(false)
 
+  // All user assignments (for showing in table)
+  const [allAssignments, setAllAssignments] = useState<Record<string, Assignment[]>>({})
+
   // Load users and customers
   useEffect(() => {
     Promise.all([
       apiFetch<User[]>('/api/users'),
       apiFetch<Customer[]>('/api/customers'),
     ])
-      .then(([usersRes, customersRes]) => {
-        if (Array.isArray(usersRes.data)) setUsers(usersRes.data)
+      .then(async ([usersRes, customersRes]) => {
+        const loadedUsers = Array.isArray(usersRes.data) ? usersRes.data : []
+        if (loadedUsers.length) setUsers(loadedUsers)
         if (Array.isArray(customersRes.data)) setCustomers(customersRes.data)
+
+        // Load assignments for all non-admin users
+        const assignmentMap: Record<string, Assignment[]> = {}
+        await Promise.all(
+          loadedUsers
+            .filter(u => u.role !== 'Admin')
+            .map(async (u) => {
+              try {
+                const { data } = await apiFetch<Assignment[]>(`/api/users/${u.id}/customers`)
+                if (Array.isArray(data)) assignmentMap[u.id] = data
+              } catch {
+                assignmentMap[u.id] = []
+              }
+            })
+        )
+        setAllAssignments(assignmentMap)
         setLoading(false)
       })
       .catch(() => {
@@ -141,7 +161,12 @@ export function UserManager() {
       )
 
       if (status >= 200 && status < 300) {
-        setUserAssignments(prev => [...prev, data as Assignment])
+        const newAssignment = data as Assignment
+        setUserAssignments(prev => [...prev, newAssignment])
+        setAllAssignments(prev => ({
+          ...prev,
+          [assigningUser.id]: [...(prev[assigningUser.id] || []), newAssignment],
+        }))
       }
     } catch {
       // ignore
@@ -155,6 +180,10 @@ export function UserManager() {
         method: 'DELETE',
       })
       setUserAssignments(prev => prev.filter(a => a.customerId !== customerId))
+      setAllAssignments(prev => ({
+        ...prev,
+        [assigningUser.id]: (prev[assigningUser.id] || []).filter(a => a.customerId !== customerId),
+      }))
     } catch {
       // ignore
     }
@@ -269,17 +298,24 @@ export function UserManager() {
                 </td>
                 <td className="py-2">
                   {user.role === 'Admin' ? (
-                    <span className="text-xs text-gray-400">All</span>
+                    <span className="text-xs text-gray-400">All customers</span>
                   ) : (
-                    <button
-                      onClick={() => {
-                        setAssigningUser(user)
-                        loadAssignments(user.id)
-                      }}
-                      className="text-xs text-blue-500 hover:text-blue-700"
-                    >
-                      Manage
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-500">
+                        {(allAssignments[user.id] || []).length === 0
+                          ? 'None'
+                          : (allAssignments[user.id] || []).map(a => a.customerName).join(', ')}
+                      </span>
+                      <button
+                        onClick={() => {
+                          setAssigningUser(user)
+                          loadAssignments(user.id)
+                        }}
+                        className="text-xs text-blue-500 hover:text-blue-700 whitespace-nowrap"
+                      >
+                        Manage
+                      </button>
+                    </div>
                   )}
                 </td>
               </tr>

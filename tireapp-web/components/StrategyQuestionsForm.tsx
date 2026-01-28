@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { apiFetch } from '@/lib/api-client'
 import {
@@ -46,6 +46,20 @@ export function StrategyQuestionsForm({
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
   const [filterCategory, setFilterCategory] = useState<TireCategory | 'all'>('all')
+  const [selectedPlacement, setSelectedPlacement] = useState<TireCategory | ''>('')
+  const stickyHeaderRef = useRef<HTMLDivElement>(null)
+  const [stickyHeaderHeight, setStickyHeaderHeight] = useState(0)
+
+  useEffect(() => {
+    if (!stickyHeaderRef.current) return
+    const observer = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        setStickyHeaderHeight(entry.contentRect.height)
+      }
+    })
+    observer.observe(stickyHeaderRef.current)
+    return () => observer.disconnect()
+  }, [])
 
   // Merge existing answers into questions
   const [questions, setQuestions] = useState<StrategyQuestion[]>(() => {
@@ -109,6 +123,7 @@ export function StrategyQuestionsForm({
           type: 'strategy_questions',
           answers: questions,
           completed,
+          ...(selectedPlacement && { confirmedPlacement: selectedPlacement }),
         }),
       })
 
@@ -127,7 +142,7 @@ export function StrategyQuestionsForm({
       setMessage('Error: Failed to save')
     }
     setSaving(false)
-  }, [applicationId, questions, router, backUrl])
+  }, [applicationId, questions, router, backUrl, selectedPlacement])
 
   const filtered = useMemo(
     () => filterCategory === 'all'
@@ -139,7 +154,7 @@ export function StrategyQuestionsForm({
   return (
     <div>
       {/* Sticky header with scores, placement, and action buttons */}
-      <div className="sticky top-0 z-10 bg-gray-50 -mx-6 px-6 pt-2 pb-4 border-b mb-4">
+      <div ref={stickyHeaderRef} className="sticky top-0 z-10 bg-gray-50 -mx-6 px-6 pt-2 pb-4 border-b mb-4">
         {/* Action buttons at top */}
         <div className="flex items-center justify-end gap-3 mb-4">
           {message && (
@@ -196,12 +211,25 @@ export function StrategyQuestionsForm({
         {/* Placement result */}
         <div className="bg-white rounded-lg border p-3">
           <div className="flex items-center justify-between">
-            <div>
-              <span className="text-sm text-gray-500">TIRE Placement: </span>
-              <span className="font-bold text-lg">{placement.confirmedPlacement}</span>
-              {placement.tiebreakNeeded && (
-                <span className="ml-2 text-xs text-orange-500">
-                  (Tiebreak: {placement.tiedCategories.join(', ')})
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-gray-500">TIRE Placement:</span>
+              <select
+                value={selectedPlacement || ''}
+                onChange={e => setSelectedPlacement(e.target.value as TireCategory | '')}
+                className={`border rounded px-3 py-1.5 font-bold text-sm ${
+                  selectedPlacement ? 'border-blue-400 bg-blue-50' : ''
+                }`}
+              >
+                <option value="">
+                  {placement.tiebreakNeeded ? 'Select placement...' : placement.confirmedPlacement}
+                </option>
+                {(['Tolerate', 'Invest', 'Replace', 'Eliminate'] as TireCategory[]).map(cat => (
+                  <option key={cat} value={cat}>{cat} ({placement.scores[cat].percentageScore}%)</option>
+                ))}
+              </select>
+              {placement.tiebreakNeeded && !selectedPlacement && (
+                <span className="text-xs text-orange-500">
+                  Tiebreak needed: {placement.tiedCategories.join(', ')}
                 </span>
               )}
             </div>
@@ -232,7 +260,7 @@ export function StrategyQuestionsForm({
       {/* Questions Table */}
       <div className="bg-white rounded-lg border overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b">
+          <thead className="bg-gray-50 border-b sticky z-[5]" style={{ top: stickyHeaderHeight }}>
             <tr>
               <th className="text-left px-3 py-2 font-medium w-8">#</th>
               <th className="text-left px-3 py-2 font-medium">Category</th>
