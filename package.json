@@ -65,11 +65,13 @@
   "description": "An Electron-based desktop application for managing and assessing applications using the TIRE framework",
   "dependencies": {
     "electron-store": "^8.1.0",
-    "sanitize-filename": "^1.6.3",
-    "xlsx": "^0.18.5"
+    "sanitize-filename": "^1.6.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.0",
+    "csv-parse": "^6.1.0",
     "electron": "^33.2.0",
-    "electron-builder": "^24.13.3"
+    "electron-builder": "^24.13.3",
+    "xlsx": "^0.18.5"
   }
 }

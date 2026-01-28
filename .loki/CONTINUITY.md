@@ -1,10 +1,10 @@
 # Loki Continuity - TIREApp Migration
 
 ## Current State
-- **Phase**: POST-MIGRATION - Production ready iteration 14 ✅
-- **Last Action**: Client-side ETag caching, integration tests, performance benchmarks, monitoring dashboard
-- **Git HEAD**: c94c715 (Monitoring dashboard)
-- **Next Action**: Additional improvements (E2E tests for caching, analytics dashboard, user activity tracking)
+- **Phase**: POST-MIGRATION - Production ready iteration 15 ✅
+- **Last Action**: Critical bug fixes (health API, MonitoringDashboard, AnalyticsDashboard), DB indexes, upload validation, AnalyticsDashboard tests
+- **Git HEAD**: cfb628c (Bug fixes + indexes + upload validation)
+- **Next Action**: E2E tests for caching flows, audit logging, error logging in catch blocks
 
 ## Mistakes & Learnings
 - Previous session committed M1 scaffold but directory was deleted from disk afterward
@@ -32,6 +32,10 @@
 - `npx jest` may pick up global jest (v30) instead of project jest - use `node_modules/.bin/jest` for reliability
 - `JSON.stringify(undefined)` returns `undefined` (not a string) - use `?? ''` fallback for crypto.update()
 - PrismaNeon adapter internally creates neon Pool from config object - pass pool options directly to PrismaNeon constructor
+- Health API must return structured objects (database.connected, memory.used) not flat strings - components depend on nested shapes
+- MonitoringDashboard fetchHealth must use useCallback to avoid accessing before definition in useEffect
+- AnalyticsDashboard: applications API returns paginated { data: [...], pagination: {...} }, not flat array
+- Always validate file uploads: check MIME type AND extension, enforce size limits server-side
 
 ## Progress
 - M1 Foundation: COMPLETE (7b0a6e9 - build fixes, 7d806a6 - tests)
@@ -65,10 +69,11 @@
 - M29 Integration Tests: COMPLETE (3b31200 - API caching integration tests, 14 tests)
 - M30 Performance Benchmarks: COMPLETE (fa2d592 - caching benchmarks, 10 tests, 117k req/s)
 - M31 Monitoring Dashboard: COMPLETE (c94c715 - health monitoring component, 13 tests)
+- M32 Quality Fixes: COMPLETE (cfb628c - health API fix, MonitoringDashboard fix, AnalyticsDashboard fix, DB indexes, upload validation, 11 new tests)
 
-## Test Coverage (350 tests, 35 suites)
-- **API Routes (9 suites, 84 tests)**: customers, applications (inc pagination), applications/[id], applications-edge (9), questionnaires, thresholds, users, upload (7), export (7), health (4)
-- **Components (11 suites, 77 tests)**: ExportButton, ThresholdManager, CustomerActions, UserManager, ApplicationTable, ExcelUpload, ErrorBoundary/Loading/NotFound, ApplicationDetail (7), StrategyQuestionsForm (10), AppQuestionsForm (17), MonitoringDashboard (13)
+## Test Coverage (362 tests, 36 suites)
+- **API Routes (9 suites, 85 tests)**: customers, applications (inc pagination), applications/[id], applications-edge (9), questionnaires, thresholds, users, upload (7), export (7), health (5)
+- **Components (12 suites, 88 tests)**: ExportButton, ThresholdManager, CustomerActions, UserManager, ApplicationTable, ExcelUpload, ErrorBoundary/Loading/NotFound, ApplicationDetail (7), StrategyQuestionsForm (10), AppQuestionsForm (17), MonitoringDashboard (13), AnalyticsDashboard (11)
 - **Lib (9 suites, 129 tests)**: TIRE Scoring (18), Excel Parser (6), Rate Limiter (6), Sanitize (13), Validations (34), Logger (10), API Cache (17), API Errors (10), API Client (9)
 - **Pages (2 suites, 6 tests)**: HomePage (3), UnauthorizedPage (3)
 - **Schema (1 suite, 9 tests)**: Prisma schema validation
@@ -86,6 +91,7 @@
 - [x] ETag conditional responses on all GET endpoints (304 Not Modified)
 - [x] Cache-Control headers (5-min max-age for thresholds)
 - [x] Neon connection pooling (10 max, 30s idle timeout, 10s connect timeout)
+- [x] Database indexes on Customer.name, Application.customerId/status, AssessmentHistory.applicationId/createdAt
 
 ## Security Improvements (Iterations 2+4+6)
 - [x] Input validation: customer/app names max 500 chars
@@ -97,6 +103,7 @@
 - [x] Input sanitization: HTML tag stripping on all name inputs
 - [x] Security headers: CSP, X-Frame-Options, X-Content-Type-Options
 - [x] CORS: origin-restricted, exposes ETag/X-Request-Id/X-Response-Time
+- [x] File upload validation: 10MB size limit, Excel-only type check (.xlsx/.xls)
 
 ## API Improvements (Iteration 6+7)
 - [x] OpenAPI 3.1 spec at /api/docs

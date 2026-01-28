@@ -1,0 +1,11 @@
+{
+    "version": "5.3.0",
+    "currentPhase": "BOOTSTRAP",
+    "startedAt": "2026-01-27T17:28:17Z",
+    "agents": {},
+    "metrics": {
+        "tasksCompleted": 0,
+        "tasksFailed": 0,
+        "retries": 0
+    }
+}
