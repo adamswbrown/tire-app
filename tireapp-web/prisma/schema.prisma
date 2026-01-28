@@ -1,17 +1,10 @@
-// Prisma schema for TIREApp Web
-// M1: Auth.js models | M2: Domain models with TIRE scoring
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider  = "postgresql"
+  provider = "postgresql"
 }
-
-// ============================================
-// AUTH.JS REQUIRED MODELS (v5 with PrismaAdapter)
-// ============================================
 
 model User {
   id            String    @id @default(cuid())
@@ -19,13 +12,12 @@ model User {
   email         String    @unique
   emailVerified DateTime?
   image         String?
-  role          String    @default("Consultant") // "Consultant" or "Admin"
-
-  accounts      Account[]
-  sessions      Session[]
-
+  role          String    @default("Consultant")
+  password      String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+  accounts      Account[]
+  sessions      Session[]
 
   @@map("users")
 }
@@ -36,15 +28,14 @@ model Account {
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
+  refresh_token     String?
+  access_token      String?
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String? @db.Text
+  id_token          String?
   session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
   @@map("accounts")
@@ -55,8 +46,7 @@ model Session {
   sessionToken String   @unique
   userId       String
   expires      DateTime
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("sessions")
 }
@@ -70,52 +60,42 @@ model VerificationToken {
   @@map("verification_tokens")
 }
 
-// ============================================
-// TIREAPP DOMAIN MODELS (M2)
-// ============================================
-
 model Customer {
-  id        String   @id @default(cuid())
-  name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
+  id           String        @id @default(cuid())
+  name         String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
   applications Application[]
 
   @@index([name])
   @@map("customers")
 }
 
-// Application imported from Excel "App-to-Server List" sheet
 model Application {
-  id              String   @id @default(cuid())
-  customerId      String
-  name            String
-  assessmentScope String   @default("In Scope") // "In Scope" | "Out of Scope"
-  dataCenter      String?
-  environment     String?
-  server          String?
-  treatment       String?  // Pre-existing treatment from Excel
-  solution        String?
-  powerStatus     String?
-  os              String?
-  sqlDetected     String?
-  vmwareDesc      String?
-
-  // TIRE Assessment Results
-  initialTirePlacement   String?  // "Tolerate" | "Invest" | "Replace" | "Eliminate" | "Not Set"
-  confirmedTirePlacement String?  // Final placement after tiebreaker
-  appQuestionsCompleted  Boolean  @default(false)
-  strategyCompleted      Boolean  @default(false)
-
-  status      String   @default("pending") // "pending" | "in_progress" | "completed"
-  completedAt DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  customer           Customer            @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  questionnaires     Questionnaire[]
-  assessmentHistory  AssessmentHistory[]
+  id                     String              @id @default(cuid())
+  customerId             String
+  name                   String
+  assessmentScope        String              @default("In Scope")
+  dataCenter             String?
+  environment            String?
+  server                 String?
+  treatment              String?
+  solution               String?
+  powerStatus            String?
+  os                     String?
+  sqlDetected            String?
+  vmwareDesc             String?
+  initialTirePlacement   String?
+  confirmedTirePlacement String?
+  appQuestionsCompleted  Boolean             @default(false)
+  strategyCompleted      Boolean             @default(false)
+  status                 String              @default("pending")
+  completedAt            DateTime?
+  createdAt              DateTime            @default(now())
+  updatedAt              DateTime            @updatedAt
+  customer               Customer            @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  assessmentHistory      AssessmentHistory[]
+  questionnaires         Questionnaire[]
 
   @@index([customerId])
   @@index([status])
@@ -123,56 +103,50 @@ model Application {
   @@map("applications")
 }
 
-// Questionnaire answers stored as JSON (flexible schema)
 model Questionnaire {
-  id            String    @id @default(cuid())
+  id            String      @id @default(cuid())
   applicationId String
-  type          String    // "app_questions" | "strategy_questions"
-  answers       Json      // Question answers as JSON blob
-  summary       Json?     // Scoring summary (totalQuestions, answeredQuestions, tireScores)
+  type          String
+  answers       Json
+  summary       Json?
   completedAt   DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
 
   @@unique([applicationId, type])
   @@map("questionnaires")
 }
 
-// Track assessment restarts and treatment changes
 model AssessmentHistory {
-  id            String   @id @default(cuid())
+  id            String      @id @default(cuid())
   applicationId String
-  action        String   // "restart" | "treatment_change"
-  previousValue String?  // Previous treatment/state
-  newValue      String?  // New treatment/state
+  action        String
+  previousValue String?
+  newValue      String?
   reason        String?
-  createdAt     DateTime @default(now())
-
-  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  createdAt     DateTime    @default(now())
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
 
   @@index([applicationId])
   @@index([createdAt])
   @@map("assessment_history")
 }
 
-// Export tracking
 model Export {
   id        String   @id @default(cuid())
   userId    String
   appId     String?
   fileUrl   String
-  format    String   // "xlsx" | "csv"
+  format    String
   createdAt DateTime @default(now())
 
   @@map("exports")
 }
 
-// Admin-configurable thresholds for TIRE scoring
 model Threshold {
   id        String   @id @default(cuid())
-  key       String   @unique // "distributionThreshold" | "tiebreakThreshold"
+  key       String   @unique
   value     Float
   updatedAt DateTime @updatedAt
 

@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-01-28T08:39:31Z",
+  "timestamp": "2026-01-28T10:00:02Z",
   "version": "5.3.0",
   "mode": "paused",
   "phase": "BOOTSTRAP",
@@ -21,9 +21,9 @@
   "metrics": {
     "tasksCompleted": 0,
     "tasksFailed": 0,
-    "cpuUsage": 70,
-    "memoryUsage": 70,
-    "resourceStatus": "ok"
+    "cpuUsage": 99,
+    "memoryUsage": 84,
+    "resourceStatus": "warning"
   },
   "memory": {
     "episodic": 0,
