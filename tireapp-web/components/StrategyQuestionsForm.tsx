@@ -52,12 +52,14 @@ export function StrategyQuestionsForm({
 
   useEffect(() => {
     if (!stickyHeaderRef.current) return
-    const observer = new ResizeObserver(entries => {
-      for (const entry of entries) {
-        setStickyHeaderHeight(entry.contentRect.height)
+    const updateHeight = () => {
+      if (stickyHeaderRef.current) {
+        setStickyHeaderHeight(stickyHeaderRef.current.offsetHeight)
       }
-    })
+    }
+    const observer = new ResizeObserver(() => updateHeight())
     observer.observe(stickyHeaderRef.current)
+    updateHeight() // Initial measurement
     return () => observer.disconnect()
   }, [])
 
