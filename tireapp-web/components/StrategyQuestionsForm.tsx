@@ -269,7 +269,7 @@ export function StrategyQuestionsForm({
       </div>
 
       {/* Questions Table */}
-      <div className="bg-white rounded-lg border overflow-hidden">
+      <div className="bg-white rounded-lg border">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b sticky z-[5]" style={{ top: stickyHeaderHeight }}>
             <tr>
