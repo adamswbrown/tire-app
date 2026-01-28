@@ -3,6 +3,7 @@ import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
 import Link from "next/link"
 import { ApplicationDetail } from "@/components/ApplicationDetail"
+import { hasCustomerAccess } from "@/lib/auth-helpers"
 
 export default async function ApplicationPage({
   params,
@@ -13,6 +14,14 @@ export default async function ApplicationPage({
   if (!session) redirect('/api/auth/signin')
 
   const { customerId, appId } = await params
+
+  // Check if user has access to this customer
+  const hasAccess = await hasCustomerAccess(
+    session.user.id,
+    session.user.role,
+    customerId
+  )
+  if (!hasAccess) redirect('/app')
 
   const application = await prisma.application.findUnique({
     where: { id: appId },

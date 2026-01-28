@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import Link from "next/link"
 import { StrategyQuestionsForm } from "@/components/StrategyQuestionsForm"
 import strategyData from "@/lib/strategy-questions.json"
+import { hasCustomerAccess } from "@/lib/auth-helpers"
 
 export default async function StrategyQuestionsPage({
   params,
@@ -14,6 +15,14 @@ export default async function StrategyQuestionsPage({
   if (!session) redirect('/api/auth/signin')
 
   const { customerId, appId } = await params
+
+  // Check if user has access to this customer
+  const hasAccess = await hasCustomerAccess(
+    session.user.id,
+    session.user.role,
+    customerId
+  )
+  if (!hasAccess) redirect('/app')
 
   const application = await prisma.application.findUnique({
     where: { id: appId },

@@ -7,17 +7,18 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(cuid())
+  id            String         @id @default(cuid())
   name          String?
-  email         String    @unique
+  email         String         @unique
   emailVerified DateTime?
   image         String?
-  role          String    @default("Consultant")
+  role          String         @default("Consultant")
   password      String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
   accounts      Account[]
   sessions      Session[]
+  customers     UserCustomer[]
 
   @@map("users")
 }
@@ -61,14 +62,29 @@ model VerificationToken {
 }
 
 model Customer {
-  id           String        @id @default(cuid())
+  id           String         @id @default(cuid())
   name         String
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
   applications Application[]
+  users        UserCustomer[]
 
   @@index([name])
   @@map("customers")
+}
+
+model UserCustomer {
+  id         String   @id @default(cuid())
+  userId     String
+  customerId String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  assignedAt DateTime @default(now())
+
+  @@unique([userId, customerId])
+  @@index([userId])
+  @@index([customerId])
+  @@map("user_customers")
 }
 
 model Application {

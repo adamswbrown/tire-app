@@ -64,14 +64,47 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
   ],
 
   callbacks: {
+    // Block sign-in if user not provisioned (for OAuth providers)
+    async signIn({ user, account }) {
+      // Credentials already validated in authorize - user must exist
+      if (account?.provider === "credentials") {
+        return true
+      }
+
+      // For OAuth (Entra), check if user email is pre-provisioned
+      if (user.email) {
+        const existingUser = await prisma.user.findUnique({
+          where: { email: user.email },
+        })
+        if (!existingUser) {
+          // Redirect to unauthorized with error
+          return "/unauthorized?error=not_provisioned"
+        }
+      }
+      return true
+    },
+
     // JWT callback - add user data to token
-    jwt({ token, user }) {
+    async jwt({ token, user, account }) {
       if (user) {
-        token.id = user.id
-        token.role = (user as { role?: string }).role ?? "Consultant"
+        // For OAuth, get the role from the database since profile may not have it
+        if (account?.provider !== "credentials" && user.email) {
+          const dbUser = await prisma.user.findUnique({
+            where: { email: user.email },
+            select: { id: true, role: true },
+          })
+          if (dbUser) {
+            token.id = dbUser.id
+            token.role = dbUser.role
+          }
+        } else {
+          token.id = user.id
+          token.role = (user as { role?: string }).role ?? "Consultant"
+        }
       }
       return token
     },
+
     // Session callback - expose token data to client
     session({ session, token }) {
       if (session.user && token) {

@@ -15,22 +15,42 @@ export default async function DashboardPage() {
   const session = await auth()
   if (!session) redirect('/api/auth/signin')
 
+  const isAdmin = session.user?.role === 'Admin'
+  const userId = session.user?.id
+
+  // Admins see all customers, others only see assigned customers
   const customers = await prisma.customer.findMany({
+    where: isAdmin ? {} : {
+      users: { some: { userId } },
+    },
     orderBy: { createdAt: 'desc' },
     include: {
       _count: { select: { applications: true } },
     },
   })
 
-  // Aggregate TIRE stats
+  // Get customer IDs for filtering stats
+  const customerIds = customers.map(c => c.id)
+
+  // Aggregate TIRE stats (filtered by accessible customers)
   const tireCounts = await prisma.application.groupBy({
     by: ['confirmedTirePlacement'],
     _count: { id: true },
-    where: { confirmedTirePlacement: { not: null } },
+    where: {
+      confirmedTirePlacement: { not: null },
+      ...(isAdmin ? {} : { customerId: { in: customerIds } }),
+    },
   })
 
-  const totalApps = await prisma.application.count()
-  const completedApps = await prisma.application.count({ where: { status: 'completed' } })
+  const totalApps = await prisma.application.count({
+    where: isAdmin ? {} : { customerId: { in: customerIds } },
+  })
+  const completedApps = await prisma.application.count({
+    where: {
+      status: 'completed',
+      ...(isAdmin ? {} : { customerId: { in: customerIds } }),
+    },
+  })
 
   const tireMap: Record<string, number> = {}
   for (const row of tireCounts) {
@@ -89,8 +109,14 @@ export default async function DashboardPage() {
 
       {customers.length === 0 ? (
         <div className="text-center py-12 bg-white rounded-lg border">
-          <p className="text-gray-500 text-lg mb-4">No customers yet</p>
-          <p className="text-gray-400">Create a customer to get started with TIRE assessments.</p>
+          <p className="text-gray-500 text-lg mb-4">
+            {isAdmin ? 'No customers yet' : 'No customers assigned'}
+          </p>
+          <p className="text-gray-400">
+            {isAdmin
+              ? 'Create a customer to get started with TIRE assessments.'
+              : 'Contact an administrator to be assigned to customers.'}
+          </p>
         </div>
       ) : (
         <div className="grid gap-4">

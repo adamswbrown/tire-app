@@ -5,6 +5,7 @@ import Link from "next/link"
 import { ExcelUpload } from "@/components/ExcelUpload"
 import { ApplicationTable } from "@/components/ApplicationTable"
 import { ExportButton } from "@/components/ExportButton"
+import { hasCustomerAccess } from "@/lib/auth-helpers"
 
 export default async function ApplicationsPage({
   params,
@@ -21,6 +22,14 @@ export default async function ApplicationsPage({
   })
 
   if (!customer) redirect('/app')
+
+  // Check if user has access to this customer
+  const hasAccess = await hasCustomerAccess(
+    session.user.id,
+    session.user.role,
+    customerId
+  )
+  if (!hasAccess) redirect('/app')
 
   const applications = await prisma.application.findMany({
     where: { customerId },
