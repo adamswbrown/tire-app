@@ -1,10 +1,13 @@
 // Auth.js (NextAuth v5) configuration for TIREApp
 // Source: M1-ResearchPack.md (Auth.js v5 with Entra ID)
 
+
 import NextAuth from "next-auth"
 import MicrosoftEntraID from "next-auth/providers/microsoft-entra-id"
+import CredentialsProvider from "next-auth/providers/credentials"
 import { PrismaAdapter } from "@auth/prisma-adapter"
 import { prisma } from "@/lib/prisma"
+import bcrypt from "bcrypt"
 
 export const { auth, handlers, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
@@ -17,19 +20,40 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
       clientId: process.env.AUTH_MICROSOFT_ENTRA_ID_ID!,
       clientSecret: process.env.AUTH_MICROSOFT_ENTRA_ID_SECRET!,
       issuer: process.env.AUTH_MICROSOFT_ENTRA_ID_ISSUER!,
-
-      // Extract role from Entra ID profile
       profile(profile) {
-        // Check for 'roles' claim from Entra ID app roles
-        // Fallback to "Consultant" if no role assigned
         const role = profile.roles?.[0] ?? "Consultant"
-
         return {
           id: profile.sub,
           name: profile.name,
           email: profile.email,
-          role: role, // "Consultant" or "Admin"
+          role: role,
         }
+      },
+    }),
+    CredentialsProvider({
+      name: "Credentials",
+      credentials: {
+        username: { label: "Username", type: "text" },
+        password: { label: "Password", type: "password" },
+      },
+      async authorize(credentials) {
+        if (!credentials?.username || !credentials?.password) {
+          return null;
+        }
+        const user = await prisma.user.findUnique({ where: { email: credentials.username } });
+        if (!user || !user.password) {
+          return null;
+        }
+        const valid = await bcrypt.compare(credentials.password, user.password);
+        if (!valid) {
+          return null;
+        }
+        return {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+        };
       },
     }),
   ],
