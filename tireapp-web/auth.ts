@@ -83,7 +83,7 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
   },
 
   pages: {
-    signIn: '/login',
+    signIn: '/',
     error: '/api/auth/error',
   },
 })
