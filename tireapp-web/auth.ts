@@ -12,8 +12,10 @@ import bcrypt from "bcrypt"
 export const { auth, handlers, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
 
-  // Database session strategy required for PrismaAdapter
-  session: { strategy: "database" },
+  // JWT strategy is required for CredentialsProvider to work properly
+  // Database strategy doesn't work with credentials because the adapter
+  // expects OAuth callback flow for session creation
+  session: { strategy: "jwt" },
 
   providers: [
     MicrosoftEntraID({
@@ -37,14 +39,17 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.username || !credentials?.password) {
+        const username = credentials?.username as string | undefined;
+        const password = credentials?.password as string | undefined;
+
+        if (!username || !password) {
           return null;
         }
-        const user = await prisma.user.findUnique({ where: { email: credentials.username } });
+        const user = await prisma.user.findUnique({ where: { email: username } });
         if (!user || !user.password) {
           return null;
         }
-        const valid = await bcrypt.compare(credentials.password, user.password);
+        const valid = bcrypt.compareSync(password, user.password);
         if (!valid) {
           return null;
         }
@@ -59,17 +64,26 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
   ],
 
   callbacks: {
-    // Add role to session object (database strategy provides user, not token)
-    session({ session, user }) {
-      if (session.user && user) {
-        session.user.role = (user as { role?: string }).role ?? "Consultant"
+    // JWT callback - add user data to token
+    jwt({ token, user }) {
+      if (user) {
+        token.id = user.id
+        token.role = (user as { role?: string }).role ?? "Consultant"
+      }
+      return token
+    },
+    // Session callback - expose token data to client
+    session({ session, token }) {
+      if (session.user && token) {
+        session.user.id = token.id as string
+        session.user.role = token.role as string
       }
       return session
     },
   },
 
   pages: {
-    signIn: '/api/auth/signin',
+    signIn: '/login',
     error: '/api/auth/error',
   },
 })

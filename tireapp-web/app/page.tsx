@@ -1,25 +1,27 @@
 // Landing page (public)
 
-import LoginForm from "../components/LoginForm";
+import { auth } from "@/auth"
+import { redirect } from "next/navigation"
 
-export default function HomePage() {
+export default async function HomePage() {
+  const session = await auth()
+
+  // If already logged in, redirect to dashboard
+  if (session) {
+    redirect("/dashboard")
+  }
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-4 bg-gray-50">
       <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-8 flex flex-col items-center">
         <h1 className="text-4xl font-bold mb-2">TIREApp Web</h1>
         <p className="text-lg mb-6 text-gray-600">TIRE Framework Assessment Tool</p>
         <a
-          href="/api/auth/signin"
-          className="w-full mb-4 py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded transition text-center"
+          href="/login"
+          className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded transition text-center"
         >
-          Sign In with Microsoft
+          Sign In
         </a>
-        <div className="w-full flex items-center my-4">
-          <div className="flex-grow border-t border-gray-200" />
-          <span className="mx-2 text-gray-400 text-sm">or</span>
-          <div className="flex-grow border-t border-gray-200" />
-        </div>
-        <LoginForm />
         <div className="mt-4 text-sm text-gray-500">
           Test users:<br />
           <span className="font-mono">consultant@test.com / consultant123</span><br />
