@@ -158,7 +158,7 @@ export function StrategyQuestionsForm({
           </button>
           <button
             onClick={() => handleSave(true)}
-            disabled={saving || answeredCount < questions.length}
+            disabled={saving || !placement.confirmedPlacement}
             className="px-4 py-2 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
           >
             Complete Assessment
@@ -225,12 +225,9 @@ export function StrategyQuestionsForm({
               </div>
             </div>
             <div className="text-right">
-              <span className={`text-sm ${answeredCount < questions.length ? 'text-orange-500' : 'text-green-600'}`}>
+              <span className={`text-sm ${placement.confirmedPlacement ? 'text-green-600' : 'text-orange-500'}`}>
                 {answeredCount}/{questions.length} answered
               </span>
-              {answeredCount < questions.length && (
-                <p className="text-xs text-gray-400">Answer all to complete</p>
-              )}
             </div>
           </div>
         </div>
