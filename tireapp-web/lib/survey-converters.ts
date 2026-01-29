@@ -192,13 +192,12 @@ export function convertStrategyQuestionsToSurvey(
         description: `Category: ${q.category} | Weight: ${q.weight}`,
         isRequired: false,
         choices: [
-          { value: '-', text: 'Not Answered' },
           { value: 'Yes', text: 'Yes' },
           { value: 'No', text: 'No' },
           { value: 'Partial/Unsure', text: 'Partial/Unsure' },
         ],
-        colCount: 4,
-        defaultValue: '-',
+        colCount: 3,
+        showClearButton: true,
       })
 
       // Add notes field for each question
@@ -253,13 +252,13 @@ export function convertSurveyAnswersToStrategyFormat(
   surveyData: Record<string, unknown>,
   originalQuestions: StrategyQuestion[]
 ): StrategyQuestion[] {
-  const validAnswers: ClientAnswer[] = ['-', 'Yes', 'No', 'Partial/Unsure']
+  const validAnswers: ClientAnswer[] = ['Yes', 'No', 'Partial/Unsure']
 
   return originalQuestions.map((q, index) => {
     const questionId = `q${index + 1}`
-    const rawAnswer = surveyData[questionId] as string || '-'
-    // Validate and cast to ClientAnswer type
-    const answer: ClientAnswer = validAnswers.includes(rawAnswer as ClientAnswer)
+    const rawAnswer = surveyData[questionId] as string | undefined
+    // Validate and cast to ClientAnswer type - treat empty/undefined as '-' (not answered)
+    const answer: ClientAnswer = rawAnswer && validAnswers.includes(rawAnswer as ClientAnswer)
       ? (rawAnswer as ClientAnswer)
       : '-'
     const notes = surveyData[`${questionId}_notes`] as string || ''
@@ -298,18 +297,17 @@ export function convertStrategyAnswersToSurveyData(
   originalQuestions: StrategyQuestion[]
 ): Record<string, unknown> {
   if (!answers || !Array.isArray(answers)) {
-    // Return default values
-    const data: Record<string, unknown> = {}
-    originalQuestions.forEach((_, index) => {
-      data[`q${index + 1}`] = '-'
-    })
-    return data
+    // Return empty data - questions will show as unanswered
+    return {}
   }
 
   const data: Record<string, unknown> = {}
   answers.forEach((a, index) => {
     const questionId = `q${index + 1}`
-    data[questionId] = a.clientAnswer || '-'
+    // Only set the answer if it's actually answered (not '-')
+    if (a.clientAnswer && a.clientAnswer !== '-') {
+      data[questionId] = a.clientAnswer
+    }
     if (a.extendedAnswer) {
       data[`${questionId}_notes`] = a.extendedAnswer
     }
