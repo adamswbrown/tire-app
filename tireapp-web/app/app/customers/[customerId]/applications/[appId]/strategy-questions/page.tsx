@@ -2,7 +2,7 @@ import { auth } from "@/auth"
 import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
 import Link from "next/link"
-import { StrategyQuestionsForm } from "@/components/StrategyQuestionsForm"
+import { StrategyQuestionsFormWrapper } from "@/components/StrategyQuestionsFormWrapper"
 import strategyData from "@/lib/strategy-questions.json"
 import { hasCustomerAccess } from "@/lib/auth-helpers"
 
@@ -65,7 +65,7 @@ export default async function StrategyQuestionsPage({
       <h1 className="text-2xl font-bold mb-2">Strategy Questions</h1>
       <p className="text-gray-500 mb-6">{application.name}</p>
 
-      <StrategyQuestionsForm
+      <StrategyQuestionsFormWrapper
         applicationId={appId}
         questions={JSON.parse(JSON.stringify(questions))}
         existingAnswers={existingAnswers}

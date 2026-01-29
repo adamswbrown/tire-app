@@ -2,7 +2,7 @@ import { auth } from "@/auth"
 import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
 import Link from "next/link"
-import { AppQuestionsForm } from "@/components/AppQuestionsForm"
+import { AppQuestionsFormWrapper } from "@/components/AppQuestionsFormWrapper"
 import questionsData from "@/lib/app-questions.json"
 import { hasCustomerAccess } from "@/lib/auth-helpers"
 
@@ -52,7 +52,7 @@ export default async function AppQuestionsPage({
       <h1 className="text-2xl font-bold mb-2">Application Questions</h1>
       <p className="text-gray-500 mb-6">{application.name}</p>
 
-      <AppQuestionsForm
+      <AppQuestionsFormWrapper
         applicationId={appId}
         sections={questionsData as never[]}
         existingAnswers={existingAnswers || {}}
