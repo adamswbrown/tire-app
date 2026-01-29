@@ -183,9 +183,9 @@ export function SurveyStrategyQuestionsForm({
   }
 
   return (
-    <div>
-      {/* Sticky header with scores, placement, and action buttons */}
-      <div className="sticky top-0 z-10 bg-gray-50 -mx-6 px-6 pt-2 pb-4 border-b mb-4">
+    <div className="flex flex-col h-[calc(100vh-120px)]">
+      {/* Fixed header with scores, placement, and action buttons */}
+      <div className="flex-shrink-0 bg-gray-50 -mx-6 px-6 pt-2 pb-4 border-b">
         {/* Action buttons at top */}
         <div className="flex items-center justify-end gap-3 mb-4">
           {message && (
@@ -241,7 +241,7 @@ export function SurveyStrategyQuestionsForm({
           })}
         </div>
 
-        {/* Placement result */}
+        {/* Placement result and navigation */}
         <div className="bg-white rounded-lg border p-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -278,43 +278,42 @@ export function SurveyStrategyQuestionsForm({
                 )}
               </div>
             </div>
-            <div className="text-right">
+            <div className="flex items-center gap-4">
               <span
                 className={`text-sm ${selectedPlacement ? 'text-green-600' : 'text-orange-500'}`}
               >
                 {answeredCount}/{initialQuestions.length} answered
               </span>
+              {/* Page navigation */}
+              <div className="flex items-center gap-2 border-l pl-4">
+                <button
+                  onClick={() => survey.prevPage()}
+                  disabled={survey.isFirstPage}
+                  className="px-3 py-1 text-sm bg-gray-100 rounded hover:bg-gray-200 disabled:opacity-50"
+                >
+                  Prev
+                </button>
+                <span className="text-sm text-gray-500">
+                  {survey.currentPageNo + 1}/{survey.visiblePageCount}
+                </span>
+                <button
+                  onClick={() => survey.nextPage()}
+                  disabled={survey.isLastPage}
+                  className="px-3 py-1 text-sm bg-gray-100 rounded hover:bg-gray-200 disabled:opacity-50"
+                >
+                  Next
+                </button>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Survey.js form */}
-      <div className="bg-white rounded-lg border overflow-hidden">
-        <Survey model={survey} />
-      </div>
-
-      {/* Navigation buttons - Survey.js pages */}
-      <div className="flex items-center justify-between mt-6">
-        <div className="flex gap-2">
-          <button
-            onClick={() => survey.prevPage()}
-            disabled={survey.isFirstPage}
-            className="px-4 py-2 text-sm bg-gray-100 rounded hover:bg-gray-200 disabled:opacity-50"
-          >
-            Previous
-          </button>
-          <button
-            onClick={() => survey.nextPage()}
-            disabled={survey.isLastPage}
-            className="px-4 py-2 text-sm bg-gray-100 rounded hover:bg-gray-200 disabled:opacity-50"
-          >
-            Next
-          </button>
+      {/* Scrollable Survey.js form */}
+      <div className="flex-1 overflow-y-auto mt-4">
+        <div className="bg-white rounded-lg border overflow-hidden">
+          <Survey model={survey} />
         </div>
-        <span className="text-sm text-gray-500">
-          Page {survey.currentPageNo + 1} of {survey.visiblePageCount}
-        </span>
       </div>
     </div>
   )
