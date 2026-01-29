@@ -39,7 +39,7 @@ export default async function AppQuestionsPage({
   const existingAnswers = application.questionnaires[0]?.answers as Record<string, unknown> | null
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <div className="p-6">
       <div className="mb-4">
         <Link
           href={`/app/customers/${customerId}/applications`}
