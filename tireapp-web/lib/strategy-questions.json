@@ -519,27 +519,5 @@
     "category": "modernisation",
     "extendedAnswer": "",
     "sampleDrivers": "Operations: is the solution operationally heavy and could these resources deliver more value for the business elsewhere?"
-  },
-  {
-    "time": "Eliminate",
-    "characteristics": "Business Value",
-    "clientAnswer": "-",
-    "clientScore": 0,
-    "weight": 3,
-    "question": "Would the organization benefit from reallocating resources currently dedicated to maintaining this system?",
-    "category": "modernisation",
-    "extendedAnswer": "",
-    "sampleDrivers": "Operations: is the solution operationally heavy and could these resources deliver more value for the business elsewhere?"
-  },
-  {
-    "time": "Eliminate",
-    "characteristics": "Business Value",
-    "clientAnswer": "-",
-    "clientScore": 0,
-    "weight": 3,
-    "question": "Would the organization benefit from reallocating resources currently dedicated to maintaining this system?",
-    "category": "modernisation",
-    "extendedAnswer": "",
-    "sampleDrivers": "Operations: is the solution operationally heavy and could these resources deliver more value for the business elsewhere?"
   }
 ]
