@@ -1,0 +1,84 @@
+Type,Section/Category,#,Question,TIRE Placement,Weight,Characteristics,Answer Type,Options
+App Question,Basic Application Information,1,Can you briefly describe what this application does?,,,,text,
+App Question,Basic Application Information,2,What is the primary business function or purpose of this application?,,,,select,"Business Application, IT Tool"
+App Question,Basic Application Information,3,What are the key drivers for migrating this application?,,,,multiselect,"Planned for Decom, No funding, Want to use PaaS, Need to rearchitect, Not used, Business critical app, Higher Availability, Faster Deployments, DC Exit"
+App Question,Basic Application Information,4,What is the size of the user base for this application?,,,,select,">10, >100, >250, >500, >1000, 1000"
+App Question,Basic Application Information,5,"Is this application COTS (Commercial Off-the-Shelf), SaaS, or custom-built?",,,,select,"COTS/ISV, In-House Custom Built"
+App Question,Contact Information,6,Who is the primary business owner of this application?,,,,text,
+App Question,Contact Information,7,What is the email address of the application owner?,,,,text,
+App Question,Contact Information,8,Who is the technical SME (subject matter expert) for this application?,,,,text,
+App Question,Contact Information,9,What is the email address of the SME?,,,,text,
+App Question,Contact Information,10,How would you rate the application owner's knowledge of Azure/cloud?,,,,select,"None, Limited, Moderate, High"
+App Question,Contact Information,11,How would you rate the SME's knowledge of Azure/cloud?,,,,select,"None, Limited, Moderate, High"
+App Question,Application Details,12,"Would you consider this application business-critical (i.e., a failure causes major impact)?",,,,select,"Yes, No"
+App Question,Application Details,13,What is the criticality rating of the application (Low / Medium / High / Critical)?,,,,text,
+App Question,Application Details,14,Is a disaster recovery solution in place for this app?,,,,select,"Yes, No"
+App Question,Application Details,15,Is high availability configured for this application?,,,,select,"Yes, No"
+App Question,Application Details,16,Does this application process or store personally identifiable information (PII)?,,,,select,"Critical, High, Medium, Low"
+App Question,COTS Details (conditional),17,What is the name of the software?,,,,text,
+App Question,COTS Details (conditional),18,Who is the vendor for this software?,,,,text,
+App Question,COTS Details (conditional),19,What version is currently in use?,,,,text,
+App Question,COTS Details (conditional),20,Is there a vendor/product website or URL?,,,,text,
+App Question,COTS Details (conditional),21,Can this application or its components run in Azure as-is?,,,,select,"Yes, No, Not Known"
+App Question,COTS Details (conditional),22,Can the application be modernized using Azure PaaS services?,,,,text,
+App Question,COTS Details (conditional),23,Are there any constraints or special notes regarding this application's architecture?,,,,text,
+App Question,Support Information,24,Which business unit or team is responsible for this application?,,,,text,
+App Question,Support Information,25,"How is the application deployed (manual, semi-automated, CI/CD)?",,,,select,"Manual, Semi-Automated, CI/CD"
+App Question,Support Information,26,What is your current backup and restore policy or retention period?,,,,select,"6 Months, 1 Year, 2 Years, 3 Years, 4 Years, 5 Years, >5 Years"
+App Question,Support Information,27,Is this application supported internally or by a third-party vendor?,,,,select,"Internally Supported, External Vendor"
+App Question,Support Information,28,Approximately how many people support this application?,,,,select,">5, >10, <10"
+App Question,Support Information,29,How familiar is the support team with Azure/cloud services?,,,,select,"None, Limited, Moderate, High"
+App Question,Health & Risk,30,What is your required data retention duration for disaster recovery or resilience?,,,,select,"6 Months, 1 Year, 2 Years, 3 Years, 4 Years, 5 Years, >5 Years"
+App Question,Health & Risk,31,How stable is this application in its current form?,,,,select,"Stable, Intermittent Issues, Unstable"
+App Question,Health & Risk,32,How well documented is this application and its support procedures?,,,,select,"Lacking, Detailed"
+App Question,Health & Risk,33,Are backups currently enabled for this application?,,,,select,"Yes, No"
+App Question,Health & Risk,34,What is the inherent risk level of this application?,,,,select,"None, Limited, Moderate, High"
+Strategy Question,performance / stability,1,Is the current system stable and meeting our basic operational needs without significant issues?,Tolerate,5,IT Qualities,score 1-5,
+Strategy Question,user satisfaction,2,Are users generally satisfied with the current system's performance and functionality?,Tolerate,3,IT Qualities,score 1-5,
+Strategy Question,criticality,3,Is this system high-priority and a critical component of our business operations?,Tolerate,3,Business Value,score 1-5,
+Strategy Question,Scalability,4,Are there no immediate plans for business expansion or changes that would impact the system's effectiveness?,Tolerate,4,Business Value,score 1-5,
+Strategy Question,performance / stability,5,Does this system fulfill its basic intended purpose without causing significant bottlenecks or issues?,Tolerate,5,Business Value,score 1-5,
+Strategy Question,cost/value,6,Are the maintenance and operational costs associated with this system reasonable and sustainable?,Tolerate,5,IT Qualities,score 1-5,
+Strategy Question,architecture,7,Is the system's architecture compatible with our existing technology infrastructure and ecosystem?,Tolerate,4,IT Qualities,score 1-5,
+Strategy Question,modernisation,8,Would the effort and resources required to replace or upgrade this system outweigh the benefits gained?,Tolerate,5,Business Value,score 1-5,
+Strategy Question,legacy / tech debt,9,Is the system's lack of advanced features or modern technology hindering our current business processes?,Tolerate,3,Business Value,score 1-5,
+Strategy Question,security,10,Are there any known critical security vulnerabilities associated with this system that would pose substantial risks?,Tolerate,5,IT Qualities,score 1-5,
+Strategy Question,criticality,11,Is this system crucial to our core business functions and operational success?,Invest,5,Business Value,score 1-5,
+Strategy Question,user satisfaction,12,Are users experiencing usability challenges or expressing dissatisfaction with the system's interface?,Invest,3,Business Value,score 1-5,
+Strategy Question,user satisfaction,13,Could enhancements or improvements to this system lead to increased productivity or better customer experiences?,Invest,4,Business Value,score 1-5,
+Strategy Question,competitive advantage,14,"Does this system offer features that our competitors do not have, potentially providing us with a competitive advantage?",Invest,5,Business Value,score 1-5,
+Strategy Question,Integration,15,Are there clear opportunities to integrate this system with other critical tools or processes to streamline workflows?,Invest,3,IT Qualities,score 1-5,
+Strategy Question,cost/value,16,"Can we quantify potential ROI from the investment in terms of cost savings, revenue growth, or improved customer experiences?",Invest,4,Business Value,score 1-5,
+Strategy Question,cost/value,17,Are there industry trends or technological advancements that we could leverage by investing in this system?,Invest,5,IT Qualities,score 1-5,
+Strategy Question,cost/value,18,Would the investment in this system align with our long-term strategic goals and business objectives?,Invest,5,Business Value,score 1-5,
+Strategy Question,modernisation,19,"Are there feasible plans for implementation and adoption of an enhanced system, including necessary training and support?",Invest,4,Business Value,score 1-5,
+Strategy Question,criticality,20,Is this application considered strategically important for achieving our business objectives?,Retain,5,Business Value,score 1-5,
+Strategy Question,performance / stability,21,Is this system performing reliably with minimal downtime or operational issues?,Retain,5,IT Qualities,score 1-5,
+Strategy Question,Integration,22,Does this application integrate effectively with other critical business systems?,Retain,4,Business Value,score 1-5,
+Strategy Question,cost/value,23,Is the total cost of ownership for this system justified by the value it delivers to the business?,Retain,4,Business Value,score 1-5,
+Strategy Question,legacy / tech debt,24,Is the underlying technology stack still actively supported and maintained by vendors?,Retain,5,IT Qualities,score 1-5,
+Strategy Question,user satisfaction,25,Are the users satisfied with the current functionality and user experience of the system?,Retain,3,Business Value,score 1-5,
+Strategy Question,criticality,26,Would changing or replacing this system introduce significant risk to ongoing business operations?,Retain,4,IT Qualities,score 1-5,
+Strategy Question,security,27,Does this system have adequate security controls in place to protect business data and operations?,Retain,4,IT Qualities,score 1-5,
+Strategy Question,competitive advantage,28,Does this system provide capabilities that would be difficult or expensive to replicate with alternative solutions?,Retain,4,Business Value,score 1-5,
+Strategy Question,performance / stability,29,"Is this system struggling to handle increased usage, leading to performance issues during peak times?",Replace,5,IT Qualities,score 1-5,
+Strategy Question,Scalability,30,Could moving this system to a cloud-based platform help us scale more effectively as our business grows?,Replace,4,Business Value,score 1-5,
+Strategy Question,cost/value,31,Would a cloud-based solution offer cost savings compared to maintaining this system on-premises?,Replace,4,Business Value,score 1-5,
+Strategy Question,performance / stability,32,Are there challenges with remote access or collaboration that could be addressed by moving to a different platform?,Replace,3,IT Qualities,score 1-5,
+Strategy Question,modernisation,33,Would migrating this system align with our organization's overall strategy to leverage cloud technologies?,Replace,3,IT Qualities,score 1-5,
+Strategy Question,modernisation,34,"Is the current system's technology outdated, and would a migration provide access to more modern features and capabilities?",Replace,4,Business Value,score 1-5,
+Strategy Question,security,35,Are there potential security improvements that could be gained by migrating to a more secure or compliant platform?,Replace,4,IT Qualities,score 1-5,
+Strategy Question,criticality,36,"Are there any risks associated with a migration, such as data loss, downtime, or disruption to business operations?",Replace,0,IT Qualities,score 1-5,
+Strategy Question,cost/value,37,Would the benefits of migrating this system outweigh the costs and efforts associated with the migration process?,Replace,5,Business Value,score 1-5,
+Strategy Question,legacy / tech debt,38,Is this system built on outdated technology that is no longer supported by the vendor?,Eliminate,5,IT Qualities,score 1-5,
+Strategy Question,security,39,Are there security concerns associated with keeping this system due to lack of updates or patches?,Eliminate,5,IT Qualities,score 1-5,
+Strategy Question,cost/value,40,"Is this system underutilized by employees, and are there viable alternatives that provide similar functionality?",Eliminate,4,Business Value,score 1-5,
+Strategy Question,legacy / tech debt,41,"Are there duplicate systems or applications that serve the same purpose, leading to unnecessary complexity?",Eliminate,4,Business Value,score 1-5,
+Strategy Question,cost/value,42,Does the cost to run the system outweigh the value to the organisation?,Eliminate,4,Business Value,score 1-5,
+Strategy Question,legacy / tech debt,43,Does the function of the system duplicate functions already present?,Eliminate,3,Business Value,score 1-5,
+Strategy Question,legacy / tech debt,44,Has the system's original purpose become obsolete due to changes in business processes or industry standards?,Eliminate,4,Business Value,score 1-5,
+Strategy Question,Integration,45,Does the system lack integration capabilities with other critical tools and systems?,Eliminate,2,IT Qualities,score 1-5,
+Strategy Question,user satisfaction,46,"Are there user complaints or dissatisfaction with the system's performance, usability, or functionality?",Eliminate,3,Business Value,score 1-5,
+Strategy Question,modernisation,47,Would the organization benefit from reallocating resources currently dedicated to maintaining this system?,Eliminate,3,Business Value,score 1-5,
+Strategy Question,modernisation,48,Would the organization benefit from reallocating resources currently dedicated to maintaining this system? (DUPLICATE),Eliminate,3,Business Value,score 1-5,
+Strategy Question,modernisation,49,Would the organization benefit from reallocating resources currently dedicated to maintaining this system? (DUPLICATE),Eliminate,3,Business Value,score 1-5,
