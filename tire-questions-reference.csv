@@ -80,5 +80,3 @@ Strategy Question,legacy / tech debt,44,Has the system's original purpose become
 Strategy Question,Integration,45,Does the system lack integration capabilities with other critical tools and systems?,Eliminate,2,IT Qualities,score 1-5,
 Strategy Question,user satisfaction,46,"Are there user complaints or dissatisfaction with the system's performance, usability, or functionality?",Eliminate,3,Business Value,score 1-5,
 Strategy Question,modernisation,47,Would the organization benefit from reallocating resources currently dedicated to maintaining this system?,Eliminate,3,Business Value,score 1-5,
-Strategy Question,modernisation,48,Would the organization benefit from reallocating resources currently dedicated to maintaining this system? (DUPLICATE),Eliminate,3,Business Value,score 1-5,
-Strategy Question,modernisation,49,Would the organization benefit from reallocating resources currently dedicated to maintaining this system? (DUPLICATE),Eliminate,3,Business Value,score 1-5,
