@@ -69,11 +69,20 @@ cp .env.example .env.local
 # Run database migrations
 npx prisma migrate dev
 
+# Seed test users (optional - creates admin and consultant test accounts)
+npm run db:seed
+
 # Start development server
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+**Test Admin Credentials** (for development):
+- Email: `admin@test.com`
+- Password: `admin123`
+
+See [TEST_USERS.md](./TEST_USERS.md) for complete test user documentation.
 
 ## Development
 
@@ -83,6 +92,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 npm run dev         # Start development server
 npm run build       # Build for production
 npm run start       # Start production server
+npm run db:seed     # Seed database with test users
 npm test            # Run Jest tests (177 tests)
 npm run test:watch  # Run tests in watch mode
 npm run test:e2e    # Run Playwright E2E tests (8 tests)
