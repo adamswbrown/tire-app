@@ -6,6 +6,7 @@ import { redirect } from "next/navigation"
 import Link from "next/link"
 import { prisma } from "@/lib/prisma"
 import { CustomerActions } from "@/components/CustomerActions"
+import { DeleteCustomerButton } from "@/components/DeleteCustomerButton"
 
 export const metadata: Metadata = {
   title: "Dashboard",
@@ -121,26 +122,39 @@ export default async function DashboardPage() {
       ) : (
         <div className="grid gap-4">
           {customers.map(customer => (
-            <Link
+            <div
               key={customer.id}
-              href={`/app/customers/${customer.id}/applications`}
-              className="block bg-white p-4 rounded-lg border hover:border-blue-400 transition-colors"
+              className="bg-white rounded-lg border hover:border-blue-400 transition-colors flex items-stretch"
             >
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-lg font-semibold">{customer.name}</h2>
-                  <p className="text-sm text-gray-500">
-                    Created {customer.createdAt.toLocaleDateString()}
-                  </p>
+              <Link
+                href={`/app/customers/${customer.id}/applications`}
+                className="flex-1 p-4"
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-lg font-semibold">{customer.name}</h2>
+                    <p className="text-sm text-gray-500">
+                      Created {customer.createdAt.toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-2xl font-bold text-blue-600">
+                      {customer._count.applications}
+                    </span>
+                    <p className="text-sm text-gray-500">applications</p>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <span className="text-2xl font-bold text-blue-600">
-                    {customer._count.applications}
-                  </span>
-                  <p className="text-sm text-gray-500">applications</p>
+              </Link>
+              {isAdmin && (
+                <div className="flex items-center pr-4">
+                  <DeleteCustomerButton
+                    customerId={customer.id}
+                    customerName={customer.name}
+                    applicationCount={customer._count.applications}
+                  />
                 </div>
-              </div>
-            </Link>
+              )}
+            </div>
           ))}
         </div>
       )}
